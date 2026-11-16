@@ -92,7 +92,7 @@ function Invoke-ZtLensAssessment {
         Import-Module ZeroTrustAssessment -ErrorAction Stop
         $rawOut = Join-Path $OutputPath 'raw-zt'
         Write-Host "[ZeroTrustLens] Running read-only ZeroTrustAssessment (telemetry disabled)..." -ForegroundColor Cyan
-        Invoke-ZtAssessment -OutputFolder $rawOut -DisableTelemetry
+        Invoke-ZtAssessment -Path $rawOut -DisableTelemetry -NoBrowser
         $sourceJsonPath = Join-Path $rawOut 'zt-export\ZeroTrustAssessmentReport.json'
     }
 
