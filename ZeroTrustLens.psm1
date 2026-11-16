@@ -178,11 +178,12 @@ function Invoke-ZtLensAssessment {
             }
         } else {
             $correlated[$normTitle] = [PSCustomObject]@{
-                TestId     = $t.TestId
-                TestTitle  = $t.TestTitle
-                TestStatus = $t.TestStatus
-                TestRisk   = $t.TestRisk
-                TestPillar = $t.TestPillar
+                TestId        = $t.TestId
+                TestTitle     = $t.TestTitle
+                TestStatus    = $t.TestStatus
+                TestRisk      = $t.TestRisk
+                TestPillar    = $t.TestPillar
+                SkippedReason = $t.PSObject.Properties['SkippedReason'].Value
             }
         }
     }
