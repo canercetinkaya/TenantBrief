@@ -40,6 +40,7 @@ function Connect-ZtLens {
 
     Write-Host "[ZeroTrustLens] Cleaning any previous tenant sessions..." -ForegroundColor DarkGray
     try { Disconnect-MgGraph -ErrorAction SilentlyContinue | Out-Null } catch {}
+    try { Clear-AzContext -Force -ErrorAction SilentlyContinue | Out-Null } catch {}
     try { Disconnect-AzAccount -ErrorAction SilentlyContinue | Out-Null } catch {}
     try { Disconnect-ExchangeOnline -Confirm:$false -ErrorAction SilentlyContinue | Out-Null } catch {}
 
