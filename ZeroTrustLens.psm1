@@ -65,6 +65,50 @@ function Connect-ZtLens {
     Connect-ZtAssessment @params
 }
 
+function ConvertTo-ZtLensTurkish {
+    param([string]$Text)
+    if ([string]::IsNullOrWhiteSpace($Text)) { return $Text }
+    $map = [ordered]@{
+        'Conditional Access policies' = 'Koşullu Erişim ilkeleri'
+        'Conditional Access policy'   = 'Koşullu Erişim ilkesi'
+        'Conditional Access'          = 'Koşullu Erişim'
+        'Sensitivity labels'          = 'Hassasiyet etiketleri'
+        'sensitivity labels'          = 'hassasiyet etiketleri'
+        'Break-glass'                 = 'Acil durum (Break-glass)'
+        'Legacy authentication'       = 'Eski kimlik doğrulama (Legacy Auth)'
+        'legacy authentication'       = 'eski kimlik doğrulama (Legacy Auth)'
+        'Token protection'            = 'Belirteç koruması (Token Protection)'
+        'Passkey'                     = 'Geçiş anahtarı (Passkey)'
+        'Passwordless'                = 'Parolasız kimlik doğrulama'
+        'Admin consent'               = 'Yönetici onayı'
+        'are configured'              = 'yapılandırılmış'
+        'is configured'               = 'yapılandırılmış'
+        'are enabled'                 = 'etkinleştirilmiş'
+        'is enabled'                  = 'etkinleştirilmiş'
+        'are enforced'                = 'zorunlu kılınmış'
+        'is enforced'                 = 'zorunlu kılınmış'
+        'are published to users'      = 'kullanıcılara yayımlanmış'
+        'are blocked'                 = 'engellenmiş'
+        'is blocked'                  = 'engellenmiş'
+        'are required'                = 'zorunlu'
+        'is required'                 = 'zorunlu'
+        'for all users'               = 'tüm kullanıcılar için'
+        'for all administrators'      = 'tüm yöneticiler için'
+        'for privileged roles'        = 'ayrıcalıklı roller için'
+        'with encryption'             = 'şifreleme ile'
+        'should be'                   = 'olmalıdır'
+        'must be'                     = 'olmalıdır'
+        'High'                        = 'Yüksek'
+        'Medium'                      = 'Orta'
+        'Low'                         = 'Düşük'
+    }
+    $out = $Text
+    foreach ($k in $map.Keys) {
+        $out = $out -replace [regex]::Escape($k), $map[$k]
+    }
+    return $out
+}
+
 function Invoke-ZtLensAssessment {
     [CmdletBinding()]
     param(
@@ -372,16 +416,24 @@ function Invoke-ZtLensAssessment {
         } else {
             'General Control'
         }
+        $fTitle = [string]$t.TestTitle
+        $fDesc  = [string]$t.TestDesc
+        $fImp   = [string]$t.TestImpact
+        if ($Language -eq 'tr') {
+            $fTitle = ConvertTo-ZtLensTurkish $fTitle
+            $fDesc  = ConvertTo-ZtLensTurkish $fDesc
+            $fImp   = ConvertTo-ZtLensTurkish $fImp
+        }
         [PSCustomObject]@{
             Id           = $t.TestId
             Pillar       = if ($pillarStr) { $pillarStr } else { 'General' }
             Status       = [string]$t.TestStatus
             Risk         = if ($t.TestRisk) { [string]$t.TestRisk } else { 'Low' }
-            Title        = [string]$t.TestTitle
+            Title        = $fTitle
             FrameworkRef = $fwRef
             Result       = [string]$t.TestResult
-            Impact       = [string]$t.TestImpact
-            Description  = [string]$t.TestDesc
+            Impact       = $fImp
+            Description  = $fDesc
         }
     }
 
