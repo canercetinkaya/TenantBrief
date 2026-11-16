@@ -163,6 +163,59 @@ function Invoke-ZtLensAssessment {
     $fwConfig = (Get-Content -Path $script:FrameworkMapPath -Raw -Encoding UTF8 | ConvertFrom-Json).frameworks
     $tests = @($raw.Tests)
 
+    if (-not $InputReportJson) {
+        if (Get-Module -ListAvailable -Name 'ScubaGear') {
+            try {
+                Write-Host "[ZeroTrustLens] ScubaGear detected. Running CISA SCuBA checks (read-only)..." -ForegroundColor Cyan
+                $scubaOut = Join-Path $OutputPath 'raw-scuba'
+                Import-Module ScubaGear -ErrorAction Stop
+                $null = Invoke-SCuBA -OutPath $scubaOut -Quiet 6>$null 3>$null 2>$null
+                $scubaJson = Get-ChildItem -Path $scubaOut -Filter 'ScubaResults.json' -Recurse -ErrorAction SilentlyContinue | Select-Object -First 1
+                if ($scubaJson) {
+                    $scubaData = Get-Content -Path $scubaJson.FullName -Raw -Encoding UTF8 | ConvertFrom-Json
+                    foreach ($prop in $scubaData.Results.PSObject.Properties) {
+                        foreach ($item in @($prop.Value)) {
+                            $tests += [PSCustomObject]@{
+                                TestId       = "SCUBA-$($item.Control)"
+                                TestTitle    = [string]$item.Requirement
+                                TestStatus   = if ($item.Result -eq 'Pass') { 'Passed' } else { 'Failed' }
+                                TestRisk     = if ($item.Criticality -eq 'Shall') { 'High' } else { 'Medium' }
+                                TestPillar   = 'CISA SCuBA'
+                            }
+                        }
+                    }
+                }
+            } catch {
+                Write-Warning "[ZeroTrustLens] ScubaGear execution skipped: $($_.Exception.Message)"
+            }
+        }
+
+        if (Get-Module -ListAvailable -Name 'ORCA') {
+            try {
+                Write-Host "[ZeroTrustLens] ORCA detected. Running Defender for Office 365 checks (read-only)..." -ForegroundColor Cyan
+                $orcaOut = Join-Path $OutputPath 'raw-orca'
+                if (-not (Test-Path $orcaOut)) { New-Item -ItemType Directory -Path $orcaOut -Force | Out-Null }
+                Import-Module ORCA -ErrorAction Stop
+                $orcaJsonPath = Join-Path $orcaOut 'orca.json'
+                $null = Get-ORCAReport -Output JSON -OutputOptions @{ FilePath = $orcaJsonPath } 6>$null 3>$null 2>$null
+                if (Test-Path $orcaJsonPath) {
+                    $orcaData = Get-Content -Path $orcaJsonPath -Raw -Encoding UTF8 | ConvertFrom-Json
+                    foreach ($item in @($orcaData.Checks)) {
+                        $tests += [PSCustomObject]@{
+                            TestId     = "ORCA-$($item.CheckName)"
+                            TestTitle  = [string]$item.CheckName
+                            TestStatus = if ($item.Status -eq 'OK') { 'Passed' } else { 'Failed' }
+                            TestRisk   = 'Medium'
+                            TestPillar = 'Defender for Office 365 (ORCA)'
+                        }
+                    }
+                }
+            } catch {
+                Write-Warning "[ZeroTrustLens] ORCA execution skipped: $($_.Exception.Message)"
+            }
+        }
+    }
+
     $passedCount = @($tests | Where-Object { $_.TestStatus -eq 'Passed' }).Count
     $failedCount = @($tests | Where-Object { $_.TestStatus -eq 'Failed' }).Count
     $investigateCount = @($tests | Where-Object { $_.TestStatus -eq 'Investigate' }).Count
