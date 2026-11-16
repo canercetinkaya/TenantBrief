@@ -92,6 +92,8 @@ Anonymized sample reports generated from a real 361-check Microsoft 365 tenant e
 - **Offline-First:** All HTML and JSON outputs are generated locally.
 - **Anonymization (`-Anonymize`):** Strips tenant IDs and domain names before generating shareable reports.
 
-## License
+## License & Technical Article
 
-MIT License — see [LICENSE](LICENSE).
+- **Technical Deep-Dive (TR):** [ZeroTrustLens: Microsoft 365 Lisans ROI ve Çoklu Çerçeve Analizi](https://canercetinkaya.com/tr/blog/zerotrustlens-m365-lisans-roi-uyumluluk-analizi)
+- **Technical Deep-Dive (EN):** [ZeroTrustLens: Read-Only M365 License ROI & Multi-Framework Analysis](https://canercetinkaya.com/en/blog/zerotrustlens-m365-lisans-roi-uyumluluk-analizi)
+- **License:** MIT License — see [LICENSE](LICENSE).
