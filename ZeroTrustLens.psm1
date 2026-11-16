@@ -38,8 +38,13 @@ function Connect-ZtLens {
         [switch]$UseDeviceCode
     )
 
-    Write-Host "[ZeroTrustLens] Checking ZeroTrustAssessment & PSGallery dependencies..." -ForegroundColor Cyan
-    foreach ($dep in @('Microsoft.Graph.Beta.Teams', 'Microsoft.Online.SharePoint.PowerShell')) {
+    Write-Host "[ZeroTrustLens] Cleaning any previous tenant sessions..." -ForegroundColor DarkGray
+    try { Disconnect-MgGraph -ErrorAction SilentlyContinue | Out-Null } catch {}
+    try { Disconnect-AzAccount -ErrorAction SilentlyContinue | Out-Null } catch {}
+    try { Disconnect-ExchangeOnline -Confirm:$false -ErrorAction SilentlyContinue | Out-Null } catch {}
+
+    Write-Host "[ZeroTrustLens] Checking ZeroTrustAssessment, ScubaGear, ORCA & PSGallery dependencies..." -ForegroundColor Cyan
+    foreach ($dep in @('Microsoft.Graph.Beta.Teams', 'Microsoft.Online.SharePoint.PowerShell', 'ScubaGear', 'ORCA')) {
         if (-not (Get-Module -ListAvailable -Name $dep)) {
             Write-Warning "Module '$dep' is not installed. Installing from PSGallery (CurrentUser)..."
             try {
@@ -82,6 +87,17 @@ function Invoke-ZtLensAssessment {
         [Parameter()]
         [switch]$NoBrowser
     )
+
+    if (-not $InputReportJson) {
+        $tenantFolder = 'tenant'
+        try {
+            $ctx = Get-MgContext -ErrorAction SilentlyContinue
+            if ($ctx -and $ctx.Account -and $ctx.Account -match '@(.+)$') {
+                $tenantFolder = ($Matches[1] -replace '[^a-zA-Z0-9\.-]', '_')
+            }
+        } catch {}
+        $OutputPath = Join-Path $OutputPath ("{0}_{1}" -f $tenantFolder, (Get-Date -Format 'yyyyMMdd_HHmm'))
+    }
 
     if (-not (Test-Path $OutputPath)) {
         New-Item -ItemType Directory -Path $OutputPath -Force | Out-Null
