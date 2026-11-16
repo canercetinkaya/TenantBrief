@@ -29,6 +29,7 @@
       <span class="badge" id="statusBadge">{{RUNNING}}</span>
     </div>
     <div id="stages"></div>
+    <div id="detail" style="margin-top:10px;font-size:12px;color:var(--accent);font-family:monospace;min-height:18px;"></div>
     <div class="meta">
       <span id="elapsed">00:00</span>
       <span>Read-Only Assessment</span>
@@ -55,6 +56,9 @@
           const state = step < data.stage ? '✓' : (step === data.stage ? '...' : '');
           container.innerHTML += `<div class="stage ${cls}"><div><span class="dot"></span>${lbl}</div><span>${state}</span></div>`;
         });
+        if (data.detail) {
+          document.getElementById('detail').textContent = '▸ ' + data.detail;
+        }
         if (data.done) {
           document.getElementById('statusBadge').textContent = data.doneLabel;
         }

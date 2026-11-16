@@ -103,8 +103,9 @@ function Invoke-ZtLensAssessment {
         New-Item -ItemType Directory -Path $OutputPath -Force | Out-Null
     }
 
+    $rawOut = Join-Path $OutputPath 'raw-zt'
     $progressJob = $null
-    $progressState = [hashtable]::Synchronized(@{ Stage = 1; Done = $false; Stop = $false })
+    $progressState = [hashtable]::Synchronized(@{ Stage = 1; Done = $false; Stop = $false; RawOut = $rawOut })
     if (-not $NoBrowser -and -not $InputReportJson) {
         $port = 8925
         $progressHtmlPath = Join-Path $PSScriptRoot 'assets\progress-template.html'
@@ -140,7 +141,15 @@ function Invoke-ZtLensAssessment {
                         $reqPath = $ctx.Request.Url.AbsolutePath
                         $body = if ($reqPath -eq '/status.json') {
                             $ctx.Response.ContentType = 'application/json; charset=utf-8'
-                            (@{ stage = $State.Stage; done = $State.Done; doneLabel = $DoneLbl } | ConvertTo-Json -Compress)
+                            $detail = ''
+                            if ($State.RawOut -and (Test-Path $State.RawOut)) {
+                                $latest = Get-ChildItem -Path $State.RawOut -Recurse -File -ErrorAction SilentlyContinue | Sort-Object LastWriteTime -Descending | Select-Object -First 1
+                                if ($latest) {
+                                    $cnt = (Get-ChildItem -Path $State.RawOut -Recurse -File -ErrorAction SilentlyContinue).Count
+                                    $detail = "$cnt files | $($latest.Name)"
+                                }
+                            }
+                            (@{ stage = $State.Stage; done = $State.Done; doneLabel = $DoneLbl; detail = $detail } | ConvertTo-Json -Compress)
                         } else {
                             $ctx.Response.ContentType = 'text/html; charset=utf-8'
                             $Html
