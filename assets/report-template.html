@@ -214,7 +214,8 @@
         ? `Microsoft Entra / Defender / Purview yönetim portalında "${f.Pillar}" kategorisi altındaki ilgili ilkeyi Report-only (Denetim) kipinde başlatıp doğrulayın.`
         : `Review the corresponding policy under "${f.Pillar}" in Microsoft Entra / Defender / Purview admin center and validate in Report-only mode first.`;
       const psCmd = `# ${isTr ? 'Salt okunur kontrol' : 'Read-only verification'} (${f.Id})\nConnect-MgGraph -Scopes "Policy.Read.All"\nGet-MgIdentityConditionalAccessPolicy | Select-Object DisplayName, State`;
-      return `<div class="rem-box"><div><strong>${isTr ? 'Portal Adımı:' : 'Portal Action:'}</strong> ${portalTip}</div><pre>${psCmd}</pre></div>`;
+      const detailBlock = f.Result ? `<div style="margin-bottom:10px;color:#cbd5e1;white-space:pre-wrap;">${f.Result}</div>` : '';
+      return `<div class="rem-box">${detailBlock}<div><strong>${isTr ? 'Portal Adımı:' : 'Portal Action:'}</strong> ${portalTip}</div><pre>${psCmd}</pre></div>`;
     }
 
     function renderFindings() {

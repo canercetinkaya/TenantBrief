@@ -184,6 +184,7 @@ function Invoke-ZtLensAssessment {
                 TestRisk      = $t.TestRisk
                 TestPillar    = $t.TestPillar
                 SkippedReason = $t.PSObject.Properties['SkippedReason'].Value
+                TestResult    = $t.PSObject.Properties['TestResult'].Value
             }
         }
     }
@@ -330,6 +331,7 @@ function Invoke-ZtLensAssessment {
             Risk         = if ($t.TestRisk) { [string]$t.TestRisk } else { 'Low' }
             Title        = [string]$t.TestTitle
             FrameworkRef = $fwRef
+            Result       = [string]$t.TestResult
         }
     }
 
