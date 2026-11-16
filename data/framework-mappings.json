@@ -18,7 +18,9 @@
         "Data": "A.5.12 / A.5.13 / A.8.12 / A.8.24 (Classification, DLP & Cryptography)",
         "Infrastructure": "A.8.9 / A.8.20 (Configuration Management & Cloud Infra)",
         "SecOps": "A.5.24 / A.5.25 / A.8.15 / A.8.16 (Logging, Monitoring & Incident Response)",
-        "AI": "A.5.12 / A.8.12 / A.8.2 (AI Data Governance & Access Boundaries)"
+        "AI": "A.5.12 / A.8.12 / A.8.2 (AI Data Governance & Access Boundaries)",
+        "CISA SCuBA": "A.5.15 / A.8.9 / A.8.20 (Federal Cloud Baseline & Hardening)",
+        "Defender for Office 365 (ORCA)": "A.8.7 / A.8.23 (Email & Phishing Protection)"
       }
     },
     "NIST_CSF_2": {

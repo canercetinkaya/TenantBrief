@@ -153,6 +153,31 @@ function Invoke-ZtLensAssessment {
         $null = Invoke-ZtAssessment -Path $rawOut -DisableTelemetry -NoBrowser 6>$null 3>$null 2>$null
         $sourceJsonPath = Join-Path $rawOut 'zt-export\ZeroTrustAssessmentReport.json'
     }
+    # Deduplicate / Correlate findings with identical normalized titles across engines
+    $correlated = @{}
+    foreach ($t in $tests) {
+        $normTitle = ([string]$t.TestTitle).ToLowerInvariant().Trim() -replace '[^a-z0-9]+', ' '
+        if (-not $normTitle) { $normTitle = [string]$t.TestId }
+        if ($correlated.ContainsKey($normTitle)) {
+            $existing = $correlated[$normTitle]
+            if ($existing.TestPillar -notlike "*$($t.TestPillar)*") {
+                $existing.TestPillar = "$($existing.TestPillar), $($t.TestPillar)"
+            }
+            if ($t.TestStatus -eq 'Failed' -and $existing.TestStatus -eq 'Passed') {
+                $existing.TestStatus = 'Failed'
+            }
+        } else {
+            $correlated[$normTitle] = [PSCustomObject]@{
+                TestId     = $t.TestId
+                TestTitle  = $t.TestTitle
+                TestStatus = $t.TestStatus
+                TestRisk   = $t.TestRisk
+                TestPillar = $t.TestPillar
+            }
+        }
+    }
+    $tests = @($correlated.Values)
+
     $progressState.Stage = 2
 
     if (-not (Test-Path $sourceJsonPath)) {
