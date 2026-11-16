@@ -169,13 +169,36 @@
     document.getElementById('fwDetailBars').innerHTML = fwHtml;
 
     document.getElementById('roiBox').innerHTML = `
-      <h3 style="margin-bottom:10px;">${isTr ? 'Lisans ROI & Yapılandırılmamış Özellikler' : 'License ROI & Unconfigured Features'}</h3>
-      <p style="color:var(--muted);font-size:14px;line-height:1.6;">
+      <h3 style="margin-bottom:10px;">${isTr ? 'Lisans ROI & Çerçeve Etki Simülasyonu' : 'License ROI & Framework Impact Simulator'}</h3>
+      <p style="color:var(--muted);font-size:14px;line-height:1.6;margin-bottom:16px;">
         ${isTr
-          ? `Toplam <strong>${s.Skipped}</strong> kontrol atlandı (Skipped) ve <strong>${s.Planned}</strong> kontrol planlandı (Planned). Bu kontroller, sahip olunan Microsoft 365 E3/E5 veya Defender/Purview lisanslarının henüz aktif yapılandırılmayan güvenlik katmanlarını temsil eder.`
-          : `A total of <strong>${s.Skipped}</strong> checks were Skipped and <strong>${s.Planned}</strong> are Planned, representing paid Microsoft 365 E3/E5 or Defender/Purview capabilities not yet configured.`}
+          ? `Toplam <strong>${s.Skipped}</strong> kontrol atlandı (Skipped) ve <strong>${s.Planned}</strong> kontrol planlandı (Planned). Aşağıdaki simülasyon ile bu lisans kör noktalarını veya yüksek riskli bulguları kapattığınızda uyumluluk skorlarınızın nasıl değişeceğini görebilirsiniz.`
+          : `A total of <strong>${s.Skipped}</strong> checks were Skipped and <strong>${s.Planned}</strong> are Planned. Use the simulator below to preview how closing license blind spots or high-risk findings improves your compliance scores.`}
       </p>
+      <div style="display:flex;gap:16px;flex-wrap:wrap;margin-bottom:16px;">
+        <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13.5px;">
+          <input type="checkbox" id="simHigh" onchange="runSim()" /> ${isTr ? `Yüksek riskli ${s.HighRiskFailed} bulguyu çöz` : `Fix ${s.HighRiskFailed} High-risk findings`}
+        </label>
+        <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13.5px;">
+          <input type="checkbox" id="simSkipped" onchange="runSim()" /> ${isTr ? `Atlanan ${s.Skipped} lisans özelliğini devreye al` : `Activate ${s.Skipped} Skipped license features`}
+        </label>
+      </div>
+      <div id="simResults"></div>
     `;
+
+    function runSim() {
+      const fixHigh = document.getElementById('simHigh').checked;
+      const fixSkip = document.getElementById('simSkipped').checked;
+      const baseEval = Math.max(1, DATA.Frameworks[0]?.Evaluated || (s.Passed + s.Failed));
+      const addedPass = (fixHigh ? s.HighRiskFailed : 0) + (fixSkip ? s.Skipped : 0);
+      const newEval = baseEval + (fixSkip ? s.Skipped : 0);
+      document.getElementById('simResults').innerHTML = DATA.Frameworks.map(f => {
+        const simScore = Math.min(100, Math.round(((f.Passed + addedPass) / newEval) * 1000) / 10);
+        const delta = Math.round((simScore - f.Score) * 10) / 10;
+        return `<div class="bar-row"><div class="bar-head"><span>${f.Name}</span><span>${f.Score}% → <strong style="color:var(--ok)">${simScore}%</strong> (+${delta}%)</span></div><div class="bar-track"><div class="bar-fill" style="width:${simScore}%"></div></div></div>`;
+      }).join('');
+    }
+    runSim();
 
     const high = DATA.Findings.filter(x => x.Status === 'Failed' && x.Risk === 'High').length;
     const med = DATA.Findings.filter(x => x.Status === 'Failed' && x.Risk === 'Medium').length;
