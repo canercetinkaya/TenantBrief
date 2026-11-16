@@ -15,6 +15,13 @@
         'Compare-ZtLensReports',
         'Export-ZtLensExecutiveSummary'
     )
+    PrivateData = @{
+        PSData = @{
+            Tags       = @('ZeroTrust', 'Microsoft365', 'Security', 'Compliance', 'ISO27001', 'KVKK', 'ReadOnly')
+            LicenseUri = 'https://github.com/canercetinkaya/ZeroTrustLens/blob/master/LICENSE'
+            ProjectUri = 'https://github.com/canercetinkaya/ZeroTrustLens'
+        }
+    }
     CmdletsToExport   = @()
     VariablesToExport = @()
     AliasesToExport   = @()
