@@ -282,15 +282,35 @@ function Invoke-ZtLensAssessment {
     $baseScore = if ($evaluatedTotal -gt 0) { [math]::Round(($passedCount / $evaluatedTotal) * 100, 1) } else { 0 }
 
     $selectedFwIds = if ($Framework -eq 'All') { @('ZeroTrust', 'ISO27001', 'NIST_CSF_2', 'CIS_M365', 'KVKK_TR') } else { @($Framework) }
+    $fwPillars = @{
+        'ZeroTrust'  = @('Identity', 'Devices', 'Network', 'Data', 'Infrastructure', 'SecOps', 'AI', 'CISA SCuBA', 'Defender for Office 365 (ORCA)')
+        'ISO27001'   = @('Identity', 'Devices', 'Network', 'Data', 'Infrastructure', 'SecOps')
+        'NIST_CSF_2' = @('Identity', 'Devices', 'Network', 'SecOps', 'AI')
+        'CIS_M365'   = @('Identity', 'Devices', 'Data', 'CISA SCuBA', 'Defender for Office 365 (ORCA)')
+        'KVKK_TR'    = @('Identity', 'Data', 'SecOps', 'Devices')
+    }
+
     $frameworkCards = foreach ($fwId in $selectedFwIds) {
         $fwMeta = $fwConfig.$fwId
         $fwName = if ($Language -eq 'tr') { $fwMeta.nameTr } else { $fwMeta.nameEn }
+        $allowed = $fwPillars[$fwId]
+        $fwTests = if ($allowed) {
+            @($tests | Where-Object {
+                $p = if ($_.TestPillar -is [System.Array]) { [string]$_.TestPillar[0] } else { [string]$_.TestPillar }
+                $allowed -contains $p
+            })
+        } else { $tests }
+        $fwPass = @($fwTests | Where-Object { $_.TestStatus -eq 'Passed' }).Count
+        $fwFail = @($fwTests | Where-Object { $_.TestStatus -eq 'Failed' }).Count
+        $fwInv  = @($fwTests | Where-Object { $_.TestStatus -eq 'Investigate' }).Count
+        $fwEval = $fwPass + $fwFail + $fwInv
+        $fwScore = if ($fwEval -gt 0) { [Math]::Round(($fwPass / $fwEval) * 100, 1) } else { 0 }
         [PSCustomObject]@{
             Id        = $fwId
             Name      = $fwName
-            Score     = $baseScore
-            Passed    = $passedCount
-            Evaluated = $evaluatedTotal
+            Score     = $fwScore
+            Passed    = $fwPass
+            Evaluated = $fwEval
         }
     }
 
