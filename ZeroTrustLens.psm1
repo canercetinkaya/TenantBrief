@@ -153,6 +153,16 @@ function Invoke-ZtLensAssessment {
         $null = Invoke-ZtAssessment -Path $rawOut -DisableTelemetry -NoBrowser 6>$null 3>$null 2>$null
         $sourceJsonPath = Join-Path $rawOut 'zt-export\ZeroTrustAssessmentReport.json'
     }
+    $progressState.Stage = 2
+
+    if (-not (Test-Path $sourceJsonPath)) {
+        throw "Assessment JSON report not found: $sourceJsonPath"
+    }
+
+    $raw = Get-Content -Path $sourceJsonPath -Raw -Encoding UTF8 | ConvertFrom-Json
+    $fwConfig = (Get-Content -Path $script:FrameworkMapPath -Raw -Encoding UTF8 | ConvertFrom-Json).frameworks
+    $tests = @($raw.Tests)
+
     # Deduplicate / Correlate findings with identical normalized titles across engines
     $correlated = @{}
     foreach ($t in $tests) {
@@ -177,16 +187,6 @@ function Invoke-ZtLensAssessment {
         }
     }
     $tests = @($correlated.Values)
-
-    $progressState.Stage = 2
-
-    if (-not (Test-Path $sourceJsonPath)) {
-        throw "Assessment JSON report not found: $sourceJsonPath"
-    }
-
-    $raw = Get-Content -Path $sourceJsonPath -Raw -Encoding UTF8 | ConvertFrom-Json
-    $fwConfig = (Get-Content -Path $script:FrameworkMapPath -Raw -Encoding UTF8 | ConvertFrom-Json).frameworks
-    $tests = @($raw.Tests)
 
     if (-not $InputReportJson) {
         if (Get-Module -ListAvailable -Name 'ScubaGear') {
