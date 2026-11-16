@@ -420,6 +420,17 @@ function Invoke-ZtLensAssessment {
         if ($Language -eq 'tr' -and $fImp) {
             $fImp = $fImp -replace '^High$', 'Yüksek' -replace '^Medium$', 'Orta' -replace '^Low$', 'Düşük'
         }
+        $portalName = switch ($primaryPillar) {
+            'Identity'       { 'Microsoft Entra yönetim merkezi (entra.microsoft.com)' }
+            'Devices'        { 'Microsoft Intune yönetim merkezi (intune.microsoft.com)' }
+            'Network'        { 'Global Secure Access / Azure Portal (portal.azure.com)' }
+            'Data'           { 'Microsoft Purview portalı (purview.microsoft.com)' }
+            'Infrastructure' { 'Azure Portal (portal.azure.com)' }
+            'SecOps'         { 'Microsoft Defender XDR / Sentinel (security.microsoft.com)' }
+            'AI'             { 'Microsoft Purview / Entra Agent ID (entra.microsoft.com)' }
+            default          { 'Microsoft 365 Yönetim Merkezi' }
+        }
+        $remTr = "1. $portalName üzerinden '$fTitle' kontrolüne karşılık gelen ilkeyi açın. 2. Değişikliği önce Denetim (Report-only) kipinde pilot gruba uygulayıp oturum açma/olay günlüklerini doğrulayın. 3. Etki analizi sonrası kademeli olarak Zorunlu (Enforce) durumuna geçin."
         [PSCustomObject]@{
             Id           = $t.TestId
             Pillar       = if ($pillarStr) { $pillarStr } else { 'General' }
@@ -427,9 +438,10 @@ function Invoke-ZtLensAssessment {
             Risk         = if ($t.TestRisk) { [string]$t.TestRisk } else { 'Low' }
             Title        = $fTitle
             FrameworkRef = $fwRef
-            Result       = [string]$t.TestResult
-            Impact       = $fImp
-            Description  = $fDesc
+            Result        = [string]$t.TestResult
+            Impact        = $fImp
+            Description   = $fDesc
+            RemediationTr = $remTr
         }
     }
 
