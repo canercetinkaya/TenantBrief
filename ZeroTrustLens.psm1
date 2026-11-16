@@ -401,20 +401,20 @@ function Compare-ZtLensReports {
     $curr = Get-Content -Path $CurrentJsonPath -Raw -Encoding UTF8 | ConvertFrom-Json
 
     $baseMap = @{}
-    foreach ($t in @($base.Findings)) { $baseMap[[string]$t.TestId] = $t }
+    foreach ($t in @($base.Findings)) { $baseMap[[string]$t.Id] = $t }
 
     $improved = @()
     $regressed = @()
     $unchanged = 0
 
     foreach ($t in @($curr.Findings)) {
-        $id = [string]$t.TestId
-        if (-not $baseMap.ContainsKey($id)) { continue }
+        $id = [string]$t.Id
+        if (-not $id -or -not $baseMap.ContainsKey($id)) { continue }
         $prev = $baseMap[$id]
         if ($prev.Status -ne 'Passed' -and $t.Status -eq 'Passed') {
-            $improved += [PSCustomObject]@{ TestId = $id; Title = $t.Title; From = $prev.Status; To = $t.Status; Risk = $t.Risk }
+            $improved += [PSCustomObject]@{ Id = $id; Title = $t.Title; From = $prev.Status; To = $t.Status; Risk = $t.Risk }
         } elseif ($prev.Status -eq 'Passed' -and $t.Status -ne 'Passed') {
-            $regressed += [PSCustomObject]@{ TestId = $id; Title = $t.Title; From = $prev.Status; To = $t.Status; Risk = $t.Risk }
+            $regressed += [PSCustomObject]@{ Id = $id; Title = $t.Title; From = $prev.Status; To = $t.Status; Risk = $t.Risk }
         } else {
             $unchanged++
         }
@@ -449,8 +449,8 @@ function Export-ZtLensExecutiveSummary {
     $data = Get-Content -Path $InputLensJsonPath -Raw -Encoding UTF8 | ConvertFrom-Json
     $title = if ($Language -eq 'tr') { 'Yönetici Özeti — Güvenlik Duruşu ve Lisans ROI' } else { 'Executive Summary — Security Posture & License ROI' }
 
-    $fwRows = ($data.FrameworkScores | ForEach-Object {
-        "<tr><td>$($_.Name)</td><td>$($_.Passed) / $($_.Total)</td><td><strong>$($_.Score)%</strong></td></tr>"
+    $fwRows = ($data.Frameworks | ForEach-Object {
+        "<tr><td>$($_.Name)</td><td>$($_.Passed) / $($_.Evaluated)</td><td><strong>$($_.Score)%</strong></td></tr>"
     }) -join "`n"
 
     $html = @"
@@ -474,7 +474,7 @@ function Export-ZtLensExecutiveSummary {
 </head>
 <body>
   <h1>ZeroTrustLens — $title</h1>
-  <div class="sub">Generated: $($data.GeneratedAt) | Read-Only Assessment</div>
+  <div class="sub">Generated: $(Get-Date -Format 'yyyy-MM-dd HH:mm') | Read-Only Assessment</div>
   <div class="grid">
     <div class="card"><div>Total</div><div class="val">$($data.Summary.Total)</div></div>
     <div class="card"><div>Passed</div><div class="val">$($data.Summary.Passed)</div></div>
