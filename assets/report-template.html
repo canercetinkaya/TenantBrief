@@ -210,12 +210,22 @@
     `;
 
     function getRemediation(f) {
-      const descBlock = f.Description ? `<div style="margin-bottom:8px;"><strong>${isTr ? 'Açıklama ve Öneri:' : 'Description & Recommendation:'}</strong><div style="color:#cbd5e1;white-space:pre-wrap;margin-top:4px;">${f.Description}</div></div>` : '';
+      const trSummary = f.Status === 'Skipped'
+        ? `Bu kontrol mevcut kiracı ortamında uygulanabilir olmadığı veya ilgili lisans/modül etkinleştirilmediği için atlandı (Lisans ROI kör noktası).`
+        : (f.Status === 'Failed'
+          ? `Bu kontrol başarısız oldu. "${f.Pillar}" kategorisi altındaki ilgili ilkeyi Microsoft yönetim portalında önce Report-only (Denetim) kipinde yapılandırıp doğrulayın.`
+          : `Bu kontrol mevcut yapılandırmada başarılı veya inceleme aşamasındadır.`);
+      const summaryBlock = isTr
+        ? `<div style="margin-bottom:10px;padding:8px 10px;background:rgba(56,189,248,.08);border-left:3px solid var(--accent);border-radius:4px;"><strong>Türkçe Özet & Yönlendirme:</strong> ${trSummary}</div>`
+        : '';
       const impBlock = f.Impact ? `<div style="margin-bottom:8px;"><strong>${isTr ? 'Etki:' : 'Impact:'}</strong> <span style="color:#fcd34d;">${f.Impact}</span></div>` : '';
       const detailBlock = f.Result
-        ? `<div><strong>${isTr ? 'Tespit & Etkilenen Kaynaklar:' : 'Finding & Affected Resources:'}</strong><div style="margin-top:4px;color:#cbd5e1;white-space:pre-wrap;">${f.Result}</div></div>`
+        ? `<div style="margin-bottom:10px;"><strong>${isTr ? 'Tespit & Etkilenen Kaynaklar:' : 'Finding & Affected Resources:'}</strong><div style="margin-top:4px;color:#cbd5e1;white-space:pre-wrap;">${f.Result}</div></div>`
         : '';
-      return `<div class="rem-box">${descBlock}${impBlock}${detailBlock}</div>`;
+      const descBlock = f.Description
+        ? `<div><strong>${isTr ? 'Orijinal Microsoft Teknik Referansı (EN):' : 'Technical Reference:'}</strong><div style="color:#94a3b8;white-space:pre-wrap;margin-top:4px;">${f.Description}</div></div>`
+        : '';
+      return `<div class="rem-box">${summaryBlock}${impBlock}${detailBlock}${descBlock}</div>`;
     }
 
     function renderFindings() {

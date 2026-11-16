@@ -417,10 +417,8 @@ function Invoke-ZtLensAssessment {
         $fTitle = [string]$t.TestTitle
         $fDesc  = [string]$t.TestDesc
         $fImp   = [string]$t.TestImpact
-        if ($Language -eq 'tr') {
-            $fTitle = ConvertTo-ZtLensTurkish $fTitle
-            $fDesc  = ConvertTo-ZtLensTurkish $fDesc
-            $fImp   = ConvertTo-ZtLensTurkish $fImp
+        if ($Language -eq 'tr' -and $fImp) {
+            $fImp = $fImp -replace '^High$', 'Yüksek' -replace '^Medium$', 'Orta' -replace '^Low$', 'Düşük'
         }
         [PSCustomObject]@{
             Id           = $t.TestId
