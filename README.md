@@ -24,6 +24,7 @@
 - **Cross-Engine Correlation (`ZeroTrustAssessment` + `ScubaGear` + `ORCA`):** Automatically detects and runs installed `ScubaGear` and `ORCA` modules in read-only mode and deduplicates overlapping findings.
 - **Interactive What-If Simulator & Print-to-PDF Executive Summary:** Simulates framework score improvements in real time and automatically generates `ZeroTrustLens-ExecutiveSummary-<LANG>.html` for CISO/audit briefings.
 - **Historical Drift Comparison (`Compare-ZtLensReports`) & Real SKU ROI (`Get-ZtLensLicenseRoi`):** Tracks posture improvements over time and calculates idle license cost across 25+ Microsoft 365 SKUs.
+- **Multi-Tenant Consulting Ready:** Automatically cleans previous Graph/Azure/EXO sessions on `Connect-ZtLens`, auto-installs missing `ScubaGear`/`ORCA` modules, isolates outputs into `<OutputPath>\<Tenant>_<Timestamp>`, and includes per-finding `TestResult` & affected resources in the HTML report.
 - **Bilingual Offline HTML & JSON Reports:** Generates self-contained dark-mode HTML dashboards (`-Language tr` or `-Language en`) with search, status/risk filters, and optional `-Anonymize` mode for safe sharing.
 
 ---
