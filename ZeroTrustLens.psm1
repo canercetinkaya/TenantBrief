@@ -87,14 +87,73 @@ function Invoke-ZtLensAssessment {
         New-Item -ItemType Directory -Path $OutputPath -Force | Out-Null
     }
 
+    $progressJob = $null
+    $progressState = [hashtable]::Synchronized(@{ Stage = 1; Done = $false; Stop = $false })
+    if (-not $NoBrowser -and -not $InputReportJson) {
+        $port = 8925
+        $progressHtmlPath = Join-Path $PSScriptRoot 'assets\progress-template.html'
+        if (Test-Path $progressHtmlPath) {
+            $pHtml = Get-Content -Path $progressHtmlPath -Raw -Encoding UTF8
+            $labelsJson = if ($Language -eq 'tr') {
+                '["1. Kiraci Verileri ve Guvenlik Kontrolleri","2. Lisans ROI ve Kor Nokta Analizi","3. Uyumluluk Cerceveleri Puanlamasi","4. ZeroTrustLens Rapor Uretimi"]'
+            } else {
+                '["1. Tenant Data & Security Checks","2. License ROI & Blind-Spot Analysis","3. Compliance Framework Scoring","4. Generating ZeroTrustLens Report"]'
+            }
+            $pHtml = $pHtml.Replace('{{LANG}}', $Language).Replace('{{TITLE}}', $(if ($Language -eq 'tr') { 'Canli Degerlendirme' } else { 'Live Assessment' })).Replace('{{RUNNING}}', $(if ($Language -eq 'tr') { 'Calisiyor' } else { 'Running' })).Replace('{{LABELS_JSON}}', $labelsJson)
+            $doneLbl = if ($Language -eq 'tr') { 'Tamamlandi' } else { 'Completed' }
+            $rs = [runspacefactory]::CreateRunspace()
+            $rs.Open()
+            $rs.SessionStateProxy.SetVariable('State', $progressState)
+            $rs.SessionStateProxy.SetVariable('Html', $pHtml)
+            $rs.SessionStateProxy.SetVariable('DoneLbl', $doneLbl)
+            $rs.SessionStateProxy.SetVariable('Port', $port)
+            $ps = [powershell]::Create()
+            $ps.Runspace = $rs
+            [void]$ps.AddScript({
+                $listener = New-Object System.Net.HttpListener
+                $listener.Prefixes.Add("http://localhost:$Port/")
+                try {
+                    $listener.Start()
+                    while (-not $State.Stop -and $listener.IsListening) {
+                        $ctxTask = $listener.GetContextAsync()
+                        while (-not $ctxTask.AsyncWaitHandle.WaitOne(200)) {
+                            if ($State.Stop) { break }
+                        }
+                        if ($State.Stop) { break }
+                        $ctx = $ctxTask.GetAwaiter().GetResult()
+                        $reqPath = $ctx.Request.Url.AbsolutePath
+                        $body = if ($reqPath -eq '/status.json') {
+                            $ctx.Response.ContentType = 'application/json; charset=utf-8'
+                            (@{ stage = $State.Stage; done = $State.Done; doneLabel = $DoneLbl } | ConvertTo-Json -Compress)
+                        } else {
+                            $ctx.Response.ContentType = 'text/html; charset=utf-8'
+                            $Html
+                        }
+                        $bytes = [System.Text.Encoding]::UTF8.GetBytes($body)
+                        $ctx.Response.ContentLength64 = $bytes.Length
+                        $ctx.Response.OutputStream.Write($bytes, 0, $bytes.Length)
+                        $ctx.Response.Close()
+                    }
+                } catch {} finally {
+                    if ($listener.IsListening) { $listener.Stop() }
+                    $listener.Close()
+                }
+            })
+            $asyncHandle = $ps.BeginInvoke()
+            $progressJob = @{ Ps = $ps; Handle = $asyncHandle; Rs = $rs }
+            Start-Process "http://localhost:$port/"
+        }
+    }
+
     $sourceJsonPath = $InputReportJson
     if (-not $sourceJsonPath) {
         Import-Module ZeroTrustAssessment -ErrorAction Stop
         $rawOut = Join-Path $OutputPath 'raw-zt'
         Write-Host "[ZeroTrustLens] Running read-only tenant assessment (this may take a few minutes)..." -ForegroundColor Cyan
-        $null = Invoke-ZtAssessment -Path $rawOut -DisableTelemetry 6>$null 3>$null 2>$null
+        $null = Invoke-ZtAssessment -Path $rawOut -DisableTelemetry -NoBrowser 6>$null 3>$null 2>$null
         $sourceJsonPath = Join-Path $rawOut 'zt-export\ZeroTrustAssessmentReport.json'
     }
+    $progressState.Stage = 2
 
     if (-not (Test-Path $sourceJsonPath)) {
         throw "Assessment JSON report not found: $sourceJsonPath"

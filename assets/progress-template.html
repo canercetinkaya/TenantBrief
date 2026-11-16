@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="{{LANG}}">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ZeroTrustLens — {{TITLE}}</title>
+  <style>
+    :root { --bg:#0b0f19; --card:#131a2a; --border:#1f2a44; --text:#e2e8f0; --muted:#94a3b8; --accent:#38bdf8; --ok:#22c55e; }
+    * { box-sizing:border-box; margin:0; padding:0; }
+    body { font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif; background:var(--bg); color:var(--text); min-height:100vh; display:flex; align-items:center; justify-content:center; padding:24px; }
+    .box { width:100%; max-width:680px; background:var(--card); border:1px solid var(--border); border-radius:16px; padding:28px; box-shadow:0 20px 50px rgba(0,0,0,.45); }
+    .top { display:flex; justify-content:space-between; align-items:center; margin-bottom:24px; border-bottom:1px solid var(--border); padding-bottom:16px; }
+    .brand { display:flex; align-items:center; gap:12px; font-size:20px; font-weight:700; }
+    .logo { width:34px; height:34px; border-radius:9px; background:linear-gradient(135deg,#0ea5e9,#6366f1); display:flex; align-items:center; justify-content:center; font-weight:800; color:#fff; }
+    .badge { font-size:12px; padding:4px 10px; border-radius:999px; background:rgba(56,189,248,.15); color:var(--accent); border:1px solid rgba(56,189,248,.35); }
+    .stage { display:flex; align-items:center; justify-content:space-between; padding:12px 14px; border-radius:10px; background:rgba(255,255,255,.02); border:1px solid var(--border); margin-bottom:10px; }
+    .stage.active { border-color:var(--accent); background:rgba(56,189,248,.07); }
+    .stage.done { border-color:rgba(34,197,94,.4); background:rgba(34,197,94,.06); }
+    .dot { width:10px; height:10px; border-radius:50%; background:var(--muted); margin-right:12px; display:inline-block; }
+    .active .dot { background:var(--accent); box-shadow:0 0 10px var(--accent); }
+    .done .dot { background:var(--ok); }
+    .meta { display:flex; justify-content:space-between; margin-top:18px; font-size:13px; color:var(--muted); }
+  </style>
+</head>
+<body>
+  <div class="box">
+    <div class="top">
+      <div class="brand"><div class="logo">ZL</div><span>ZeroTrustLens</span></div>
+      <span class="badge" id="statusBadge">{{RUNNING}}</span>
+    </div>
+    <div id="stages"></div>
+    <div class="meta">
+      <span id="elapsed">00:00</span>
+      <span>Read-Only Assessment</span>
+    </div>
+  </div>
+  <script>
+    const start = Date.now();
+    const labels = {{LABELS_JSON}};
+    function fmt(ms) {
+      const s = Math.floor(ms / 1000);
+      return String(Math.floor(s / 60)).padStart(2, '0') + ':' + String(s % 60).padStart(2, '0');
+    }
+    async function poll() {
+      document.getElementById('elapsed').textContent = fmt(Date.now() - start);
+      try {
+        const res = await fetch('/status.json?t=' + Date.now());
+        if (!res.ok) return;
+        const data = await res.json();
+        const container = document.getElementById('stages');
+        container.innerHTML = '';
+        labels.forEach((lbl, idx) => {
+          const step = idx + 1;
+          const cls = step < data.stage ? 'done' : (step === data.stage ? 'active' : '');
+          const state = step < data.stage ? '✓' : (step === data.stage ? '...' : '');
+          container.innerHTML += `<div class="stage ${cls}"><div><span class="dot"></span>${lbl}</div><span>${state}</span></div>`;
+        });
+        if (data.done) {
+          document.getElementById('statusBadge').textContent = data.doneLabel;
+        }
+      } catch {}
+    }
+    poll();
+    setInterval(poll, 1500);
+  </script>
+</body>
+</html>
