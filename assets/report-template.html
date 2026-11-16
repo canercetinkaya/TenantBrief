@@ -3,199 +3,221 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>{{TITLE}}</title>
+  <title>ZeroTrustLens — {{TITLE}}</title>
   <style>
     :root {
-      --bg: #0b1120;
-      --surface: #111827;
-      --surface-alt: #1e293b;
-      --border: #334155;
-      --text: #f8fafc;
-      --muted: #94a3b8;
-      --accent: #38bdf8;
-      --pass: #22c55e;
-      --fail: #ef4444;
-      --warn: #f59e0b;
-      --skip: #64748b;
+      --bg:#0b0f19; --card:#131a2a; --card2:#0f1624; --border:#1f2a44;
+      --text:#e2e8f0; --muted:#94a3b8; --accent:#38bdf8;
+      --ok:#22c55e; --fail:#ef4444; --warn:#f59e0b; --skip:#a855f7;
     }
-    * { box-sizing: border-box; }
-    body {
-      margin: 0;
-      font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
-      background: var(--bg);
-      color: var(--text);
-      line-height: 1.5;
-    }
-    .container { max-width: 1280px; margin: 0 auto; padding: 24px; }
-    header {
-      display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center;
-      gap: 16px; border-bottom: 1px solid var(--border); padding-bottom: 16px; margin-bottom: 24px;
-    }
-    h1 { margin: 0; font-size: 1.5rem; }
-    .subtitle { color: var(--muted); font-size: 0.9rem; margin-top: 4px; }
-    .badge {
-      display: inline-block; padding: 4px 10px; border-radius: 999px;
-      font-size: 0.75rem; font-weight: 600; background: var(--surface-alt); border: 1px solid var(--border);
-    }
-    .grid { display: grid; gap: 16px; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); margin-bottom: 24px; }
-    .card {
-      background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 16px;
-    }
-    .card-label { font-size: 0.8rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.04em; }
-    .card-val { font-size: 1.8rem; font-weight: 700; margin-top: 6px; }
-    .section-title { font-size: 1.15rem; margin: 28px 0 12px; border-left: 3px solid var(--accent); padding-left: 10px; }
-    .fw-grid { display: grid; gap: 12px; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); }
-    .bar-wrap { height: 8px; background: var(--surface-alt); border-radius: 999px; overflow: hidden; margin-top: 8px; }
-    .bar-fill { height: 100%; background: var(--accent); }
-    .controls { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 14px; }
-    input, select {
-      background: var(--surface); color: var(--text); border: 1px solid var(--border);
-      border-radius: 8px; padding: 8px 12px; font-size: 0.88rem;
-    }
-    table { width: 100%; border-collapse: collapse; background: var(--surface); border-radius: 12px; overflow: hidden; }
-    th, td { padding: 10px 12px; text-align: left; border-bottom: 1px solid var(--border); font-size: 0.86rem; vertical-align: top; }
-    th { background: var(--surface-alt); color: var(--muted); font-weight: 600; }
-    .pill { padding: 2px 8px; border-radius: 999px; font-size: 0.75rem; font-weight: 600; display: inline-block; }
-    .st-Passed { background: rgba(34,197,94,0.15); color: var(--pass); }
-    .st-Failed { background: rgba(239,68,68,0.15); color: var(--fail); }
-    .st-Investigate { background: rgba(245,158,11,0.15); color: var(--warn); }
-    .st-Skipped, .st-Planned { background: rgba(100,116,139,0.2); color: var(--muted); }
-    .rk-High { color: var(--fail); font-weight: 700; }
-    .rk-Medium { color: var(--warn); font-weight: 600; }
-    .rk-Low { color: var(--muted); }
-    footer { margin-top: 32px; padding-top: 16px; border-top: 1px solid var(--border); color: var(--muted); font-size: 0.8rem; }
+    * { box-sizing:border-box; margin:0; padding:0; }
+    body { font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif; background:var(--bg); color:var(--text); display:flex; min-height:100vh; }
+    .sidebar { width:250px; background:var(--card2); border-right:1px solid var(--border); padding:22px 14px; display:flex; flex-direction:column; gap:6px; position:sticky; top:0; height:100vh; }
+    .brand { display:flex; align-items:center; gap:10px; font-size:18px; font-weight:700; padding:0 10px 16px; border-bottom:1px solid var(--border); margin-bottom:10px; }
+    .logo { width:32px; height:32px; border-radius:8px; background:linear-gradient(135deg,#0ea5e9,#6366f1); display:flex; align-items:center; justify-content:center; font-weight:800; color:#fff; font-size:14px; }
+    .nav-btn { background:transparent; border:none; color:var(--muted); text-align:left; padding:10px 12px; border-radius:8px; cursor:pointer; font-size:14px; font-weight:500; transition:.15s; }
+    .nav-btn:hover { background:rgba(56,189,248,.08); color:var(--text); }
+    .nav-btn.active { background:rgba(56,189,248,.16); color:var(--accent); font-weight:600; }
+    .main { flex:1; padding:28px; max-width:1280px; margin:0 auto; width:100%; }
+    .header { display:flex; justify-content:space-between; align-items:center; margin-bottom:24px; flex-wrap:wrap; gap:12px; }
+    .meta { font-size:13px; color:var(--muted); }
+    .tab-panel { display:none; }
+    .tab-panel.active { display:block; }
+    .cards { display:grid; grid-template-columns:repeat(auto-fit,minmax(180px,1fr)); gap:14px; margin-bottom:22px; }
+    .card { background:var(--card); border:1px solid var(--border); border-radius:12px; padding:16px; }
+    .card .lbl { font-size:12px; color:var(--muted); margin-bottom:6px; }
+    .card .val { font-size:28px; font-weight:700; }
+    .charts-row { display:grid; grid-template-columns:300px 1fr; gap:18px; margin-bottom:22px; }
+    @media (max-width:900px) { body { flex-direction:column; } .sidebar { width:100%; height:auto; position:static; flex-direction:row; overflow-x:auto; } .charts-row { grid-template-columns:1fr; } }
+    .bar-row { margin-bottom:12px; }
+    .bar-head { display:flex; justify-content:space-between; font-size:13px; margin-bottom:5px; }
+    .bar-track { height:10px; background:#1e293b; border-radius:999px; overflow:hidden; }
+    .bar-fill { height:100%; background:linear-gradient(90deg,#0ea5e9,#22c55e); border-radius:999px; }
+    .filters { display:flex; gap:10px; flex-wrap:wrap; margin-bottom:14px; }
+    input, select { background:var(--card); color:var(--text); border:1px solid var(--border); border-radius:8px; padding:8px 12px; font-size:13px; }
+    .finding { background:var(--card); border:1px solid var(--border); border-radius:10px; padding:14px 16px; margin-bottom:10px; }
+    .finding-top { display:flex; justify-content:space-between; align-items:center; gap:10px; flex-wrap:wrap; }
+    .pill { font-size:11px; padding:3px 9px; border-radius:999px; font-weight:600; }
+    .pill.Passed { background:rgba(34,197,94,.15); color:var(--ok); }
+    .pill.Failed { background:rgba(239,68,68,.15); color:var(--fail); }
+    .pill.Skipped { background:rgba(168,85,247,.15); color:var(--skip); }
+    .pill.Investigate, .pill.Planned { background:rgba(245,158,11,.15); color:var(--warn); }
+    details { margin-top:10px; border-top:1px solid var(--border); padding-top:10px; }
+    summary { cursor:pointer; color:var(--accent); font-size:13px; font-weight:600; }
+    .rem-box { margin-top:8px; background:#090d16; border:1px solid var(--border); border-radius:8px; padding:12px; font-size:12.5px; line-height:1.55; }
+    pre { background:#05080f; padding:10px; border-radius:6px; overflow-x:auto; margin-top:6px; color:#7dd3fc; font-size:12px; }
   </style>
 </head>
 <body>
-  <div class="container">
-    <header>
+  <aside class="sidebar">
+    <div class="brand"><div class="logo">ZL</div><span>ZeroTrustLens</span></div>
+    <button class="nav-btn active" onclick="showTab('overview', this)" id="navOverview">Overview</button>
+    <button class="nav-btn" onclick="showTab('frameworks', this)" id="navFrameworks">Frameworks</button>
+    <button class="nav-btn" onclick="showTab('roi', this)" id="navRoi">License ROI</button>
+    <button class="nav-btn" onclick="showTab('roadmap', this)" id="navRoadmap">30-60-90 Roadmap</button>
+    <button class="nav-btn" onclick="showTab('findings', this)" id="navFindings">All Findings</button>
+  </aside>
+
+  <main class="main">
+    <div class="header">
       <div>
-        <h1>ZeroTrustLens — {{HEADER_TITLE}}</h1>
-        <div class="subtitle">{{SUBTITLE}}</div>
+        <h1 id="pageTitle">ZeroTrustLens</h1>
+        <div class="meta" id="tenantMeta"></div>
       </div>
-      <div>
-        <span class="badge">{{READONLY_BADGE}}</span>
-        <span class="badge">{{GENERATED_AT}}</span>
-      </div>
-    </header>
-
-    <div class="grid" id="summary-cards"></div>
-
-    <h2 class="section-title">{{FW_TITLE}}</h2>
-    <div class="fw-grid" id="framework-cards"></div>
-
-    <h2 class="section-title">{{ROI_TITLE}}</h2>
-    <div class="card" id="roi-box"></div>
-
-    <h2 class="section-title">{{ROADMAP_TITLE}}</h2>
-    <div class="fw-grid" id="roadmap-cards"></div>
-
-    <h2 class="section-title">{{FINDINGS_TITLE}}</h2>
-    <div class="controls">
-      <input type="text" id="searchInput" placeholder="{{SEARCH_PLACEHOLDER}}" style="flex:1;min-width:220px;" />
-      <select id="statusFilter">
-        <option value="ALL">{{ALL_STATUSES}}</option>
-        <option value="Failed">Failed</option>
-        <option value="Investigate">Investigate</option>
-        <option value="Passed">Passed</option>
-        <option value="Skipped">Skipped</option>
-        <option value="Planned">Planned</option>
-      </select>
-      <select id="riskFilter">
-        <option value="ALL">{{ALL_RISKS}}</option>
-        <option value="High">High</option>
-        <option value="Medium">Medium</option>
-        <option value="Low">Low</option>
-      </select>
     </div>
 
-    <table>
-      <thead>
-        <tr>
-          <th>ID</th>
-          <th>{{COL_PILLAR}}</th>
-          <th>{{COL_STATUS}}</th>
-          <th>{{COL_RISK}}</th>
-          <th>{{COL_TITLE}}</th>
-          <th>{{COL_FRAMEWORK}}</th>
-        </tr>
-      </thead>
-      <tbody id="findingsBody"></tbody>
-    </table>
+    <section id="tab-overview" class="tab-panel active">
+      <div class="cards" id="summaryCards"></div>
+      <div class="charts-row">
+        <div class="card" style="display:flex;flex-direction:column;align-items:center;justify-content:center;">
+          <div class="lbl" id="donutLbl">Posture Distribution</div>
+          <svg id="donutChart" width="180" height="180" viewBox="0 0 42 42"></svg>
+        </div>
+        <div class="card">
+          <div class="lbl" style="margin-bottom:12px;" id="fwChartLbl">Compliance Frameworks</div>
+          <div id="overviewFwBars"></div>
+        </div>
+      </div>
+    </section>
 
-    <footer>
-      ZeroTrustLens · {{FOOTER_NOTE}} · github.com/canercetinkaya/ZeroTrustLens
-    </footer>
-  </div>
+    <section id="tab-frameworks" class="tab-panel">
+      <div class="card"><div id="fwDetailBars"></div></div>
+    </section>
+
+    <section id="tab-roi" class="tab-panel">
+      <div class="card" id="roiBox"></div>
+    </section>
+
+    <section id="tab-roadmap" class="tab-panel">
+      <div class="cards" id="roadmapCards"></div>
+    </section>
+
+    <section id="tab-findings" class="tab-panel">
+      <div class="filters">
+        <input type="text" id="searchInput" placeholder="Search..." oninput="renderFindings()" />
+        <select id="statusFilter" onchange="renderFindings()">
+          <option value="ALL">All Statuses</option>
+          <option value="Failed">Failed</option>
+          <option value="Passed">Passed</option>
+          <option value="Skipped">Skipped</option>
+          <option value="Investigate">Investigate</option>
+          <option value="Planned">Planned</option>
+        </select>
+        <select id="riskFilter" onchange="renderFindings()">
+          <option value="ALL">All Risks</option>
+          <option value="High">High</option>
+          <option value="Medium">Medium</option>
+          <option value="Low">Low</option>
+        </select>
+      </div>
+      <div id="findingsList"></div>
+    </section>
+  </main>
 
   <script>
-    const REPORT = {{REPORT_JSON}};
+    const DATA = {{REPORT_JSON}};
+    const isTr = DATA.Language === 'tr';
 
-    const summaryEl = document.getElementById('summary-cards');
-    const s = REPORT.Summary;
-    const cards = [
-      { label: REPORT.Labels.TotalChecks, val: s.Total, color: 'var(--text)' },
-      { label: 'Passed', val: s.Passed, color: 'var(--pass)' },
-      { label: 'Failed', val: s.Failed, color: 'var(--fail)' },
-      { label: 'Investigate', val: s.Investigate, color: 'var(--warn)' },
-      { label: 'Skipped / Planned', val: s.Skipped + s.Planned, color: 'var(--skip)' },
-      { label: REPORT.Labels.HighRiskFailed, val: s.HighRiskFailed, color: 'var(--fail)' }
-    ];
-    summaryEl.innerHTML = cards.map(c =>
-      `<div class="card"><div class="card-label">${c.label}</div><div class="card-val" style="color:${c.color}">${c.val}</div></div>`
-    ).join('');
-
-    const fwEl = document.getElementById('framework-cards');
-    fwEl.innerHTML = REPORT.Frameworks.map(f =>
-      `<div class="card">
-        <div class="card-label">${f.Name}</div>
-        <div class="card-val">${f.Score}%</div>
-        <div class="subtitle">${f.Passed} / ${f.Evaluated} ${REPORT.Labels.PassedLabel}</div>
-        <div class="bar-wrap"><div class="bar-fill" style="width:${f.Score}%"></div></div>
-      </div>`
-    ).join('');
-
-    const roiEl = document.getElementById('roi-box');
-    roiEl.innerHTML = `<p style="margin-top:0">${REPORT.LicenseROI.Summary}</p>` +
-      `<ul style="margin:0;padding-left:18px">${REPORT.LicenseROI.Gaps.map(g => `<li><strong>${g.License}</strong>: ${g.Count} ${REPORT.Labels.SkippedChecksLabel}</li>`).join('')}</ul>`;
-
-    const rmEl = document.getElementById('roadmap-cards');
-    rmEl.innerHTML = REPORT.Roadmap.map(r =>
-      `<div class="card"><div class="card-label">${r.Phase}</div><div class="card-val">${r.Count}</div><div class="subtitle">${r.Focus}</div></div>`
-    ).join('');
-
-    const tbody = document.getElementById('findingsBody');
-    const searchInput = document.getElementById('searchInput');
-    const statusFilter = document.getElementById('statusFilter');
-    const riskFilter = document.getElementById('riskFilter');
-
-    function renderTable() {
-      const q = searchInput.value.toLowerCase();
-      const st = statusFilter.value;
-      const rk = riskFilter.value;
-      const rows = REPORT.Findings.filter(f => {
-        if (st !== 'ALL' && f.Status !== st) return false;
-        if (rk !== 'ALL' && f.Risk !== rk) return false;
-        if (q && !(f.Title.toLowerCase().includes(q) || String(f.Id).includes(q) || f.Pillar.toLowerCase().includes(q))) return false;
-        return true;
-      }).slice(0, 250);
-
-      tbody.innerHTML = rows.map(f => `
-        <tr>
-          <td><code>${f.Id}</code></td>
-          <td>${f.Pillar}</td>
-          <td><span class="pill st-${f.Status}">${f.Status}</span></td>
-          <td class="rk-${f.Risk}">${f.Risk}</td>
-          <td>${f.Title}</td>
-          <td style="color:var(--muted);font-size:0.8rem">${f.FrameworkRef}</td>
-        </tr>
-      `).join('');
+    if (isTr) {
+      document.getElementById('navOverview').textContent = 'Genel Bakış';
+      document.getElementById('navFrameworks').textContent = 'Uyumluluk Çerçeveleri';
+      document.getElementById('navRoi').textContent = 'Lisans ROI & Kör Nokta';
+      document.getElementById('navRoadmap').textContent = '30-60-90 Gün Yol Haritası';
+      document.getElementById('navFindings').textContent = 'Tüm Bulgular';
+      document.getElementById('donutLbl').textContent = 'Kontrol Dağılımı';
+      document.getElementById('fwChartLbl').textContent = 'Çerçeve Uyum Puanları';
+      document.getElementById('searchInput').placeholder = 'Bulgu veya kategori ara...';
     }
 
-    searchInput.addEventListener('input', renderTable);
-    statusFilter.addEventListener('change', renderTable);
-    riskFilter.addEventListener('change', renderTable);
-    renderTable();
+    document.getElementById('tenantMeta').textContent = `${DATA.Tenant} | ${isTr ? 'Salt Okunur Değerlendirme' : 'Read-Only Assessment'}`;
+
+    function showTab(id, btn) {
+      document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+      document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+      document.getElementById('tab-' + id).classList.add('active');
+      btn.classList.add('active');
+    }
+
+    const s = DATA.Summary;
+    document.getElementById('summaryCards').innerHTML = `
+      <div class="card"><div class="lbl">${isTr ? 'Toplam Kontrol' : 'Total Checks'}</div><div class="val">${s.Total}</div></div>
+      <div class="card"><div class="lbl">${isTr ? 'Başarılı' : 'Passed'}</div><div class="val" style="color:var(--ok)">${s.Passed}</div></div>
+      <div class="card"><div class="lbl">${isTr ? 'Başarısız (Yüksek)' : 'Failed (High)'}</div><div class="val" style="color:var(--fail)">${s.Failed} (${s.HighRiskFailed})</div></div>
+      <div class="card"><div class="lbl">${isTr ? 'Atlanan (Lisans ROI)' : 'Skipped (License ROI)'}</div><div class="val" style="color:var(--skip)">${s.Skipped}</div></div>
+    `;
+
+    // SVG Donut Chart
+    const total = Math.max(1, s.Total);
+    const pPct = (s.Passed / total) * 100;
+    const fPct = (s.Failed / total) * 100;
+    const skPct = (s.Skipped / total) * 100;
+    document.getElementById('donutChart').innerHTML = `
+      <circle cx="21" cy="21" r="15.915" fill="transparent" stroke="#1e293b" stroke-width="5"></circle>
+      <circle cx="21" cy="21" r="15.915" fill="transparent" stroke="#22c55e" stroke-width="5" stroke-dasharray="${pPct} ${100 - pPct}" stroke-dashoffset="25"></circle>
+      <circle cx="21" cy="21" r="15.915" fill="transparent" stroke="#ef4444" stroke-width="5" stroke-dasharray="${fPct} ${100 - fPct}" stroke-dashoffset="${25 - pPct}"></circle>
+      <circle cx="21" cy="21" r="15.915" fill="transparent" stroke="#a855f7" stroke-width="5" stroke-dasharray="${skPct} ${100 - skPct}" stroke-dashoffset="${25 - pPct - fPct}"></circle>
+      <text x="21" y="22.5" text-anchor="middle" fill="#e2e8f0" font-size="6" font-weight="700">${Math.round(pPct)}%</text>
+    `;
+
+    const fwHtml = DATA.Frameworks.map(f => `
+      <div class="bar-row">
+        <div class="bar-head"><span>${f.Name}</span><span>${f.Passed} / ${f.Evaluated} (<strong>${f.Score}%</strong>)</span></div>
+        <div class="bar-track"><div class="bar-fill" style="width:${f.Score}%"></div></div>
+      </div>
+    `).join('');
+    document.getElementById('overviewFwBars').innerHTML = fwHtml;
+    document.getElementById('fwDetailBars').innerHTML = fwHtml;
+
+    document.getElementById('roiBox').innerHTML = `
+      <h3 style="margin-bottom:10px;">${isTr ? 'Lisans ROI & Yapılandırılmamış Özellikler' : 'License ROI & Unconfigured Features'}</h3>
+      <p style="color:var(--muted);font-size:14px;line-height:1.6;">
+        ${isTr
+          ? `Toplam <strong>${s.Skipped}</strong> kontrol atlandı (Skipped) ve <strong>${s.Planned}</strong> kontrol planlandı (Planned). Bu kontroller, sahip olunan Microsoft 365 E3/E5 veya Defender/Purview lisanslarının henüz aktif yapılandırılmayan güvenlik katmanlarını temsil eder.`
+          : `A total of <strong>${s.Skipped}</strong> checks were Skipped and <strong>${s.Planned}</strong> are Planned, representing paid Microsoft 365 E3/E5 or Defender/Purview capabilities not yet configured.`}
+      </p>
+    `;
+
+    const high = DATA.Findings.filter(x => x.Status === 'Failed' && x.Risk === 'High').length;
+    const med = DATA.Findings.filter(x => x.Status === 'Failed' && x.Risk === 'Medium').length;
+    const low = DATA.Findings.filter(x => x.Status === 'Failed' && x.Risk === 'Low').length;
+    document.getElementById('roadmapCards').innerHTML = `
+      <div class="card"><div class="lbl">${isTr ? '0-30 Gün (Yüksek Risk)' : '0-30 Days (High Risk)'}</div><div class="val" style="color:var(--fail)">${high}</div></div>
+      <div class="card"><div class="lbl">${isTr ? '31-60 Gün (Orta Risk)' : '31-60 Days (Medium Risk)'}</div><div class="val" style="color:var(--warn)">${med}</div></div>
+      <div class="card"><div class="lbl">${isTr ? '61-90 Gün (Düşük Risk)' : '61-90 Days (Low Risk)'}</div><div class="val" style="color:var(--accent)">${low}</div></div>
+    `;
+
+    function getRemediation(f) {
+      const portalTip = isTr
+        ? `Microsoft Entra / Defender / Purview yönetim portalında "${f.Pillar}" kategorisi altındaki ilgili ilkeyi Report-only (Denetim) kipinde başlatıp doğrulayın.`
+        : `Review the corresponding policy under "${f.Pillar}" in Microsoft Entra / Defender / Purview admin center and validate in Report-only mode first.`;
+      const psCmd = `# ${isTr ? 'Salt okunur kontrol' : 'Read-only verification'} (${f.Id})\nConnect-MgGraph -Scopes "Policy.Read.All"\nGet-MgIdentityConditionalAccessPolicy | Select-Object DisplayName, State`;
+      return `<div class="rem-box"><div><strong>${isTr ? 'Portal Adımı:' : 'Portal Action:'}</strong> ${portalTip}</div><pre>${psCmd}</pre></div>`;
+    }
+
+    function renderFindings() {
+      const q = document.getElementById('searchInput').value.toLowerCase();
+      const st = document.getElementById('statusFilter').value;
+      const rk = document.getElementById('riskFilter').value;
+      const list = DATA.Findings.filter(f =>
+        (st === 'ALL' || f.Status === st) &&
+        (rk === 'ALL' || f.Risk === rk) &&
+        ((f.Title || '').toLowerCase().includes(q) || (f.Pillar || '').toLowerCase().includes(q) || (f.Id || '').toLowerCase().includes(q))
+      ).slice(0, 150);
+
+      document.getElementById('findingsList').innerHTML = list.map(f => `
+        <div class="finding">
+          <div class="finding-top">
+            <div><strong>${f.Id}</strong> — ${f.Title} <span style="color:var(--muted);font-size:12px;">(${f.Pillar})</span></div>
+            <div><span class="pill ${f.Status}">${f.Status}</span> <span class="pill">${f.Risk}</span></div>
+          </div>
+          <details>
+            <summary>${isTr ? 'PowerShell ve Portal Düzeltme Adımları' : 'PowerShell & Portal Remediation Steps'}</summary>
+            ${getRemediation(f)}
+          </details>
+        </div>
+      `).join('');
+    }
+    renderFindings();
   </script>
 </body>
 </html>
