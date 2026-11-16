@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="{{LANG}}">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>{{TITLE}}</title>
+  <style>
+    :root {
+      --bg: #0b1120;
+      --surface: #111827;
+      --surface-alt: #1e293b;
+      --border: #334155;
+      --text: #f8fafc;
+      --muted: #94a3b8;
+      --accent: #38bdf8;
+      --pass: #22c55e;
+      --fail: #ef4444;
+      --warn: #f59e0b;
+      --skip: #64748b;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.5;
+    }
+    .container { max-width: 1280px; margin: 0 auto; padding: 24px; }
+    header {
+      display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center;
+      gap: 16px; border-bottom: 1px solid var(--border); padding-bottom: 16px; margin-bottom: 24px;
+    }
+    h1 { margin: 0; font-size: 1.5rem; }
+    .subtitle { color: var(--muted); font-size: 0.9rem; margin-top: 4px; }
+    .badge {
+      display: inline-block; padding: 4px 10px; border-radius: 999px;
+      font-size: 0.75rem; font-weight: 600; background: var(--surface-alt); border: 1px solid var(--border);
+    }
+    .grid { display: grid; gap: 16px; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); margin-bottom: 24px; }
+    .card {
+      background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 16px;
+    }
+    .card-label { font-size: 0.8rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.04em; }
+    .card-val { font-size: 1.8rem; font-weight: 700; margin-top: 6px; }
+    .section-title { font-size: 1.15rem; margin: 28px 0 12px; border-left: 3px solid var(--accent); padding-left: 10px; }
+    .fw-grid { display: grid; gap: 12px; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); }
+    .bar-wrap { height: 8px; background: var(--surface-alt); border-radius: 999px; overflow: hidden; margin-top: 8px; }
+    .bar-fill { height: 100%; background: var(--accent); }
+    .controls { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 14px; }
+    input, select {
+      background: var(--surface); color: var(--text); border: 1px solid var(--border);
+      border-radius: 8px; padding: 8px 12px; font-size: 0.88rem;
+    }
+    table { width: 100%; border-collapse: collapse; background: var(--surface); border-radius: 12px; overflow: hidden; }
+    th, td { padding: 10px 12px; text-align: left; border-bottom: 1px solid var(--border); font-size: 0.86rem; vertical-align: top; }
+    th { background: var(--surface-alt); color: var(--muted); font-weight: 600; }
+    .pill { padding: 2px 8px; border-radius: 999px; font-size: 0.75rem; font-weight: 600; display: inline-block; }
+    .st-Passed { background: rgba(34,197,94,0.15); color: var(--pass); }
+    .st-Failed { background: rgba(239,68,68,0.15); color: var(--fail); }
+    .st-Investigate { background: rgba(245,158,11,0.15); color: var(--warn); }
+    .st-Skipped, .st-Planned { background: rgba(100,116,139,0.2); color: var(--muted); }
+    .rk-High { color: var(--fail); font-weight: 700; }
+    .rk-Medium { color: var(--warn); font-weight: 600; }
+    .rk-Low { color: var(--muted); }
+    footer { margin-top: 32px; padding-top: 16px; border-top: 1px solid var(--border); color: var(--muted); font-size: 0.8rem; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <div>
+        <h1>ZeroTrustLens — {{HEADER_TITLE}}</h1>
+        <div class="subtitle">{{SUBTITLE}}</div>
+      </div>
+      <div>
+        <span class="badge">{{READONLY_BADGE}}</span>
+        <span class="badge">{{GENERATED_AT}}</span>
+      </div>
+    </header>
+
+    <div class="grid" id="summary-cards"></div>
+
+    <h2 class="section-title">{{FW_TITLE}}</h2>
+    <div class="fw-grid" id="framework-cards"></div>
+
+    <h2 class="section-title">{{ROI_TITLE}}</h2>
+    <div class="card" id="roi-box"></div>
+
+    <h2 class="section-title">{{ROADMAP_TITLE}}</h2>
+    <div class="fw-grid" id="roadmap-cards"></div>
+
+    <h2 class="section-title">{{FINDINGS_TITLE}}</h2>
+    <div class="controls">
+      <input type="text" id="searchInput" placeholder="{{SEARCH_PLACEHOLDER}}" style="flex:1;min-width:220px;" />
+      <select id="statusFilter">
+        <option value="ALL">{{ALL_STATUSES}}</option>
+        <option value="Failed">Failed</option>
+        <option value="Investigate">Investigate</option>
+        <option value="Passed">Passed</option>
+        <option value="Skipped">Skipped</option>
+        <option value="Planned">Planned</option>
+      </select>
+      <select id="riskFilter">
+        <option value="ALL">{{ALL_RISKS}}</option>
+        <option value="High">High</option>
+        <option value="Medium">Medium</option>
+        <option value="Low">Low</option>
+      </select>
+    </div>
+
+    <table>
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>{{COL_PILLAR}}</th>
+          <th>{{COL_STATUS}}</th>
+          <th>{{COL_RISK}}</th>
+          <th>{{COL_TITLE}}</th>
+          <th>{{COL_FRAMEWORK}}</th>
+        </tr>
+      </thead>
+      <tbody id="findingsBody"></tbody>
+    </table>
+
+    <footer>
+      ZeroTrustLens · {{FOOTER_NOTE}} · github.com/canercetinkaya/ZeroTrustLens
+    </footer>
+  </div>
+
+  <script>
+    const REPORT = {{REPORT_JSON}};
+
+    const summaryEl = document.getElementById('summary-cards');
+    const s = REPORT.Summary;
+    const cards = [
+      { label: REPORT.Labels.TotalChecks, val: s.Total, color: 'var(--text)' },
+      { label: 'Passed', val: s.Passed, color: 'var(--pass)' },
+      { label: 'Failed', val: s.Failed, color: 'var(--fail)' },
+      { label: 'Investigate', val: s.Investigate, color: 'var(--warn)' },
+      { label: 'Skipped / Planned', val: s.Skipped + s.Planned, color: 'var(--skip)' },
+      { label: REPORT.Labels.HighRiskFailed, val: s.HighRiskFailed, color: 'var(--fail)' }
+    ];
+    summaryEl.innerHTML = cards.map(c =>
+      `<div class="card"><div class="card-label">${c.label}</div><div class="card-val" style="color:${c.color}">${c.val}</div></div>`
+    ).join('');
+
+    const fwEl = document.getElementById('framework-cards');
+    fwEl.innerHTML = REPORT.Frameworks.map(f =>
+      `<div class="card">
+        <div class="card-label">${f.Name}</div>
+        <div class="card-val">${f.Score}%</div>
+        <div class="subtitle">${f.Passed} / ${f.Evaluated} ${REPORT.Labels.PassedLabel}</div>
+        <div class="bar-wrap"><div class="bar-fill" style="width:${f.Score}%"></div></div>
+      </div>`
+    ).join('');
+
+    const roiEl = document.getElementById('roi-box');
+    roiEl.innerHTML = `<p style="margin-top:0">${REPORT.LicenseROI.Summary}</p>` +
+      `<ul style="margin:0;padding-left:18px">${REPORT.LicenseROI.Gaps.map(g => `<li><strong>${g.License}</strong>: ${g.Count} ${REPORT.Labels.SkippedChecksLabel}</li>`).join('')}</ul>`;
+
+    const rmEl = document.getElementById('roadmap-cards');
+    rmEl.innerHTML = REPORT.Roadmap.map(r =>
+      `<div class="card"><div class="card-label">${r.Phase}</div><div class="card-val">${r.Count}</div><div class="subtitle">${r.Focus}</div></div>`
+    ).join('');
+
+    const tbody = document.getElementById('findingsBody');
+    const searchInput = document.getElementById('searchInput');
+    const statusFilter = document.getElementById('statusFilter');
+    const riskFilter = document.getElementById('riskFilter');
+
+    function renderTable() {
+      const q = searchInput.value.toLowerCase();
+      const st = statusFilter.value;
+      const rk = riskFilter.value;
+      const rows = REPORT.Findings.filter(f => {
+        if (st !== 'ALL' && f.Status !== st) return false;
+        if (rk !== 'ALL' && f.Risk !== rk) return false;
+        if (q && !(f.Title.toLowerCase().includes(q) || String(f.Id).includes(q) || f.Pillar.toLowerCase().includes(q))) return false;
+        return true;
+      }).slice(0, 250);
+
+      tbody.innerHTML = rows.map(f => `
+        <tr>
+          <td><code>${f.Id}</code></td>
+          <td>${f.Pillar}</td>
+          <td><span class="pill st-${f.Status}">${f.Status}</span></td>
+          <td class="rk-${f.Risk}">${f.Risk}</td>
+          <td>${f.Title}</td>
+          <td style="color:var(--muted);font-size:0.8rem">${f.FrameworkRef}</td>
+        </tr>
+      `).join('');
+    }
+
+    searchInput.addEventListener('input', renderTable);
+    statusFilter.addEventListener('change', renderTable);
+    riskFilter.addEventListener('change', renderTable);
+    renderTable();
+  </script>
+</body>
+</html>
