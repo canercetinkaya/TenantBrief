@@ -413,10 +413,14 @@ function Invoke-ZtLensAssessment {
         Start-Process $reportHtmlPath
     }
 
+    $execSummaryPath = Join-Path $OutputPath "ZeroTrustLens-ExecutiveSummary-$($Language.ToUpper()).html"
+    $null = Export-ZtLensExecutiveSummary -InputLensJsonPath $reportJsonPath -OutputHtmlPath $execSummaryPath -Language $Language
+
     return [PSCustomObject]@{
-        HtmlPath = $reportHtmlPath
-        JsonPath = $reportJsonPath
-        Summary  = $reportObj.Summary
+        HtmlPath             = $reportHtmlPath
+        JsonPath             = $reportJsonPath
+        ExecutiveSummaryPath = $execSummaryPath
+        Summary              = $reportObj.Summary
     }
 }
 

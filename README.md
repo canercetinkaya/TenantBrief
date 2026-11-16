@@ -21,6 +21,9 @@
   - `CIS_M365` (CIS Microsoft 365 Foundations)
   - `KVKK_TR` (KVKK Technical Measures)
 - **30-60-90 Day CISO Roadmap:** Prioritizes `Failed` findings by risk severity (`High`, `Medium`, `Low`) into actionable phases.
+- **Cross-Engine Correlation (`ZeroTrustAssessment` + `ScubaGear` + `ORCA`):** Automatically detects and runs installed `ScubaGear` and `ORCA` modules in read-only mode and deduplicates overlapping findings.
+- **Interactive What-If Simulator & Print-to-PDF Executive Summary:** Simulates framework score improvements in real time and automatically generates `ZeroTrustLens-ExecutiveSummary-<LANG>.html` for CISO/audit briefings.
+- **Historical Drift Comparison (`Compare-ZtLensReports`) & Real SKU ROI (`Get-ZtLensLicenseRoi`):** Tracks posture improvements over time and calculates idle license cost across 25+ Microsoft 365 SKUs.
 - **Bilingual Offline HTML & JSON Reports:** Generates self-contained dark-mode HTML dashboards (`-Language tr` or `-Language en`) with search, status/risk filters, and optional `-Anonymize` mode for safe sharing.
 
 ---
