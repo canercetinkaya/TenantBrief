@@ -1,0 +1,29 @@
+{
+  "skus": [
+    { "skuPartNumber": "SPE_E5", "name": "Microsoft 365 E5", "usdPerUserMonth": 57, "category": "Suite" },
+    { "skuPartNumber": "ENTERPRISEPREMIUM", "name": "Office 365 E5", "usdPerUserMonth": 38, "category": "Suite" },
+    { "skuPartNumber": "SPE_E3", "name": "Microsoft 365 E3", "usdPerUserMonth": 36, "category": "Suite" },
+    { "skuPartNumber": "ENTERPRISEPACK", "name": "Office 365 E3", "usdPerUserMonth": 23, "category": "Suite" },
+    { "skuPartNumber": "SPE_F1", "name": "Microsoft 365 F1", "usdPerUserMonth": 2.25, "category": "Frontline" },
+    { "skuPartNumber": "M365_F3", "name": "Microsoft 365 F3", "usdPerUserMonth": 8, "category": "Frontline" },
+    { "skuPartNumber": "SPB", "name": "Microsoft 365 Business Premium", "usdPerUserMonth": 22, "category": "SMB" },
+    { "skuPartNumber": "O365_BUSINESS_PREMIUM", "name": "Microsoft 365 Business Standard", "usdPerUserMonth": 12.5, "category": "SMB" },
+    { "skuPartNumber": "EMS_E5", "name": "Enterprise Mobility + Security E5", "usdPerUserMonth": 16.4, "category": "Security" },
+    { "skuPartNumber": "EMSPREMIUM", "name": "Enterprise Mobility + Security E5", "usdPerUserMonth": 16.4, "category": "Security" },
+    { "skuPartNumber": "EMS", "name": "Enterprise Mobility + Security E3", "usdPerUserMonth": 10.6, "category": "Security" },
+    { "skuPartNumber": "AAD_PREMIUM_P2", "name": "Microsoft Entra ID P2", "usdPerUserMonth": 9, "category": "Identity" },
+    { "skuPartNumber": "AAD_PREMIUM", "name": "Microsoft Entra ID P1", "usdPerUserMonth": 6, "category": "Identity" },
+    { "skuPartNumber": "MDATP_XPLAT", "name": "Microsoft Defender for Endpoint P2", "usdPerUserMonth": 5.2, "category": "Endpoint" },
+    { "skuPartNumber": "WIN_DEF_ATP", "name": "Microsoft Defender for Endpoint P1", "usdPerUserMonth": 3, "category": "Endpoint" },
+    { "skuPartNumber": "ATP_ENTERPRISE", "name": "Microsoft Defender for Office 365 P1", "usdPerUserMonth": 2, "category": "Email" },
+    { "skuPartNumber": "THREAT_INTELLIGENCE", "name": "Microsoft Defender for Office 365 P2", "usdPerUserMonth": 5, "category": "Email" },
+    { "skuPartNumber": "ADALLOM_S_STANDALONE", "name": "Microsoft Defender for Cloud Apps", "usdPerUserMonth": 3.5, "category": "CASB" },
+    { "skuPartNumber": "ATA", "name": "Microsoft Defender for Identity", "usdPerUserMonth": 5.5, "category": "Identity" },
+    { "skuPartNumber": "INTUNE_A", "name": "Microsoft Intune Plan 1", "usdPerUserMonth": 8, "category": "Endpoint" },
+    { "skuPartNumber": "INTUNE_P2", "name": "Microsoft Intune Plan 2", "usdPerUserMonth": 4, "category": "Endpoint" },
+    { "skuPartNumber": "M365_E5_SECURITY", "name": "Microsoft 365 E5 Security", "usdPerUserMonth": 12, "category": "Security" },
+    { "skuPartNumber": "M365_E5_COMPLIANCE", "name": "Microsoft 365 E5 Compliance", "usdPerUserMonth": 12, "category": "Compliance" },
+    { "skuPartNumber": "INFORMATION_PROTECTION_COMPLIANCE", "name": "Microsoft Purview Suite", "usdPerUserMonth": 12, "category": "Compliance" },
+    { "skuPartNumber": "Microsoft_365_Copilot", "name": "Microsoft 365 Copilot", "usdPerUserMonth": 30, "category": "AI" }
+  ]
+}

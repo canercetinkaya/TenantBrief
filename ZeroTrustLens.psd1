@@ -10,7 +10,10 @@
     FunctionsToExport = @(
         'Connect-ZtLens',
         'Invoke-ZtLensAssessment',
-        'Get-ZtLensFrameworks'
+        'Get-ZtLensFrameworks',
+        'Get-ZtLensLicenseRoi',
+        'Compare-ZtLensReports',
+        'Export-ZtLensExecutiveSummary'
     )
     CmdletsToExport   = @()
     VariablesToExport = @()

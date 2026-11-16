@@ -341,4 +341,155 @@ function Invoke-ZtLensAssessment {
     }
 }
 
-Export-ModuleMember -Function Connect-ZtLens, Invoke-ZtLensAssessment, Get-ZtLensFrameworks
+function Get-ZtLensLicenseRoi {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory = $false)]
+        [object[]]$SubscribedSkus
+    )
+
+    $catalogPath = Join-Path $PSScriptRoot 'data\sku-catalog.json'
+    $catalog = (Get-Content -Path $catalogPath -Raw -Encoding UTF8 | ConvertFrom-Json).skus
+    $skuIndex = @{}
+    foreach ($c in $catalog) { $skuIndex[$c.skuPartNumber] = $c }
+
+    if (-not $SubscribedSkus) {
+        $resp = Invoke-MgGraphRequest -Method GET -Uri 'https://graph.microsoft.com/v1.0/subscribedSkus'
+        $SubscribedSkus = @($resp.value)
+    }
+
+    $results = foreach ($s in $SubscribedSkus) {
+        $part = [string]$s.skuPartNumber
+        $enabled = [int]$s.prepaidUnits.enabled
+        $consumed = [int]$s.consumedUnits
+        if ($enabled -le 0) { continue }
+
+        $unassigned = [Math]::Max(0, $enabled - $consumed)
+        $utilPct = [Math]::Round(($consumed / $enabled) * 100, 1)
+        $meta = $skuIndex[$part]
+        $unitUsd = if ($meta) { [double]$meta.usdPerUserMonth } else { 0.0 }
+        $idleUsdMonth = [Math]::Round($unassigned * $unitUsd, 2)
+
+        [PSCustomObject]@{
+            SkuPartNumber       = $part
+            ProductName         = if ($meta) { $meta.name } else { $part }
+            Category            = if ($meta) { $meta.category } else { 'Other' }
+            Purchased           = $enabled
+            Assigned            = $consumed
+            Unassigned          = $unassigned
+            UtilizationPercent  = $utilPct
+            EstimatedIdleUsdMo  = $idleUsdMonth
+        }
+    }
+    return @($results)
+}
+
+function Compare-ZtLensReports {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory = $true)]
+        [string]$BaselineJsonPath,
+
+        [Parameter(Mandatory = $true)]
+        [string]$CurrentJsonPath
+    )
+
+    if (-not (Test-Path $BaselineJsonPath)) { throw "Baseline JSON not found: $BaselineJsonPath" }
+    if (-not (Test-Path $CurrentJsonPath)) { throw "Current JSON not found: $CurrentJsonPath" }
+
+    $base = Get-Content -Path $BaselineJsonPath -Raw -Encoding UTF8 | ConvertFrom-Json
+    $curr = Get-Content -Path $CurrentJsonPath -Raw -Encoding UTF8 | ConvertFrom-Json
+
+    $baseMap = @{}
+    foreach ($t in @($base.Findings)) { $baseMap[[string]$t.TestId] = $t }
+
+    $improved = @()
+    $regressed = @()
+    $unchanged = 0
+
+    foreach ($t in @($curr.Findings)) {
+        $id = [string]$t.TestId
+        if (-not $baseMap.ContainsKey($id)) { continue }
+        $prev = $baseMap[$id]
+        if ($prev.Status -ne 'Passed' -and $t.Status -eq 'Passed') {
+            $improved += [PSCustomObject]@{ TestId = $id; Title = $t.Title; From = $prev.Status; To = $t.Status; Risk = $t.Risk }
+        } elseif ($prev.Status -eq 'Passed' -and $t.Status -ne 'Passed') {
+            $regressed += [PSCustomObject]@{ TestId = $id; Title = $t.Title; From = $prev.Status; To = $t.Status; Risk = $t.Risk }
+        } else {
+            $unchanged++
+        }
+    }
+
+    return [PSCustomObject]@{
+        BaselineTotal  = $base.Summary.Total
+        CurrentTotal   = $curr.Summary.Total
+        ImprovedCount  = $improved.Count
+        RegressedCount = $regressed.Count
+        UnchangedCount = $unchanged
+        Improved       = $improved
+        Regressed      = $regressed
+    }
+}
+
+function Export-ZtLensExecutiveSummary {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory = $true)]
+        [string]$InputLensJsonPath,
+
+        [Parameter(Mandatory = $false)]
+        [string]$OutputHtmlPath = '.\ZeroTrustLens-ExecutiveSummary.html',
+
+        [Parameter(Mandatory = $false)]
+        [ValidateSet('tr', 'en')]
+        [string]$Language = 'tr'
+    )
+
+    if (-not (Test-Path $InputLensJsonPath)) { throw "ZeroTrustLens JSON not found: $InputLensJsonPath" }
+    $data = Get-Content -Path $InputLensJsonPath -Raw -Encoding UTF8 | ConvertFrom-Json
+    $title = if ($Language -eq 'tr') { 'Yönetici Özeti — Güvenlik Duruşu ve Lisans ROI' } else { 'Executive Summary — Security Posture & License ROI' }
+
+    $fwRows = ($data.FrameworkScores | ForEach-Object {
+        "<tr><td>$($_.Name)</td><td>$($_.Passed) / $($_.Total)</td><td><strong>$($_.Score)%</strong></td></tr>"
+    }) -join "`n"
+
+    $html = @"
+<!DOCTYPE html>
+<html lang="$Language">
+<head>
+<meta charset="UTF-8" />
+<title>ZeroTrustLens - $title</title>
+<style>
+  body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; color: #0f172a; margin: 32px; }
+  h1 { font-size: 22px; margin-bottom: 4px; }
+  .sub { color: #475569; margin-bottom: 20px; font-size: 13px; }
+  .grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 20px; }
+  .card { border: 1px solid #cbd5e1; border-radius: 8px; padding: 12px; }
+  .val { font-size: 24px; font-weight: 700; }
+  table { width: 100%; border-collapse: collapse; margin-top: 12px; }
+  th, td { border: 1px solid #cbd5e1; padding: 8px 10px; text-align: left; font-size: 13px; }
+  th { background: #f1f5f9; }
+  @media print { body { margin: 12mm; } }
+</style>
+</head>
+<body>
+  <h1>ZeroTrustLens — $title</h1>
+  <div class="sub">Generated: $($data.GeneratedAt) | Read-Only Assessment</div>
+  <div class="grid">
+    <div class="card"><div>Total</div><div class="val">$($data.Summary.Total)</div></div>
+    <div class="card"><div>Passed</div><div class="val">$($data.Summary.Passed)</div></div>
+    <div class="card"><div>Failed (High)</div><div class="val">$($data.Summary.Failed) ($($data.Summary.HighRiskFailed))</div></div>
+    <div class="card"><div>Skipped (ROI Blind Spot)</div><div class="val">$($data.Summary.Skipped)</div></div>
+  </div>
+  <table>
+    <thead><tr><th>Framework</th><th>Passed / Total</th><th>Score</th></tr></thead>
+    <tbody>$fwRows</tbody>
+  </table>
+</body>
+</html>
+"@
+    $html | Out-File -FilePath $OutputHtmlPath -Encoding UTF8
+    return (Resolve-Path $OutputHtmlPath).Path
+}
+
+Export-ModuleMember -Function Connect-ZtLens, Invoke-ZtLensAssessment, Get-ZtLensFrameworks, Get-ZtLensLicenseRoi, Compare-ZtLensReports, Export-ZtLensExecutiveSummary
