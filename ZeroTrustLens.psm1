@@ -91,8 +91,8 @@ function Invoke-ZtLensAssessment {
     if (-not $sourceJsonPath) {
         Import-Module ZeroTrustAssessment -ErrorAction Stop
         $rawOut = Join-Path $OutputPath 'raw-zt'
-        Write-Host "[ZeroTrustLens] Running read-only ZeroTrustAssessment (telemetry disabled)..." -ForegroundColor Cyan
-        Invoke-ZtAssessment -Path $rawOut -DisableTelemetry
+        Write-Host "[ZeroTrustLens] Running read-only tenant assessment (this may take a few minutes)..." -ForegroundColor Cyan
+        $null = Invoke-ZtAssessment -Path $rawOut -DisableTelemetry 6>$null 3>$null 2>$null
         $sourceJsonPath = Join-Path $rawOut 'zt-export\ZeroTrustAssessmentReport.json'
     }
 
