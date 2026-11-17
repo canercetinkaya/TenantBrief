@@ -52,6 +52,27 @@ Describe 'ZeroTrustLens Module' {
         $w.Inactive90dUsers | Should -Be 1
     }
 
+    It 'Follows @odata.nextLink pagination when enumerating users' {
+        InModuleScope ZeroTrustLens {
+            $script:__pagingCalls = 0
+            function Invoke-MgGraphRequest {
+                param($Method, $Uri, $ErrorAction)
+                $script:__pagingCalls++
+                if ($script:__pagingCalls -eq 1) {
+                    return [PSCustomObject]@{ value = @([PSCustomObject]@{ id = 'p1' }); '@odata.nextLink' = 'https://graph.microsoft.com/v1.0/users?$skiptoken=p2' }
+                }
+                return [PSCustomObject]@{ value = @([PSCustomObject]@{ id = 'p2' }) }
+            }
+            try {
+                $res = @(Get-ZtLensGraphCollection -Uri 'https://graph.microsoft.com/v1.0/users?$top=999')
+                $res.Count | Should -Be 2
+                $script:__pagingCalls | Should -Be 2
+            } finally {
+                Remove-Item function:Invoke-MgGraphRequest -ErrorAction SilentlyContinue
+            }
+        }
+    }
+
     It 'Evaluates Copilot Readiness score, warnings and checks' {
         $mockSkus = @(
             [PSCustomObject]@{ skuPartNumber = 'SPE_E5'; prepaidUnits = @{ enabled = 25 }; consumedUnits = 20 },

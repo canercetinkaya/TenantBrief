@@ -1158,6 +1158,54 @@ function Export-ZtLensExecutiveSummary {
     return (Resolve-Path $OutputHtmlPath).Path
 }
 
+function Get-ZtLensGraphCollection {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory = $true)]
+        [string]$Uri,
+
+        [Parameter(Mandatory = $false)]
+        [int]$PageLimit = 200
+    )
+
+    $items = New-Object System.Collections.Generic.List[object]
+    $nextLink = $Uri
+    $page = 0
+
+    while ($nextLink -and $page -lt $PageLimit) {
+        $page++
+        $response = Invoke-MgGraphRequest -Method GET -Uri $nextLink -ErrorAction Stop
+        if ($null -eq $response) { break }
+
+        $values = $null
+        if ($response -is [hashtable]) {
+            if ($response.ContainsKey('value')) { $values = $response['value'] }
+        } elseif ($response.PSObject.Properties['value']) {
+            $values = $response.value
+        }
+        foreach ($v in @($values)) {
+            if ($null -ne $v) { $items.Add($v) }
+        }
+
+        $nextLink = $null
+        if ($response -is [hashtable]) {
+            if ($response.ContainsKey('@odata.nextLink')) { $nextLink = [string]$response['@odata.nextLink'] }
+        } elseif ($response.PSObject.Properties['@odata.nextLink']) {
+            $nextLink = [string]$response.'@odata.nextLink'
+        }
+
+        if ($nextLink) {
+            Write-Verbose "Graph sayfalamasi devam ediyor (sayfa $page, $($items.Count) kayit): $nextLink"
+        }
+    }
+
+    if ($nextLink) {
+        Write-Warning "Graph sayfalama siniri ($PageLimit sayfa) asildi; sonuc kismi olabilir."
+    }
+
+    return $items.ToArray()
+}
+
 function Get-ZtLensLicenseWaste {
     [CmdletBinding()]
     param(
@@ -1200,14 +1248,19 @@ function Get-ZtLensLicenseWaste {
     $signInChecked = $false
     if (-not $Users -and (Get-MgContext -ErrorAction SilentlyContinue)) {
         try {
-            $uResp = Invoke-MgGraphRequest -Method GET -Uri 'https://graph.microsoft.com/v1.0/users?$select=id,displayName,userPrincipalName,accountEnabled,userType,assignedLicenses,signInActivity&$top=999' -ErrorAction Stop
-            if ($uResp -and $uResp.value) { $Users = @($uResp.value); $signInChecked = $true }
+            $Users = @(Get-ZtLensGraphCollection -Uri 'https://graph.microsoft.com/v1.0/users?$select=id,displayName,userPrincipalName,accountEnabled,userType,assignedLicenses,signInActivity&$top=999' -ErrorAction Stop)
+            $signInChecked = $true
         } catch {
+            Write-Verbose "signInActivity alani okunamadi, pasif kullanici analizi atlanacak: $($_.Exception.Message)"
+            $signInChecked = $false
             try {
-                $uResp2 = Invoke-MgGraphRequest -Method GET -Uri 'https://graph.microsoft.com/v1.0/users?$select=id,displayName,userPrincipalName,accountEnabled,userType,assignedLicenses&$top=999' -ErrorAction SilentlyContinue
-                if ($uResp2 -and $uResp2.value) { $Users = @($uResp2.value) }
-            } catch {}
+                $Users = @(Get-ZtLensGraphCollection -Uri 'https://graph.microsoft.com/v1.0/users?$select=id,displayName,userPrincipalName,accountEnabled,userType,assignedLicenses&$top=999' -ErrorAction SilentlyContinue)
+            } catch {
+                Write-Verbose "Kullanici listesi okunamadi: $($_.Exception.Message)"
+                $Users = $null
+            }
         }
+        if ($Users -and $Users.Count -eq 0) { $Users = $null }
     } else {
         $signInChecked = $true
     }
