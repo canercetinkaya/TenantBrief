@@ -128,7 +128,10 @@ function Invoke-ZtLensAssessment {
         [switch]$Anonymize,
 
         [Parameter()]
-        [switch]$NoBrowser
+        [switch]$NoBrowser,
+
+        [Parameter()]
+        [string]$TranslatorKey = $env:AZURE_TRANSLATOR_KEY
     )
 
     if (-not $InputReportJson) {
@@ -417,6 +420,18 @@ function Invoke-ZtLensAssessment {
         $fTitle = [string]$t.TestTitle
         $fDesc  = [string]$t.TestDesc
         $fImp   = [string]$t.TestImpact
+        if ($Language -eq 'tr' -and $TranslatorKey -and $fTitle) {
+            try {
+                $body = @(@{ Text = $fTitle }, @{ Text = ($fDesc.Substring(0, [Math]::Min(1200, $fDesc.Length))) }) | ConvertTo-Json -Compress
+                $trResp = Invoke-RestMethod -Method Post -Uri 'https://api.cognitive.microsofttranslator.com/translate?api-version=3.0&from=en&to=tr' -Headers @{
+                    'Ocp-Apim-Subscription-Key'    = $TranslatorKey
+                    'Ocp-Apim-Subscription-Region' = 'global'
+                    'Content-Type'                 = 'application/json; charset=utf-8'
+                } -Body ([System.Text.Encoding]::UTF8.GetBytes($body)) -ErrorAction Stop
+                if ($trResp[0].translations[0].text) { $fTitle = $trResp[0].translations[0].text }
+                if ($trResp[1].translations[0].text) { $fDesc  = $trResp[1].translations[0].text }
+            } catch {}
+        }
         if ($Language -eq 'tr' -and $fImp) {
             $fImp = $fImp -replace '^High$', 'Yüksek' -replace '^Medium$', 'Orta' -replace '^Low$', 'Düşük'
         }
