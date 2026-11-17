@@ -424,62 +424,88 @@ function Invoke-ZtLensAssessment {
             try { Install-Module -Name ScubaGear -Repository PSGallery -Scope CurrentUser -Force -AllowClobber -ErrorAction Stop } catch {}
         }
         if (Get-Module -ListAvailable -Name 'ScubaGear') {
+            $scubaOut = Join-Path $OutputPath 'raw-scuba'
+            if (-not (Test-Path $scubaOut)) { New-Item -ItemType Directory -Path $scubaOut -Force | Out-Null }
             try {
                 if (-not (Get-Module -ListAvailable -Name 'powershell-yaml')) {
                     Install-Module -Name 'powershell-yaml' -Repository PSGallery -Scope CurrentUser -Force -ErrorAction SilentlyContinue
                 }
                 Import-Module ScubaGear -ErrorAction Stop
-                $opaExePath = Join-Path $env:USERPROFILE '.scubagear\Tools\opa_windows_amd64.exe'
+                $opaDir = Join-Path $env:USERPROFILE '.scubagear\Tools'
+                $opaExePath = Join-Path $opaDir 'opa_windows_amd64.exe'
                 if (-not (Test-Path $opaExePath)) {
                     & $addLog "[Stage 2/5] Installing OPA executable for ScubaGear..."
                     Install-OPAforSCuBA | Out-Null
                 }
-                & $addLog "[Stage 2/5] Running CISA ScubaGear checks (aad, exo, defender)..."
-                $scubaOut = Join-Path $OutputPath 'raw-scuba'
-                if (-not (Test-Path $scubaOut)) { New-Item -ItemType Directory -Path $scubaOut -Force | Out-Null }
-                $null = Invoke-SCuBA -ProductNames @('aad', 'exo', 'defender') -LogIn:$false -DisconnectOnExit:$false -OutPath $scubaOut -Quiet 6>$null 3>$null 2>$null
+                & $addLog "[Stage 2/5] Running CISA ScubaGear checks (aad baseline — reusing active Graph session)..."
+                $null = Invoke-SCuBA -ProductNames @('aad') -LogIn:$false -DisconnectOnExit:$false -OPAPath $opaDir -OutPath $scubaOut -Quiet 6>$null 3>$null
                 $scubaJson = Get-ChildItem -Path $scubaOut -Filter 'ScubaResults.json' -Recurse -ErrorAction SilentlyContinue | Select-Object -First 1
                 if (-not $scubaJson) {
-                    & $addLog "[Stage 2/5] Retrying ScubaGear for exo & defender (bypassing Graph module cap on aad)..."
-                    $null = Invoke-SCuBA -ProductNames @('exo', 'defender') -LogIn:$false -DisconnectOnExit:$false -OutPath $scubaOut -Quiet 6>$null 3>$null 2>$null
-                    $scubaJson = Get-ChildItem -Path $scubaOut -Filter 'ScubaResults.json' -Recurse -ErrorAction SilentlyContinue | Select-Object -First 1
+                    $scubaJson = Get-ChildItem -Path $scubaOut -Filter '*Report.json' -Recurse -ErrorAction SilentlyContinue | Select-Object -First 1
                 }
                 if ($scubaJson) {
                     $scubaData = Get-Content -Path $scubaJson.FullName -Raw -Encoding UTF8 | ConvertFrom-Json
                     $scCount = 0
+                    $scubaControlList = @()
                     if ($scubaData.PSObject.Properties['Results']) {
-                        foreach ($prop in $scubaData.Results.PSObject.Properties) {
-                            foreach ($item in @($prop.Value)) {
-                                $scCount++
-                                $ctrl = if ($item.PSObject.Properties['Control']) { [string]$item.Control } else { "$scCount" }
-                                $req  = if ($item.PSObject.Properties['Requirement']) { [string]$item.Requirement } else { "SCuBA Control $ctrl" }
-                                $res  = if ($item.PSObject.Properties['Result']) { [string]$item.Result } else { '' }
-                                $crit = if ($item.PSObject.Properties['Criticality']) { [string]$item.Criticality } else { 'Should' }
-                                $det  = if ($item.PSObject.Properties['Details']) { [string]$item.Details } else { '' }
-                                $tests += [PSCustomObject]@{
-                                    TestId        = "SCUBA-$ctrl"
-                                    TestTitle     = $req
-                                    TestStatus    = if ($res -eq 'Pass') { 'Passed' } else { 'Failed' }
-                                    TestRisk      = if ($crit -eq 'Shall') { 'High' } else { 'Medium' }
-                                    TestPillar    = 'CISA SCuBA'
-                                    TestCategory  = [string]$prop.Name
-                                    TestSfiPillar = 'CISA SCuBA'
-                                    TestImplCost  = ''
-                                    TestMinLic    = ''
-                                    SkippedReason = ''
-                                    TestResult    = $det
-                                    TestImpact    = if ($crit -eq 'Shall') { 'High' } else { 'Medium' }
-                                    TestDesc      = $req
+                        if ($scubaData.Results -is [System.Array]) {
+                            foreach ($grp in @($scubaData.Results)) {
+                                if ($grp.PSObject.Properties['Controls']) { $scubaControlList += @($grp.Controls) } else { $scubaControlList += $grp }
+                            }
+                        } else {
+                            foreach ($prop in $scubaData.Results.PSObject.Properties) {
+                                foreach ($entry in @($prop.Value)) {
+                                    if ($entry.PSObject.Properties['Controls']) {
+                                        foreach ($c in @($entry.Controls)) { $scubaControlList += [PSCustomObject]@{ Cat = [string]$prop.Name; Item = $c } }
+                                    } else {
+                                        $scubaControlList += [PSCustomObject]@{ Cat = [string]$prop.Name; Item = $entry }
+                                    }
                                 }
                             }
                         }
                     }
+                    foreach ($wrap in $scubaControlList) {
+                        $cat  = if ($wrap.PSObject.Properties['Cat']) { [string]$wrap.Cat } else { 'AAD' }
+                        $item = if ($wrap.PSObject.Properties['Item']) { $wrap.Item } else { $wrap }
+                        $ctrl = if ($item.PSObject.Properties['Control ID']) { [string]$item.'Control ID' } elseif ($item.PSObject.Properties['Control']) { [string]$item.Control } else { "$($scCount + 1)" }
+                        $reqRaw = if ($item.PSObject.Properties['Requirement']) { [string]$item.Requirement } else { "SCuBA Control $ctrl" }
+                        $req  = ([System.Net.WebUtility]::HtmlDecode(($reqRaw -replace '<[^>]+>', ' ')) -replace '\s+', ' ').Trim()
+                        $res  = if ($item.PSObject.Properties['Result']) { [string]$item.Result } else { '' }
+                        $crit = if ($item.PSObject.Properties['Criticality']) { [string]$item.Criticality } else { 'Should' }
+                        $detRaw = if ($item.PSObject.Properties['Details']) { [string]$item.Details } else { '' }
+                        $det  = ([System.Net.WebUtility]::HtmlDecode(($detRaw -replace '<[^>]+>', ' ')) -replace '\s+', ' ').Trim()
+                        if (-not $req) { continue }
+                        $scCount++
+                        $mappedStatus = switch -Regex ($res) {
+                            '^(Pass|Met)$' { 'Passed' }
+                            '^(Fail|Not Met)$' { 'Failed' }
+                            default { 'Investigate' }
+                        }
+                        $tests += [PSCustomObject]@{
+                            TestId        = if ($ctrl -like 'SCUBA-*') { $ctrl } else { "SCUBA-$ctrl" }
+                            TestTitle     = $req
+                            TestStatus    = $mappedStatus
+                            TestRisk      = if ($crit -match 'Shall') { 'High' } else { 'Medium' }
+                            TestPillar    = 'CISA SCuBA'
+                            TestCategory  = $cat
+                            TestSfiPillar = 'CISA SCuBA'
+                            TestImplCost  = ''
+                            TestMinLic    = ''
+                            SkippedReason = ''
+                            TestResult    = $det
+                            TestImpact    = if ($crit -match 'Shall') { 'High' } else { 'Medium' }
+                            TestDesc      = $req
+                        }
+                    }
                     & $addLog "[Stage 2/5] ScubaGear completed: $scCount controls merged."
                 } else {
-                    & $addLog "[Stage 2/5] ScubaGear finished with no ScubaResults.json output."
+                    "ScubaGear finished without ScubaResults.json / *Report.json output." | Set-Content -Path (Join-Path $scubaOut 'scuba-error.txt') -Encoding UTF8
+                    & $addLog "[Stage 2/5] ScubaGear finished with no JSON output (check raw-scuba\DebugLogs)."
                 }
             } catch {
-                & $addLog "[Stage 2/5] ScubaGear skipped: $($_.Exception.Message)"
+                $errMsg = $_.Exception.Message
+                $errMsg | Set-Content -Path (Join-Path $scubaOut 'scuba-error.txt') -Encoding UTF8
+                & $addLog "[Stage 2/5] ScubaGear skipped: $errMsg"
             }
         }
 
@@ -489,15 +515,35 @@ function Invoke-ZtLensAssessment {
             try { Install-Module -Name ORCA -Repository PSGallery -Scope CurrentUser -Force -AllowClobber -ErrorAction Stop } catch {}
         }
         if (Get-Module -ListAvailable -Name 'ORCA') {
+            $orcaOut = Join-Path $OutputPath 'raw-orca'
+            if (-not (Test-Path $orcaOut)) { New-Item -ItemType Directory -Path $orcaOut -Force | Out-Null }
             try {
-                if (-not (Get-Command Get-AcceptedDomain -ErrorAction SilentlyContinue)) {
-                    & $addLog "[Stage 3/5] ORCA skipped: Exchange Online session not connected."
+                Get-Module tmpEXO_* -ErrorAction SilentlyContinue | Import-Module -Global -ErrorAction SilentlyContinue | Out-Null
+                $exoDoms = @()
+                if (Get-Command Get-AcceptedDomain -ErrorAction SilentlyContinue) {
+                    try { $exoDoms = @(Get-AcceptedDomain -ErrorAction Stop) } catch { $exoDoms = @() }
+                }
+                if ($exoDoms.Count -eq 0 -and (Get-Command Connect-ExchangeOnline -ErrorAction SilentlyContinue)) {
+                    & $addLog "[Stage 3/5] Refreshing Exchange Online session for ORCA..."
+                    try {
+                        $exoUpn = if ($mgCheck -and $mgCheck.Account) { $mgCheck.Account } else { $null }
+                        if ($exoUpn) {
+                            $null = Connect-ExchangeOnline -UserPrincipalName $exoUpn -ShowBanner:$false -ErrorAction Stop
+                        } else {
+                            $null = Connect-ExchangeOnline -ShowBanner:$false -ErrorAction Stop
+                        }
+                        Get-Module tmpEXO_* -ErrorAction SilentlyContinue | Import-Module -Global -ErrorAction SilentlyContinue | Out-Null
+                        $exoDoms = @(Get-AcceptedDomain -ErrorAction SilentlyContinue)
+                    } catch {}
+                }
+
+                if ($exoDoms.Count -eq 0) {
+                    "Exchange Online session unavailable or Get-AcceptedDomain returned 0 domains." | Set-Content -Path (Join-Path $orcaOut 'orca-error.txt') -Encoding UTF8
+                    & $addLog "[Stage 3/5] ORCA skipped: Exchange Online session not connected or returned no domains."
                 } else {
                     & $addLog "[Stage 3/5] Running Microsoft ORCA checks (Defender for Office 365)..."
-                    $orcaOut = Join-Path $OutputPath 'raw-orca'
-                    if (-not (Test-Path $orcaOut)) { New-Item -ItemType Directory -Path $orcaOut -Force | Out-Null }
                     Import-Module ORCA -ErrorAction Stop
-                    $null = Invoke-ORCA -Connect:$false -SCC:$false -PerformVersionCheck:$false -InstallModules:$false -ShowSurvey:$false -Output @('JSON') -OutputOptions @{ JSON = @{ OutputDirectory = $orcaOut } } 6>$null 3>$null 2>$null
+                    $null = Invoke-ORCA -Connect:$false -SCC:$false -PerformVersionCheck:$false -InstallModules:$false -ShowSurvey:$false -Output @('JSON') -OutputOptions @{ JSON = @{ OutputDirectory = $orcaOut } } 6>$null 3>$null
                     $orcaFile = Get-ChildItem -Path $orcaOut -Filter '*.json' -Recurse -ErrorAction SilentlyContinue | Select-Object -First 1
                     if ($orcaFile) {
                         $orcaData = Get-Content -Path $orcaFile.FullName -Raw -Encoding UTF8 | ConvertFrom-Json
@@ -507,15 +553,17 @@ function Invoke-ZtLensAssessment {
                             $cName = if ($item.PSObject.Properties['Name'] -and $item.Name) { [string]$item.Name } elseif ($item.PSObject.Properties['CheckName'] -and $item.CheckName) { [string]$item.CheckName } else { '' }
                             if (-not $cName) { continue }
                             $ocCount++
-                            $ctrl = if ($item.PSObject.Properties['Control']) { [string]$item.Control } else { "$ocCount" }
+                            $ctrl = if ($item.PSObject.Properties['Control']) { [string]$item.Control } else { "ORCA-$ocCount" }
                             $st   = if ($item.PSObject.Properties['Result']) { [string]$item.Result } else { '' }
                             $area = if ($item.PSObject.Properties['Area'] -and $item.Area) { [string]$item.Area } else { 'Defender for Office 365' }
                             $rec  = if ($item.PSObject.Properties['FailRecommendation']) { [string]$item.FailRecommendation } else { '' }
+                            $passTxt = if ($item.PSObject.Properties['PassText']) { [string]$item.PassText } else { '' }
                             $imp  = if ($item.PSObject.Properties['Importance']) { [string]$item.Importance } else { '' }
+                            $mappedOrStatus = if ($st -in @('1', 'Pass', 'OK')) { 'Passed' } elseif ($st -in @('2', '0', 'Informational', 'Info', 'None')) { 'Investigate' } else { 'Failed' }
                             $tests += [PSCustomObject]@{
-                                TestId        = "ORCA-$ctrl"
+                                TestId        = if ($ctrl -like 'ORCA-*') { $ctrl } else { "ORCA-$ctrl" }
                                 TestTitle     = $cName
-                                TestStatus    = if ($st -match 'Pass|OK') { 'Passed' } else { 'Failed' }
+                                TestStatus    = $mappedOrStatus
                                 TestRisk      = 'Medium'
                                 TestPillar    = 'Defender for Office 365 (ORCA)'
                                 TestCategory  = $area
@@ -523,16 +571,21 @@ function Invoke-ZtLensAssessment {
                                 TestImplCost  = ''
                                 TestMinLic    = ''
                                 SkippedReason = ''
-                                TestResult    = $rec
+                                TestResult    = if ($mappedOrStatus -eq 'Passed' -and $passTxt) { $passTxt } else { $rec }
                                 TestImpact    = 'Medium'
                                 TestDesc      = $imp
                             }
                         }
                         & $addLog "[Stage 3/5] ORCA completed: $ocCount controls merged."
+                    } else {
+                        "ORCA finished without emitting JSON into '$orcaOut'." | Set-Content -Path (Join-Path $orcaOut 'orca-error.txt') -Encoding UTF8
+                        & $addLog "[Stage 3/5] ORCA finished without JSON output."
                     }
                 }
             } catch {
-                & $addLog "[Stage 3/5] ORCA skipped: $($_.Exception.Message)"
+                $errMsg = $_.Exception.Message
+                $errMsg | Set-Content -Path (Join-Path $orcaOut 'orca-error.txt') -Encoding UTF8
+                & $addLog "[Stage 3/5] ORCA skipped: $errMsg"
             }
         }
     }
