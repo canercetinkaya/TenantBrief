@@ -56,7 +56,10 @@ function Connect-ZtLens {
         }
     }
 
-    Import-Module ZeroTrustAssessment -ErrorAction Stop
+    if (-not (Get-Module -ListAvailable -Name 'ZeroTrustAssessment')) {
+        throw "Required module 'ZeroTrustAssessment' is not installed. Run: Install-Module ZeroTrustAssessment -Scope CurrentUser"
+    }
+    Import-Module ZeroTrustAssessment -ErrorAction SilentlyContinue 2>$null 3>$null | Out-Null
     $params = @{ Service = $Service }
     if ($Tenant) { $params['TenantId'] = $Tenant }
     if ($UseDeviceCode) { $params['UseDeviceCode'] = $true }
@@ -218,7 +221,10 @@ function Invoke-ZtLensAssessment {
 
     $sourceJsonPath = $InputReportJson
     if (-not $sourceJsonPath) {
-        Import-Module ZeroTrustAssessment -ErrorAction Stop
+        if (-not (Get-Module -ListAvailable -Name 'ZeroTrustAssessment')) {
+        throw "Required module 'ZeroTrustAssessment' is not installed. Run: Install-Module ZeroTrustAssessment -Scope CurrentUser"
+    }
+    Import-Module ZeroTrustAssessment -ErrorAction SilentlyContinue 2>$null 3>$null | Out-Null
         $rawOut = Join-Path $OutputPath 'raw-zt'
         Write-Host "[ZeroTrustLens] Running read-only tenant assessment (live progress will open in browser)..." -ForegroundColor Cyan
         $null = Invoke-ZtAssessment -Path $rawOut -DisableTelemetry 6>$null 3>$null 2>$null
