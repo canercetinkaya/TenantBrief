@@ -63,6 +63,16 @@
     .md-ul { margin:6px 0 8px 20px; }
     a { color:var(--accent); text-decoration:none; }
     a:hover { text-decoration:underline; }
+    .road-card { cursor:pointer; transition:.15s; }
+    .road-card:hover, .road-card.active { border-color:var(--accent); background:rgba(56,189,248,.08); }
+    @media print {
+      body { background:#fff; color:#0f172a; display:block; }
+      .sidebar, .btn, .filter-bar, details summary { display:none !important; }
+      .main { padding:0; max-width:100%; }
+      .card, .finding, .rem-box { background:#fff; border-color:#cbd5e1; color:#0f172a; break-inside:avoid; }
+      .tab-panel { display:block !important; margin-bottom:24px; }
+      #tab-findings { display:none !important; }
+    }
   </style>
 </head>
 <body>
@@ -86,7 +96,7 @@
   <main class="main">
     <div class="header">
       <div>
-        <h1 id="pageTitle">ZeroTrustLens — v2.0</h1>
+        <h1 id="pageTitle">ZeroTrustLens</h1>
         <div class="meta" id="tenantMeta"></div>
       </div>
       <div style="display:flex;gap:8px;">
@@ -109,6 +119,7 @@
         </div>
       </div>
       <div class="card" id="mfaBanner" style="margin-bottom:20px;font-size:13.5px;color:var(--muted);"></div>
+      <div class="card" id="execActionDigest" style="margin-bottom:20px;"></div>
     </section>
 
     <section id="tab-frameworks" class="tab-panel">
@@ -122,6 +133,7 @@
 
     <section id="tab-roadmap" class="tab-panel">
       <div class="cards" id="roadmapCards"></div>
+      <div class="card" id="roadmapDetail"></div>
     </section>
 
     <section id="tab-findings" class="tab-panel">
@@ -329,10 +341,61 @@
     ).join('');
     document.getElementById('minLicBox').innerHTML = `<h3 style="margin-bottom:10px;">${isTr ? 'Kontrollerin Minimum Lisans Gereksinimi Dağılımı' : 'Minimum License Requirements Breakdown'}</h3><table class="md-table"><thead><tr><th>SKU / Plan</th><th>${isTr ? 'Toplam' : 'Total'}</th><th>Failed</th><th>Skipped</th></tr></thead><tbody>${licRows}</tbody></table>`;
 
-    // Roadmap
-    document.getElementById('roadmapCards').innerHTML = (DATA.Roadmap || []).map(r => `
-      <div class="card"><div class="lbl">${esc(r.Phase)}</div><div class="val" style="margin-bottom:8px;">${r.Count}</div><div style="font-size:13px;color:var(--muted);">${esc(r.Focus)}</div></div>
+    // Offline Deterministic Executive Remediation Digest (Zero external AI data sharing)
+    const highFailed = F.filter(x => x.Status === 'Failed' && x.Risk === 'High');
+    const pillarBreak = {};
+    highFailed.forEach(x => { const p = x.PrimaryPillar || 'General'; pillarBreak[p] = (pillarBreak[p] || 0) + 1; });
+    const breakText = Object.entries(pillarBreak).sort((a,b) => b[1]-a[1]).map(([k,v]) => `${k}: ${v}`).join(' · ');
+    const topActions = highFailed.slice(0, 12).map(x => `
+      <tr>
+        <td><strong>${esc(x.Title)}</strong><div style="font-size:11.5px;color:var(--muted);margin-top:2px;">${esc(x.Pillar)} · ${esc(x.Category)}</div></td>
+        <td>${esc(x.ImplementationCost)}</td>
+        <td style="font-size:12px;">${esc(isTr ? (x.RemediationTr || '') : (x.Description || '').slice(0, 160))}</td>
+      </tr>
     `).join('');
+    document.getElementById('execActionDigest').innerHTML = `
+      <h3 style="margin-bottom:6px;">${isTr ? 'Yönetici İyileştirme Özeti (Çevrimdışı Analiz — Sıfır Veri Paylaşımı)' : 'Executive Remediation Digest (Offline Analysis — Zero External Sharing)'}</h3>
+      <p style="font-size:12.5px;color:var(--muted);margin-bottom:12px;">${isTr ? 'Yüksek riskli açıkların sütun dağılımı:' : 'High-risk gap breakdown:'} <strong>${esc(breakText || '-')}</strong></p>
+      <table class="md-table">
+        <thead><tr><th>${isTr ? 'Öncelikli Kontrol' : 'Priority Control'}</th><th>${isTr ? 'Maliyet' : 'Cost'}</th><th>${isTr ? 'Önerilen İyileştirme Adımı' : 'Recommended Action'}</th></tr></thead>
+        <tbody>${topActions}</tbody>
+      </table>
+    `;
+
+    // Interactive 30-60-90 Day Roadmap
+    let activePhaseIdx = 0;
+    function renderRoadmap() {
+      const phases = DATA.Roadmap || [];
+      document.getElementById('roadmapCards').innerHTML = phases.map((r, idx) => `
+        <div class="card road-card ${idx === activePhaseIdx ? 'active' : ''}" onclick="selectPhase(${idx})">
+          <div class="lbl">${esc(r.Phase)}</div>
+          <div class="val" style="margin-bottom:8px;">${r.Count}</div>
+          <div style="font-size:13px;color:var(--muted);">${esc(r.Focus)}</div>
+        </div>
+      `).join('');
+      const items = activePhaseIdx === 0
+        ? F.filter(x => x.Status === 'Failed' && x.Risk === 'High')
+        : (activePhaseIdx === 1
+          ? F.filter(x => x.Status === 'Failed' && x.Risk === 'Medium')
+          : F.filter(x => (x.Status === 'Failed' && x.Risk === 'Low') || x.Status === 'Investigate'));
+      const pRows = items.map(x => `
+        <tr>
+          <td><strong>${esc(x.Title)}</strong><div style="font-size:11.5px;color:var(--muted);">${esc(x.Pillar)} · ${esc(x.Category)}</div></td>
+          <td><span class="pill ${esc(x.Status)}">${esc(x.Status)}</span></td>
+          <td>${esc(x.Risk)}</td>
+          <td style="font-size:12px;">${esc(isTr ? (x.RemediationTr || '') : (x.Description || '').slice(0, 140))}</td>
+        </tr>
+      `).join('');
+      document.getElementById('roadmapDetail').innerHTML = `
+        <h3 style="margin-bottom:10px;">${esc(phases[activePhaseIdx]?.Phase || '')} (${items.length})</h3>
+        <table class="md-table">
+          <thead><tr><th>${isTr ? 'Kontrol' : 'Control'}</th><th>${isTr ? 'Durum' : 'Status'}</th><th>Risk</th><th>${isTr ? 'İyileştirme Adımı' : 'Remediation'}</th></tr></thead>
+          <tbody>${pRows}</tbody>
+        </table>
+      `;
+    }
+    function selectPhase(i) { activePhaseIdx = i; renderRoadmap(); }
+    renderRoadmap();
 
     function renderFilterChips() {
       const statuses = ['ALL', 'Failed', 'Passed', 'Skipped', 'Investigate', 'Planned'];
@@ -390,7 +453,7 @@
           <div class="finding">
             <div class="finding-top">
               <div>
-                <strong>${esc(f.Id)}</strong> — ${esc(f.Title)}
+                <strong>${esc(f.Title)}</strong>
                 <div class="f-meta">
                   <span class="tag">${esc(f.Pillar)}</span>
                   <span class="tag">${esc(f.Category)}</span>

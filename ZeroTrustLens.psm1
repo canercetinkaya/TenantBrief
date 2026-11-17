@@ -748,6 +748,13 @@ function Export-ZtLensExecutiveSummary {
         "<tr><td>$($_.Name)</td><td>$($_.Passed) / $($_.Evaluated)</td><td><strong>$($_.Score)%</strong></td></tr>"
     }) -join "`n"
 
+    $topHigh = @($data.Findings | Where-Object { $_.Status -eq 'Failed' -and $_.Risk -eq 'High' } | Select-Object -First 15)
+    $actionRows = ($topHigh | ForEach-Object {
+        $remText = if ($Language -eq 'tr') { $_.RemediationTr } else { [string]$_.Description }
+        if ($remText.Length -gt 220) { $remText = $remText.Substring(0, 220) + '...' }
+        "<tr><td><strong>$($_.Title)</strong><br/><span style='color:#64748b;font-size:11px;'>$($_.Pillar) · $($_.Category)</span></td><td>$($_.ImplementationCost)</td><td>$remText</td></tr>"
+    }) -join "`n"
+
     $html = @"
 <!DOCTYPE html>
 <html lang="$Language">
@@ -779,6 +786,11 @@ function Export-ZtLensExecutiveSummary {
   <table>
     <thead><tr><th>Framework</th><th>Passed / Total</th><th>Score</th></tr></thead>
     <tbody>$fwRows</tbody>
+  </table>
+  <h2 style="font-size:17px;margin-top:24px;">$(if ($Language -eq 'tr') { 'Öncelikli İlk 15 İyileştirme Adımı (Çevrimdışı Analiz)' } else { 'Top 15 Priority Remediations (Offline Analysis)' })</h2>
+  <table>
+    <thead><tr><th>$(if ($Language -eq 'tr') { 'Kontrol' } else { 'Control' })</th><th>$(if ($Language -eq 'tr') { 'Maliyet' } else { 'Cost' })</th><th>$(if ($Language -eq 'tr') { 'Önerilen Aksiyon' } else { 'Recommended Action' })</th></tr></thead>
+    <tbody>$actionRows</tbody>
   </table>
 </body>
 </html>
