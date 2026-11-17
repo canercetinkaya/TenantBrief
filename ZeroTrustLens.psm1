@@ -161,13 +161,19 @@ function Invoke-ZtLensAssessment {
     }
 
     if (-not $InputReportJson) {
+        $mgCheck = Get-MgContext -ErrorAction SilentlyContinue
+        if (-not $mgCheck) {
+            throw "Authentication required or was canceled. Run Connect-ZtLens and complete sign-in before Invoke-ZtLensAssessment."
+        }
+        if (-not (Get-Module -ListAvailable -Name 'ZeroTrustAssessment')) {
+            throw "Required module 'ZeroTrustAssessment' is not installed. Run: Install-Module ZeroTrustAssessment -Scope CurrentUser"
+        }
+        Import-Module ZeroTrustAssessment -ErrorAction Stop 2>$null 3>$null | Out-Null
+
         $tenantFolder = 'tenant'
-        try {
-            $ctx = Get-MgContext -ErrorAction SilentlyContinue
-            if ($ctx -and $ctx.Account -and $ctx.Account -match '@(.+)$') {
-                $tenantFolder = ($Matches[1] -replace '[^a-zA-Z0-9\.-]', '_')
-            }
-        } catch {}
+        if ($mgCheck.Account -and $mgCheck.Account -match '@(.+)$') {
+            $tenantFolder = ($Matches[1] -replace '[^a-zA-Z0-9\.-]', '_')
+        }
         $OutputPath = Join-Path $OutputPath ("{0}_{1}" -f $tenantFolder, (Get-Date -Format 'yyyyMMdd_HHmm'))
     }
 
@@ -180,17 +186,6 @@ function Invoke-ZtLensAssessment {
         Remove-Item -Path $writeProbe -Force -ErrorAction SilentlyContinue
     } catch {
         throw "OutputPath '$OutputPath' is not writable: $($_.Exception.Message). Specify a writable folder with -OutputPath `"$HOME\ZeroTrustLensReport`"."
-    }
-
-    if (-not $InputReportJson) {
-        $mgCheck = Get-MgContext -ErrorAction SilentlyContinue
-        if (-not $mgCheck) {
-            throw "Authentication required or was canceled. Run Connect-ZtLens and complete sign-in before Invoke-ZtLensAssessment."
-        }
-        if (-not (Get-Module -ListAvailable -Name 'ZeroTrustAssessment')) {
-            throw "Required module 'ZeroTrustAssessment' is not installed. Run: Install-Module ZeroTrustAssessment -Scope CurrentUser"
-        }
-        Import-Module ZeroTrustAssessment -ErrorAction Stop 2>$null 3>$null | Out-Null
     }
 
     $rawOut = Join-Path $OutputPath 'raw-zt'
