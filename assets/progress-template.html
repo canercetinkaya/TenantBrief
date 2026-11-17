@@ -13,7 +13,9 @@
     .brand { display:flex; align-items:center; gap:12px; font-size:20px; font-weight:700; }
     .logo { width:34px; height:34px; border-radius:9px; background:linear-gradient(135deg,#0ea5e9,#6366f1); display:flex; align-items:center; justify-content:center; font-weight:800; color:#fff; }
     .badge { font-size:12px; padding:4px 10px; border-radius:999px; background:rgba(56,189,248,.15); color:var(--accent); border:1px solid rgba(56,189,248,.35); }
+    .badge.err { background:rgba(239,68,68,.15); color:var(--fail); border-color:rgba(239,68,68,.4); }
     .notice { background:rgba(245,158,11,.08); border:1px solid rgba(245,158,11,.35); color:#fde68a; border-radius:10px; padding:10px 14px; font-size:13px; margin-bottom:16px; }
+    .notice.err { background:rgba(239,68,68,.10); border-color:rgba(239,68,68,.45); color:#fca5a5; }
     .pbar-wrap { height:9px; background:#1e293b; border-radius:999px; overflow:hidden; margin-bottom:14px; }
     .pbar { height:100%; background:linear-gradient(90deg,#0ea5e9,#22c55e); width:5%; transition:width .35s ease; }
     .stages { display:grid; grid-template-columns:repeat(auto-fit,minmax(160px,1fr)); gap:8px; margin-bottom:16px; }
@@ -37,7 +39,7 @@
       <div class="brand"><div class="logo">ZL</div><span>ZeroTrustLens</span></div>
       <span class="badge" id="statusBadge">{{RUNNING}}</span>
     </div>
-    <div class="notice">{{NOTICE}}</div>
+    <div class="notice" id="noticeBox">{{NOTICE}}</div>
     <div class="pbar-wrap"><div class="pbar" id="pbar"></div></div>
     <div class="stages" id="stages"></div>
     <div class="stats">
@@ -50,7 +52,10 @@
   </div>
   <script>
     const start = Date.now();
+    const isTr = (document.documentElement.lang || '').toLowerCase() === 'tr';
     const labels = {{LABELS_JSON}};
+    let pollTimer = null;
+    let missCount = 0;
     function fmt(ms) {
       const s = Math.max(0, Math.floor(ms / 1000));
       return String(Math.floor(s / 60)).padStart(2, '0') + ':' + String(s % 60).padStart(2, '0');
@@ -58,11 +63,22 @@
     function esc(s) {
       return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
     }
+    function stopWithError(badgeTxt, msg) {
+      if (pollTimer) { clearInterval(pollTimer); pollTimer = null; }
+      const b = document.getElementById('statusBadge');
+      b.textContent = badgeTxt;
+      b.classList.add('err');
+      const nb = document.getElementById('noticeBox');
+      nb.classList.add('err');
+      nb.textContent = msg;
+      document.getElementById('pbar').style.background = 'var(--fail)';
+    }
     async function poll() {
       document.getElementById('elapsed').textContent = fmt(Date.now() - start);
       try {
         const res = await fetch('/status.json?t=' + Date.now());
-        if (!res.ok) return;
+        if (!res.ok) throw new Error('HTTP ' + res.status);
+        missCount = 0;
         const d = await res.json();
         document.getElementById('stages').innerHTML = labels.map((lbl, idx) => {
           const step = idx + 1;
@@ -95,13 +111,26 @@
           </div>`;
         }).join('');
 
+        if (d.error) {
+          stopWithError(isTr ? 'Hata / Durdu' : 'Error / Stopped', (isTr ? 'Değerlendirme hata nedeniyle durduruldu: ' : 'Assessment stopped due to error: ') + d.error);
+          return;
+        }
         if (d.done) {
+          if (pollTimer) { clearInterval(pollTimer); pollTimer = null; }
           document.getElementById('statusBadge').textContent = d.doneLabel;
         }
-      } catch {}
+      } catch {
+        missCount++;
+        if (missCount >= 3) {
+          stopWithError(
+            isTr ? 'Oturum Sonlandı' : 'Disconnected',
+            isTr ? 'PowerShell değerlendirme oturumu kapandı veya hata ile sonlandı. Lütfen PowerShell penceresindeki hata mesajını kontrol edin.' : 'PowerShell assessment session ended or stopped with an error. Please check the PowerShell console.'
+          );
+        }
+      }
     }
     poll();
-    setInterval(poll, 1000);
+    pollTimer = setInterval(poll, 1000);
   </script>
 </body>
 </html>

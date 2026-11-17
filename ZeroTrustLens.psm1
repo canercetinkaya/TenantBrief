@@ -153,6 +153,13 @@ function Invoke-ZtLensAssessment {
         [string]$TranslatorKey = $env:AZURE_TRANSLATOR_KEY
     )
 
+    $OutputPath = $ExecutionContext.SessionState.Path.GetUnresolvedProviderPathFromPSPath($OutputPath)
+    if ($OutputPath -like "$($env:SystemRoot)*") {
+        $fallbackBase = Join-Path $HOME 'ZeroTrustLensReport'
+        Write-Warning "[ZeroTrustLens] '$OutputPath' is inside a system-protected folder. Redirecting report output to '$fallbackBase'."
+        $OutputPath = $fallbackBase
+    }
+
     if (-not $InputReportJson) {
         $tenantFolder = 'tenant'
         try {
@@ -164,8 +171,15 @@ function Invoke-ZtLensAssessment {
         $OutputPath = Join-Path $OutputPath ("{0}_{1}" -f $tenantFolder, (Get-Date -Format 'yyyyMMdd_HHmm'))
     }
 
-    if (-not (Test-Path $OutputPath)) {
-        New-Item -ItemType Directory -Path $OutputPath -Force | Out-Null
+    try {
+        if (-not (Test-Path $OutputPath)) {
+            $null = New-Item -ItemType Directory -Path $OutputPath -Force -ErrorAction Stop
+        }
+        $writeProbe = Join-Path $OutputPath '.ztl_write_probe'
+        [System.IO.File]::WriteAllText($writeProbe, 'ok')
+        Remove-Item -Path $writeProbe -Force -ErrorAction SilentlyContinue
+    } catch {
+        throw "OutputPath '$OutputPath' is not writable: $($_.Exception.Message). Specify a writable folder with -OutputPath `"$HOME\ZeroTrustLensReport`"."
     }
 
     if (-not $InputReportJson) {
@@ -186,6 +200,7 @@ function Invoke-ZtLensAssessment {
         Stage      = 1
         Done       = $false
         Stop       = $false
+        Error      = $null
         RawOut     = $rawOut
         ActiveTask = if ($Language -eq 'tr') { 'Kiracı oturumu ve ZeroTrustAssessment başlatılıyor...' } else { 'Initializing tenant session and ZeroTrustAssessment...' }
         Logs       = $logQueue
@@ -235,9 +250,9 @@ function Invoke-ZtLensAssessment {
                 '["1. ZeroTrustAssessment (Tenant Data & Checks)","2. CISA ScubaGear (Security Baselines)","3. Microsoft ORCA (Defender for Office 365)","4. Correlation, License ROI & Framework Scoring","5. Generating ZeroTrustLens Reports"]'
             }
             $noticeTxt = if ($isTrUi) {
-                'Bilgi: Kapsamlı değerlendirme kiracı büyüklüğüne göre 15-30+ dakika sürebilir. İşlem tamamlanana kadar PowerShell penceresini kapatmayın.'
+                'Bilgi: Kiracı büyüklüğüne bağlı olarak tarama birkaç dakikadan 30+ dakikaya kadar sürebilir. Hata mesajı görmediğiniz sürece PowerShell penceresini kapatmayın.'
             } else {
-                'Notice: Depending on tenant size, this assessment may take 15-30+ minutes. Do not close the PowerShell window until completion.'
+                'Notice: Depending on tenant size, assessment takes from a few minutes up to 30+ minutes. Keep PowerShell open unless an error appears.'
             }
             $pMap = @{
                 '{{LANG}}'          = $Language
@@ -326,6 +341,7 @@ function Invoke-ZtLensAssessment {
                             (@{
                                 stage       = $State.Stage
                                 done        = $State.Done
+                                error       = $State.Error
                                 doneLabel   = $DoneLbl
                                 ztStageName = $ztStageName
                                 ztTotal     = $ztTotal
@@ -871,6 +887,10 @@ function Invoke-ZtLensAssessment {
 
     $progressState.Done = $true
     Start-Sleep -Seconds 2
+    } catch {
+        $progressState.Error = $_.Exception.Message
+        Start-Sleep -Seconds 3
+        throw
     } finally {
         if ($progressJob) {
             $progressState.Stop = $true
