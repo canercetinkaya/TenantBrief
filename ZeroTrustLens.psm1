@@ -562,7 +562,9 @@ function Invoke-ZtLensAssessment {
             }
         } catch {}
     }
-    $totalIdleMo = [Math]::Round(($skuRoiList | Measure-Object -Property EstimatedIdleUsdMo -Sum).Sum, 2)
+    $totalIdleMo = if ($skuRoiList.Count -gt 0) {
+        [Math]::Round((($skuRoiList | Measure-Object -Property EstimatedIdleUsdMo -Sum).Sum), 2)
+    } else { 0 }
     $totalIdleYr = [Math]::Round($totalIdleMo * 12, 2)
 
     $reportObj = [PSCustomObject]@{
