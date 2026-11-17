@@ -26,35 +26,37 @@ flowchart TB
         S3["Stage 3: Microsoft ORCA (Defender for Office 365 & Exchange Online)"]
     end
 
-    subgraph Analytics["Correlation, ROI & Compliance Layer (Stage 4)"]
+    subgraph Stage4["Correlation, License Waste & Copilot Readiness (Stage 4)"]
         Corr["Cross-Engine Deduplication & Pillar Matrix (incl. CISA SCuBA & ORCA tabs)"]
-        ROI["Live License ROI (Graph /v1.0/subscribedSkus across 25 Microsoft SKUs)"]
+        ROI["Live License ROI & Waste Audit (Graph /v1.0/subscribedSkus + Users R1-R7 across 32 SKUs & 10 Overlaps)"]
+        Cop["Copilot & Agent 365 Readiness (Entra Guests, Purview Labels, App Consent, SPO RAC / FastTrack JSON) + Copilot ROI Calc"]
         FW["5 Compliance Frameworks + Interactive What-If Score Simulator"]
     end
 
     subgraph Outputs["Offline-First Deliverables (Stage 5)"]
-        HTML["ZeroTrustLensReport-TR/EN.html (Clickable 30-60-90 Day Drill-Down + Search/CSV)"]
+        HTML["ZeroTrustLensReport-TR/EN.html (Copilot Readiness & ROI Tab + Waste R1-R7 + Clickable 30-60-90 Day Drill-Down)"]
         JSON["ZeroTrustLensReport-TR/EN.json (Drift Baseline Input)"]
         PDF["ZeroTrustLens-ExecutiveSummary-TR/EN.html (Zero-AI Local Print-to-PDF Brief)"]
     end
 
     Start --> Pre --> UI
     Pre --> S1 --> S2 --> S3
-    S3 --> Corr --> ROI --> FW --> Outputs
+    S3 --> Corr --> ROI --> Cop --> FW --> Out1
+    FW --> Out2
+    FW --> Out3
 ```
 
 ---
 
 ## Key Capabilities
 
-- **Strictly Read-Only & Fail-Fast Auth Guard:** Never modifies tenant policies, Conditional Access rules, or Entra ID objects. Both `Connect-ZtLens` and `Invoke-ZtLensAssessment` verify `Get-MgContext` up front and abort immediately if authentication is missing or canceled (without creating empty run folders or leaving a stuck progress UI).
-- **Live Step-by-Step Browser Dashboard (`localhost:8925–8945`):** Directly reads `ZeroTrustAssessment`'s thread-safe `ProgressState` concurrent worker dictionary (`Running`, `Failed`, `Done`, phase counts, active detail, elapsed time) and surfaces PowerShell errors or disconnects immediately.
-- **Cross-Engine Correlation (`ZeroTrustAssessment` + `CISA ScubaGear` + `ORCA`):** Automatically installs missing dependencies (`powershell-yaml`, `OPA`, `ScubaGear`, `ORCA`), deduplicates overlapping controls, retries ScubaGear for `exo, defender` if local `Microsoft.Graph.Authentication` exceeds ScubaGear's max module cap (`2.25.0`), and surfaces dedicated `CISA SCuBA` and `MDO / ORCA` sidebar views & risk matrix rows.
-- **Live Tenant License ROI (`Get-ZtLensLicenseRoi`):** Queries Microsoft Graph `/v1.0/subscribedSkus` in read-only mode to embed actual purchased vs. assigned vs. unassigned seat counts and monthly/annual idle spend across 25 Microsoft 365, Entra ID, Defender, Intune, Purview, and Copilot SKUs.
-- **5 Selectable Compliance Frameworks:** Maps controls across `ZeroTrust`, `ISO27001`, `NIST_CSF_2`, `CIS_M365`, and `KVKK_TR` (including `CISA SCuBA` and `Defender for Office 365 (ORCA)` mappings in every framework).
-- **Interactive 30-60-90 Day Roadmap & What-If Simulator:** Click any 0–30, 31–60, or 61–90 day bucket in the HTML report to filter concrete remediation controls, or simulate closing high-risk/skipped gaps in real time.
-- **Zero-AI Local Executive Summary (`Export-ZtLensExecutiveSummary`) & Drift Diff (`Compare-ZtLensReports`):** Generates a Print-to-PDF executive table of top priority remediations completely offline with zero external LLM data exposure, and compares two JSON baselines over time to track improved vs. regressed controls.
-- **System-Protected Folder Safeguard & Multi-Tenant Isolation:** Automatically redirects default/protected paths under `Windows\System32` to `$HOME\ZeroTrustLensReport`, isolates live runs into `<OutputPath>\<Tenant>_<yyyyMMdd_HHmm>`, and supports `-Anonymize` to strip tenant identifiers.
+- **Strictly Read-Only & Fail-Fast Auth Guard:** Never modifies tenant policies, Conditional Access rules, or Entra ID objects (nor calls `Disconnect-MgGraph` mid-session). Both `Connect-ZtLens` and `Invoke-ZtLensAssessment` validate `Get-MgContext` up front and abort cleanly if authentication is canceled.
+- **Live Step-by-Step Browser Dashboard (`localhost:8925–8945`):** Directly reads `ZeroTrustAssessment`'s thread-safe `ProgressState` concurrent worker dictionary (`Running`, `Failed`, `Done`, phase counts, elapsed time) and surfaces PowerShell errors or disconnects immediately.
+- **Cross-Engine Correlation (`ZeroTrustAssessment` + `CISA ScubaGear` + `ORCA`):** Automatically installs missing dependencies (`powershell-yaml`, `OPA`, `ScubaGear`, `ORCA`), handles ScubaGear 2.0.0's `'aad'` Graph reuse & `Control ID` schema, silently refreshes Exchange Online for ORCA if needed, and surfaces dedicated `CISA SCuBA` and `MDO / ORCA` views.
+- **Copilot & Agent 365 Readiness (`Get-ZtLensCopilotReadiness`):** Integrates live Graph API readiness signals modeled on Microsoft FastTrack `Get-M365CopilotReadiness` & Microsoft `m365-copilot-automated-readiness-assessment` — checking eligible base suites, active Copilot seats, Entra guest invitation/role boundaries, Purview sensitivity labels, user OAuth app/plugin consent, and optional FastTrack `-InputFastTrackJsonPath` or live SharePoint RAC/Restricted Search checks with explicit L1–L4 maturity scoring and security warnings.
+- **Live License ROI & Waste Hygiene (`Get-ZtLensLicenseRoi` + `Get-ZtLensLicenseWaste`):** Queries Graph `/v1.0/subscribedSkus` and `/v1.0/users` (inspired by `m365-license-review`) across **32 Microsoft SKUs** and **10 overlap rules** to detect unassigned seats, disabled licensed accounts (R1), 90+ day inactive licensed users (R2 when `AuditLog.Read.All` is granted), duplicate/overlapping SKUs such as `E5 + E3` / `E3 + EXO Plan 1` (R4), and licensed guests (R7).
+- **Offline Interactive Copilot & Agent Studio ROI Calculator:** Inspired by `copilot-roi-calculator`, runs 100% locally inside the HTML report (`$30/user/mo` Copilot + `$200/tenant/mo` Studio + `$0.008/msg` PAYG, department presets, breakeven days, net annual ROI %, and **self-funded share from reclaimed M365 license waste**).
+- **5 Selectable Compliance Frameworks & Zero-AI Print-to-PDF Brief:** Maps controls across `ZeroTrust`, `ISO27001`, `NIST_CSF_2`, `CIS_M365`, and `KVKK_TR`, generates an interactive 30-60-90 day drill-down + What-If simulator, and exports an offline executive PDF brief (`Compare-ZtLensReports` + `Export-ZtLensExecutiveSummary`).
 
 ---
 
@@ -63,9 +65,11 @@ flowchart TB
 | Cmdlet | Purpose |
 | --- | --- |
 | `Connect-ZtLens` | Clears prior sessions, ensures dependencies, connects read-only to Graph/Azure/EXO/SCC, and verifies active context |
-| `Invoke-ZtLensAssessment` | Orchestrates Stages 1–5 live or offline (`-InputReportJson`) and outputs HTML, JSON, and Executive Summary reports |
+| `Invoke-ZtLensAssessment` | Orchestrates Stages 1–5 live or offline (`-InputReportJson`, optional `-InputFastTrackJsonPath`) and outputs HTML, JSON, and Executive Summary |
 | `Get-ZtLensFrameworks` | Lists the 5 supported compliance frameworks and their TR/EN descriptions |
-| `Get-ZtLensLicenseRoi` | Computes seat utilization and monthly idle USD estimate across 25 SKUs from `/v1.0/subscribedSkus` |
+| `Get-ZtLensLicenseRoi` | Computes seat utilization and monthly idle USD estimate across 32 SKUs from `/v1.0/subscribedSkus` |
+| `Get-ZtLensLicenseWaste` | Evaluates disabled users (R1), 90d inactive users (R2), unassigned seats (R3), overlapping SKUs (R4), and licensed guests (R7) |
+| `Get-ZtLensCopilotReadiness` | Evaluates M365 Copilot & Agent 365 readiness, security warnings, and L1–L4 maturity score live or via FastTrack JSON |
 | `Compare-ZtLensReports` | Compares a baseline and current `ZeroTrustLensReport-*.json` to list `Improved` and `Regressed` controls |
 | `Export-ZtLensExecutiveSummary` | Generates a compact, offline Print-to-PDF executive brief from any `ZeroTrustLensReport-*.json` |
 
@@ -106,11 +110,19 @@ Connect-ZtLens
 Invoke-ZtLensAssessment -OutputPath "$HOME\ZeroTrustLensReport" -Language tr -Framework All
 ```
 
-### 4. Inspect License ROI & Historical Drift
+### 4. Inspect License ROI, License Waste (R1–R7), Copilot Readiness & Historical Drift
 
 ```powershell
-# Standalone License ROI query against active Graph session
+# Standalone License ROI query across 32 Microsoft SKUs
 Get-ZtLensLicenseRoi | Format-Table ProductName, Purchased, Assigned, Unassigned, UtilizationPercent, EstimatedIdleUsdMo
+
+# Audit disabled licensed users, 90d inactive accounts, licensed guests, and redundant SKU overlaps
+Get-ZtLensLicenseWaste | Format-List
+
+# Standalone M365 Copilot & Agent 365 readiness + security warnings (or ingest FastTrack JSON)
+Get-ZtLensCopilotReadiness -Language tr
+# Optional: Merge an existing FastTrack Get-M365CopilotReadiness export into ZeroTrustLens
+Invoke-ZtLensAssessment -OutputPath "$HOME\ZeroTrustLensReport" -InputFastTrackJsonPath .\copilot-readiness.json -Language tr -Framework All
 
 # Compare two historical JSON exports
 Compare-ZtLensReports -BaselineJsonPath .\prev\ZeroTrustLensReport-TR.json -CurrentJsonPath .\curr\ZeroTrustLensReport-TR.json
@@ -141,11 +153,12 @@ Anonymized sample reports generated from an actual tenant export (showing the in
 
 ---
 
-## Security & Privacy
+## Security, Privacy & Open-Source Attribution
 
-- **Zero Telemetry & Zero External AI Exposure:** `ZeroTrustLens` sends no telemetry and never forwards tenant findings or SKU counts to any external LLM/AI service.
-- **Strict Read-Only Surface:** Relies solely on read-only assessment APIs (`GET /v1.0/subscribedSkus`, `ZeroTrustAssessment`, read-only `ScubaGear`/`ORCA` inspection).
+- **Zero Telemetry & Zero External AI Exposure:** `ZeroTrustLens` sends no telemetry and never forwards tenant findings, user UPNs, or SKU counts to any external LLM/AI service.
+- **Strict Read-Only Surface:** Relies solely on read-only assessment APIs (`GET /v1.0/subscribedSkus`, `GET /v1.0/users`, `GET /v1.0/policies/authorizationPolicy`, `ZeroTrustAssessment`, `ScubaGear`, `ORCA`).
 - **Anonymization (`-Anonymize`):** Masks tenant domain identifiers before sharing reports externally.
+- **Built With Respect to Community & Microsoft Open-Source Projects:** Copilot readiness signals and FastTrack JSON ingestion are modeled on [Microsoft FastTrack `Get-M365CopilotReadiness`](https://microsoft.github.io/FastTrack/#get-m365copilotreadiness) and [Microsoft `m365-copilot-automated-readiness-assessment`](https://github.com/microsoft/m365-copilot-automated-readiness-assessment) (without calling `Disconnect-MgGraph` mid-session); license waste and SKU overlap rules (`R1–R7`) draw from [`samuelgtetteh/m365-license-review`](https://github.com/samuelgtetteh/m365-license-review); the offline Copilot & Agent Studio ROI calculator draws from [`amitlals/copilot-roi-calculator`](https://github.com/amitlals/copilot-roi-calculator); and L1–L4 readiness maturity levels adapt the reporting UX of [`acreadiness-assess`](https://awesome-copilot.github.com/skill/acreadiness-assess/) (noting `acreadiness-assess` itself is a developer repository linter, not an M365 tenant scanner).
 
 ---
 

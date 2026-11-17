@@ -12,6 +12,8 @@
         'Invoke-ZtLensAssessment',
         'Get-ZtLensFrameworks',
         'Get-ZtLensLicenseRoi',
+        'Get-ZtLensLicenseWaste',
+        'Get-ZtLensCopilotReadiness',
         'Compare-ZtLensReports',
         'Export-ZtLensExecutiveSummary'
     )

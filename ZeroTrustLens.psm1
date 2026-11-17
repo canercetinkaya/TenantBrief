@@ -150,7 +150,10 @@ function Invoke-ZtLensAssessment {
         [switch]$NoBrowser,
 
         [Parameter()]
-        [string]$TranslatorKey = $env:AZURE_TRANSLATOR_KEY
+        [string]$TranslatorKey = $env:AZURE_TRANSLATOR_KEY,
+
+        [Parameter()]
+        [string]$InputFastTrackJsonPath
     )
 
     $OutputPath = $ExecutionContext.SessionState.Path.GetUnresolvedProviderPathFromPSPath($OutputPath)
@@ -816,47 +819,76 @@ function Invoke-ZtLensAssessment {
     }
 
     $skuRoiList = @()
+    $licenseWaste = $null
+    $copilotReadiness = $null
     $secureCurrent = $null
     $secureMax = $null
+
+    $tenantInsightObj = [PSCustomObject]@{
+        UserCount            = if ($tOverview) { [int]$tOverview.UserCount } else { 0 }
+        GuestCount           = if ($tOverview) { [int]$tOverview.GuestCount } else { 0 }
+        GroupCount           = if ($tOverview) { [int]$tOverview.GroupCount } else { 0 }
+        ApplicationCount     = if ($tOverview) { [int]$tOverview.ApplicationCount } else { 0 }
+        DeviceCount          = if ($tOverview) { [int]$tOverview.DeviceCount } else { 0 }
+        ManagedDeviceCount   = if ($tOverview) { [int]$tOverview.ManagedDeviceCount } else { 0 }
+        CompliantDevices     = if ($devComp) { [int]$devComp.compliantDeviceCount } else { 0 }
+        NonCompliantDevices  = if ($devComp) { [int]$devComp.nonCompliantDeviceCount } else { 0 }
+        TotalAgents          = if ($agentOv) { [int]$agentOv.TotalAgents } else { 0 }
+        PrivSingleFactor     = $privSingle
+        PrivPhishable        = $privPhishable
+        PrivPhishResistant   = $privPhishRes
+        SecureScoreCurrent   = $secureCurrent
+        SecureScoreMax       = $secureMax
+        MfaCoverageDesc      = $mfaDesc
+    }
+
     if (-not $InputReportJson) {
         try {
             if (Get-MgContext -ErrorAction SilentlyContinue) {
-                $skuRoiList = @(Get-ZtLensLicenseRoi)
+                $subResp = Invoke-MgGraphRequest -Method GET -Uri 'https://graph.microsoft.com/v1.0/subscribedSkus' -ErrorAction SilentlyContinue
+                $liveSkus = if ($subResp -and $subResp.value) { @($subResp.value) } else { @() }
+                if ($liveSkus.Count -gt 0) {
+                    $skuRoiList = @(Get-ZtLensLicenseRoi -SubscribedSkus $liveSkus)
+                    try { $licenseWaste = Get-ZtLensLicenseWaste -SubscribedSkus $liveSkus -Language $Language } catch {}
+                }
+                try {
+                    $crParams = @{ Language = $Language; TenantInsights = $tenantInsightObj }
+                    if ($liveSkus.Count -gt 0) { $crParams['SubscribedSkus'] = $liveSkus }
+                    if ($InputFastTrackJsonPath) { $crParams['InputFastTrackJsonPath'] = $InputFastTrackJsonPath }
+                    $copilotReadiness = Get-ZtLensCopilotReadiness @crParams
+                } catch {}
                 $scResp = Invoke-MgGraphRequest -Method GET -Uri 'https://graph.microsoft.com/v1.0/security/secureScores?$top=1' -ErrorAction SilentlyContinue
                 if ($scResp -and $scResp.value -and $scResp.value.Count -gt 0) {
                     $secureCurrent = [Math]::Round([double]$scResp.value[0].currentScore, 1)
                     $secureMax = [Math]::Round([double]$scResp.value[0].maxScore, 1)
+                    $tenantInsightObj.SecureScoreCurrent = $secureCurrent
+                    $tenantInsightObj.SecureScoreMax = $secureMax
                 }
             }
         } catch {}
     }
+
+    if (-not $copilotReadiness) {
+        try {
+            $offParams = @{ Language = $Language; TenantInsights = $tenantInsightObj; OfflineOnly = $true }
+            if ($InputFastTrackJsonPath) { $offParams['InputFastTrackJsonPath'] = $InputFastTrackJsonPath }
+            $copilotReadiness = Get-ZtLensCopilotReadiness @offParams
+        } catch {
+            Write-Warning "[ZeroTrustLens] Copilot readiness evaluation warning: $($_.Exception.Message)"
+        }
+    }
+
     $totalIdleMo = if ($skuRoiList.Count -gt 0) {
         [Math]::Round((($skuRoiList | Measure-Object -Property EstimatedIdleUsdMo -Sum).Sum), 2)
     } else { 0 }
     $totalIdleYr = [Math]::Round($totalIdleMo * 12, 2)
 
     $reportObj = [PSCustomObject]@{
-        Tenant         = $tenantDisplay
-        Language       = $Language
-        Framework      = $Framework
-        TenantInsights = [PSCustomObject]@{
-            UserCount            = if ($tOverview) { [int]$tOverview.UserCount } else { 0 }
-            GuestCount           = if ($tOverview) { [int]$tOverview.GuestCount } else { 0 }
-            GroupCount           = if ($tOverview) { [int]$tOverview.GroupCount } else { 0 }
-            ApplicationCount     = if ($tOverview) { [int]$tOverview.ApplicationCount } else { 0 }
-            DeviceCount          = if ($tOverview) { [int]$tOverview.DeviceCount } else { 0 }
-            ManagedDeviceCount   = if ($tOverview) { [int]$tOverview.ManagedDeviceCount } else { 0 }
-            CompliantDevices     = if ($devComp) { [int]$devComp.compliantDeviceCount } else { 0 }
-            NonCompliantDevices  = if ($devComp) { [int]$devComp.nonCompliantDeviceCount } else { 0 }
-            TotalAgents          = if ($agentOv) { [int]$agentOv.TotalAgents } else { 0 }
-            PrivSingleFactor     = $privSingle
-            PrivPhishable        = $privPhishable
-            PrivPhishResistant   = $privPhishRes
-            SecureScoreCurrent   = $secureCurrent
-            SecureScoreMax       = $secureMax
-            MfaCoverageDesc      = $mfaDesc
-        }
-        Summary        = [PSCustomObject]@{
+        Tenant           = $tenantDisplay
+        Language         = $Language
+        Framework        = $Framework
+        TenantInsights   = $tenantInsightObj
+        Summary          = [PSCustomObject]@{
             Total          = $tests.Count
             Passed         = $passedCount
             Failed         = $failedCount
@@ -865,16 +897,18 @@ function Invoke-ZtLensAssessment {
             Planned        = $plannedCount
             HighRiskFailed = $highRiskFailed
         }
-        Frameworks = @($frameworkCards)
-        LicenseROI = [PSCustomObject]@{
+        Frameworks       = @($frameworkCards)
+        LicenseROI       = [PSCustomObject]@{
             Summary         = $roiSummary
             Gaps            = @($roiGapsList)
             Skus            = @($skuRoiList)
             TotalIdleUsdMo  = $totalIdleMo
             TotalIdleUsdYr  = $totalIdleYr
+            WasteAnalysis   = $licenseWaste
         }
-        Roadmap    = @($roadmap)
-        Findings   = @($findings)
+        CopilotReadiness = $copilotReadiness
+        Roadmap          = @($roadmap)
+        Findings         = @($findings)
         Labels     = if ($Language -eq 'tr') {
             [PSCustomObject]@{
                 TotalChecks        = 'Toplam Kontrol'
@@ -1123,4 +1157,380 @@ function Export-ZtLensExecutiveSummary {
     return (Resolve-Path $OutputHtmlPath).Path
 }
 
-Export-ModuleMember -Function Connect-ZtLens, Invoke-ZtLensAssessment, Get-ZtLensFrameworks, Get-ZtLensLicenseRoi, Compare-ZtLensReports, Export-ZtLensExecutiveSummary
+function Get-ZtLensLicenseWaste {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory = $false)]
+        [object[]]$SubscribedSkus,
+
+        [Parameter(Mandatory = $false)]
+        [object[]]$Users,
+
+        [Parameter(Mandatory = $false)]
+        [ValidateSet('tr', 'en')]
+        [string]$Language = 'tr',
+
+        [Parameter(Mandatory = $false)]
+        [int]$InactiveDays = 90
+    )
+
+    $catalogPath = Join-Path $PSScriptRoot 'data\sku-catalog.json'
+    $catalogJson = Get-Content -Path $catalogPath -Raw -Encoding UTF8 | ConvertFrom-Json
+    $skuPriceMap = @{}
+    $skuNameMap = @{}
+    $skuGuidToPart = @{}
+    foreach ($c in @($catalogJson.skus)) {
+        $skuPriceMap[[string]$c.skuPartNumber] = [double]$c.usdPerUserMonth
+        $skuNameMap[[string]$c.skuPartNumber]  = [string]$c.name
+    }
+
+    if (-not $SubscribedSkus -and (Get-MgContext -ErrorAction SilentlyContinue)) {
+        $subResp = Invoke-MgGraphRequest -Method GET -Uri 'https://graph.microsoft.com/v1.0/subscribedSkus' -ErrorAction SilentlyContinue
+        if ($subResp -and $subResp.value) { $SubscribedSkus = @($subResp.value) }
+    }
+    foreach ($s in @($SubscribedSkus | Where-Object { $null -ne $_ })) {
+        if ($s.PSObject.Properties['skuId'] -and $s.skuId) {
+            $skuGuidToPart[[string]$s.skuId] = [string]$s.skuPartNumber
+        } elseif ($s -is [hashtable] -and $s['skuId']) {
+            $skuGuidToPart[[string]$s['skuId']] = [string]$s['skuPartNumber']
+        }
+    }
+
+    $signInChecked = $false
+    if (-not $Users -and (Get-MgContext -ErrorAction SilentlyContinue)) {
+        try {
+            $uResp = Invoke-MgGraphRequest -Method GET -Uri 'https://graph.microsoft.com/v1.0/users?$select=id,displayName,userPrincipalName,accountEnabled,userType,assignedLicenses,signInActivity&$top=999' -ErrorAction Stop
+            if ($uResp -and $uResp.value) { $Users = @($uResp.value); $signInChecked = $true }
+        } catch {
+            try {
+                $uResp2 = Invoke-MgGraphRequest -Method GET -Uri 'https://graph.microsoft.com/v1.0/users?$select=id,displayName,userPrincipalName,accountEnabled,userType,assignedLicenses&$top=999' -ErrorAction SilentlyContinue
+                if ($uResp2 -and $uResp2.value) { $Users = @($uResp2.value) }
+            } catch {}
+        }
+    } else {
+        $signInChecked = $true
+    }
+
+    $disabledCount = 0; $disabledUsdMo = 0.0
+    $inactiveCount = 0; $inactiveUsdMo = 0.0
+    $guestCount = 0;    $guestUsdMo = 0.0
+    $overlapCount = 0;  $overlapUsdMo = 0.0
+    $overlapDetails = @()
+    $cutoff = (Get-Date).ToUniversalTime().AddDays(-$InactiveDays)
+    $overlaps = @($catalogJson.overlaps)
+
+    foreach ($u in @($Users)) {
+        $assigned = @($u.assignedLicenses)
+        if ($assigned.Count -eq 0) { continue }
+
+        $parts = @()
+        $userMonthlyCost = 0.0
+        foreach ($lic in $assigned) {
+            $part = $null
+            if ($lic.PSObject.Properties['skuPartNumber'] -and $lic.skuPartNumber) { $part = [string]$lic.skuPartNumber }
+            elseif ($lic.PSObject.Properties['skuId'] -and $skuGuidToPart.ContainsKey([string]$lic.skuId)) { $part = $skuGuidToPart[[string]$lic.skuId] }
+            elseif ($lic -is [hashtable] -and $lic['skuPartNumber']) { $part = [string]$lic['skuPartNumber'] }
+            elseif ($lic -is [hashtable] -and $lic['skuId'] -and $skuGuidToPart.ContainsKey([string]$lic['skuId'])) { $part = $skuGuidToPart[[string]$lic['skuId']] }
+            if ($part) {
+                $parts += $part
+                if ($skuPriceMap.ContainsKey($part)) { $userMonthlyCost += $skuPriceMap[$part] }
+            }
+        }
+
+        $isEnabled = if ($u.PSObject.Properties['accountEnabled']) { [bool]$u.accountEnabled } else { $true }
+        $uType = if ($u.PSObject.Properties['userType']) { [string]$u.userType } else { 'Member' }
+
+        if (-not $isEnabled) {
+            $disabledCount++
+            $disabledUsdMo += $userMonthlyCost
+        } elseif ($uType -eq 'Guest') {
+            $guestCount++
+            $guestUsdMo += $userMonthlyCost
+        } elseif ($signInChecked -and $u.PSObject.Properties['signInActivity'] -and $u.signInActivity -and $u.signInActivity.PSObject.Properties['lastSignInDateTime'] -and $u.signInActivity.lastSignInDateTime) {
+            try {
+                $lastDt = [DateTime]::Parse([string]$u.signInActivity.lastSignInDateTime).ToUniversalTime()
+                if ($lastDt -lt $cutoff) {
+                    $inactiveCount++
+                    $inactiveUsdMo += $userMonthlyCost
+                }
+            } catch {}
+        }
+
+        if ($parts.Count -gt 1) {
+            foreach ($ov in $overlaps) {
+                if (($parts -contains [string]$ov.skuA) -and ($parts -contains [string]$ov.skuB)) {
+                    $overlapCount++
+                    $redCost = if ($skuPriceMap.ContainsKey([string]$ov.redundant)) { $skuPriceMap[[string]$ov.redundant] } else { 0.0 }
+                    $overlapUsdMo += $redCost
+                    if ($overlapDetails.Count -lt 25) {
+                        $overlapDetails += [PSCustomObject]@{
+                            Pair      = "$($ov.skuA) + $($ov.skuB)"
+                            Redundant = [string]$ov.redundant
+                            SavedMo   = $redCost
+                            Reason    = if ($Language -eq 'tr') { [string]$ov.reasonTr } else { [string]$ov.reasonEn }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    $unassignedUsdMo = 0.0
+    $unassignedSeats = 0
+    foreach ($s in @($SubscribedSkus | Where-Object { $null -ne $_ -and $_.PSObject.Properties['skuPartNumber'] })) {
+        $part = [string]$s.skuPartNumber
+        $en = [int]$s.prepaidUnits.enabled
+        $con = [int]$s.consumedUnits
+        if ($en -gt $con) {
+            $diff = $en - $con
+            $unassignedSeats += $diff
+            if ($skuPriceMap.ContainsKey($part)) { $unassignedUsdMo += ($diff * $skuPriceMap[$part]) }
+        }
+    }
+
+    $totalRecMo = [Math]::Round($unassignedUsdMo + $disabledUsdMo + $overlapUsdMo, 2)
+    return [PSCustomObject]@{
+        SignInActivityAvailable = $signInChecked
+        UnassignedSeats         = $unassignedSeats
+        UnassignedUsdMo         = [Math]::Round($unassignedUsdMo, 2)
+        DisabledLicensedUsers   = $disabledCount
+        DisabledUsdMo           = [Math]::Round($disabledUsdMo, 2)
+        Inactive90dUsers        = $inactiveCount
+        InactiveUsdMo           = [Math]::Round($inactiveUsdMo, 2)
+        LicensedGuests          = $guestCount
+        GuestUsdMo              = [Math]::Round($guestUsdMo, 2)
+        DuplicateOverlapCount   = $overlapCount
+        DuplicateOverlapUsdMo   = [Math]::Round($overlapUsdMo, 2)
+        OverlapSamples          = @($overlapDetails)
+        TotalRecoverableUsdMo   = $totalRecMo
+        TotalRecoverableUsdYr   = [Math]::Round($totalRecMo * 12, 2)
+    }
+}
+
+function Get-ZtLensCopilotReadiness {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory = $false)]
+        [object[]]$SubscribedSkus,
+
+        [Parameter(Mandatory = $false)]
+        [object]$TenantInsights,
+
+        [Parameter(Mandatory = $false)]
+        [string]$InputFastTrackJsonPath,
+
+        [Parameter(Mandatory = $false)]
+        [ValidateSet('tr', 'en')]
+        [string]$Language = 'tr',
+
+        [Parameter(Mandatory = $false)]
+        [switch]$OfflineOnly
+    )
+
+    $isTr = ($Language -eq 'tr')
+    $checks = @()
+    $warnings = @()
+    $copilotSeats = 0
+    $eligibleBaseSeats = 0
+    $eligibleList = @('SPE_E5','SPE_E3','SPB','O365_BUSINESS_PREMIUM','O365_BUSINESS_ESSENTIALS','ENTERPRISEPACK','ENTERPRISEPREMIUM','STANDARDPACK','M365_F3','SPE_F1','O365_BUSINESS','OFFICESUBSCRIPTION')
+
+    $ftData = $null
+    if ($InputFastTrackJsonPath -and (Test-Path $InputFastTrackJsonPath)) {
+        try { $ftData = Get-Content -Path $InputFastTrackJsonPath -Raw -Encoding UTF8 | ConvertFrom-Json } catch {}
+    }
+
+    $hasLiveGraph = (-not $OfflineOnly) -and [bool](Get-MgContext -ErrorAction SilentlyContinue)
+    if ($hasLiveGraph -and -not $SubscribedSkus) {
+        try {
+            $subResp = Invoke-MgGraphRequest -Method GET -Uri 'https://graph.microsoft.com/v1.0/subscribedSkus' -ErrorAction SilentlyContinue
+            if ($subResp -and $subResp.value) { $SubscribedSkus = @($subResp.value) }
+        } catch {}
+    }
+
+    $validSkus = @($SubscribedSkus | Where-Object { $null -ne $_ -and ($_.PSObject.Properties['skuPartNumber'] -or ($_ -is [hashtable] -and $_['skuPartNumber'])) })
+    if ($validSkus.Count -gt 0) {
+        foreach ($s in $validSkus) {
+            $part = [string]$s.skuPartNumber
+            $en = if ($s.PSObject.Properties['prepaidUnits'] -and $s.prepaidUnits) { [int]$s.prepaidUnits.enabled } else { 0 }
+            if ($eligibleList -contains $part) { $eligibleBaseSeats += $en }
+            if ($part -match 'Copilot|COPILOT') { $copilotSeats += $en }
+        }
+        $checks += [PSCustomObject]@{
+            Id          = 'COP-LIC-01'
+            Category    = if ($isTr) { 'Lisans Uygunluğu' } else { 'License Eligibility' }
+            Status      = if ($eligibleBaseSeats -gt 0) { 'Pass' } else { 'Fail' }
+            Title       = if ($isTr) { 'Copilot Temel Lisans Önkoşulu' } else { 'Copilot Eligible Base Licenses' }
+            Detail      = if ($isTr) { "Uygun temel koltuk: $eligibleBaseSeats · Aktif Copilot lisansı: $copilotSeats" } else { "Eligible base seats: $eligibleBaseSeats · Copilot seats: $copilotSeats" }
+            Explanation = if ($isTr) { 'Microsoft 365 Copilot eklentisi yalnızca E3/E5, Business Standard/Premium veya F1/F3 temel paketlerinin üzerine atanabilir.' } else { 'Microsoft 365 Copilot add-ons require qualifying E3/E5, Business Standard/Premium, or F1/F3 base suites.' }
+            Warning     = if ($eligibleBaseSeats -eq 0) { if ($isTr) { 'Uygun temel M365/O365 paketi bulunamadı.' } else { 'No qualifying base Microsoft 365 suite found.' } } else { '' }
+        }
+    } elseif ($ftData -and $ftData.PSObject.Properties['Licensing']) {
+        $checks += [PSCustomObject]@{
+            Id          = 'COP-LIC-FT'
+            Category    = if ($isTr) { 'Lisans Uygunluğu (FastTrack)' } else { 'License Eligibility (FastTrack)' }
+            Status      = if ($ftData.Licensing.EligibleBaseLicenses) { 'Pass' } else { 'Warning' }
+            Title       = if ($isTr) { 'FastTrack Lisans Envanteri İçe Aktarıldı' } else { 'FastTrack Licensing Snapshot Imported' }
+            Detail      = "Eligible SKUs: $(@($ftData.Licensing.EligibleBaseLicenses).Count)"
+            Explanation = if ($isTr) { 'Harici FastTrack Get-M365CopilotReadiness JSON çıktısından lisans uygunluğu okundu.' } else { 'Imported base license readiness from FastTrack Get-M365CopilotReadiness JSON.' }
+            Warning     = ''
+        }
+    } else {
+        $checks += [PSCustomObject]@{
+            Id          = 'COP-LIC-01'
+            Category    = if ($isTr) { 'Lisans Uygunluğu' } else { 'License Eligibility' }
+            Status      = 'Warning'
+            Title       = if ($isTr) { 'Copilot ve Temel Lisans Kontrolü (Canlı Oturum Gerekir)' } else { 'Copilot Base License Check (Requires Live Session)' }
+            Detail      = if ($isTr) { 'Çevrimdışı analizde subscribedSkus verisi yer almaz.' } else { 'Offline report mode lacks subscribedSkus Graph payload.' }
+            Explanation = if ($isTr) { 'Gerçek satın alınan/atanan Copilot ve E3/E5 koltuk sayıları Connect-ZtLens sonrası canlı çekilir.' } else { 'Actual purchased vs. assigned Copilot & E3/E5 seats are pulled live after Connect-ZtLens.' }
+            Warning     = if ($isTr) { 'Gerçek lisans dağılımı için canlı tarama çalıştırın.' } else { 'Run a live tenant scan for actual SKU counts.' }
+        }
+    }
+
+    # 2. Entra ID AuthorizationPolicy & External Guest Sharing
+    if ($hasLiveGraph) {
+        try {
+            $authPol = Invoke-MgGraphRequest -Method GET -Uri 'https://graph.microsoft.com/v1.0/policies/authorizationPolicy' -ErrorAction Stop
+            $invFrom = [string]$authPol.allowInvitesFrom
+            $guestRole = [string]$authPol.guestUserRoleId
+            $restrictedGuestRole = '2af84b1e-32c8-42b7-82bc-daa82404023b'
+            $invSafe = ($invFrom -in @('adminsAndGuestInviters', 'adminsGuestInvitersAndAllMembers', 'none')) -and ($invFrom -ne 'everyone')
+            $roleSafe = ($guestRole -eq $restrictedGuestRole)
+            $checks += [PSCustomObject]@{
+                Id          = 'COP-ENTRA-01'
+                Category    = if ($isTr) { 'Dış Paylaşım & Misafir Sınırı' } else { 'Guest & External Sharing Boundary' }
+                Status      = if ($invSafe -and $roleSafe) { 'Pass' } elseif ($invFrom -eq 'everyone') { 'Fail' } else { 'Warning' }
+                Title       = if ($isTr) { 'Entra ID Misafir Davet ve Dizin Erişim İzni' } else { 'Entra ID Guest Invitations & Directory Access' }
+                Detail      = "allowInvitesFrom=$invFrom | guestUserRoleId=$guestRole"
+                Explanation = if ($isTr) { 'Copilot içerik indeksleme sırasında dış konuk kullanıcıların bulunduğu Teams kanalları ve SharePoint siteleri aşırı paylaşım riskini artırır.' } else { 'Overly permissive guest invitations and member-level guest directory permissions widen Copilot oversharing blast radius.' }
+                Warning     = if ($invFrom -eq 'everyone') {
+                    $w = if ($isTr) { 'KRİTİK UYARI: Misafir davet politikası "everyone" (herkes) olarak açık — Copilot öncesi yalnızca yöneticilerle sınırlandırılmalıdır.' } else { 'CRITICAL WARNING: Guest invitations allow "everyone" — restrict before Copilot rollout.' }
+                    $warnings += $w; $w
+                } elseif (-not $roleSafe) {
+                    $w = if ($isTr) { 'UYARI: Misafir rolü en kısıtlı düzeye (2af84b1e...) çekilmemiş; dizin taraması açık olabilir.' } else { 'WARNING: Guest user role is not set to most restricted (2af84b1e...).' }
+                    $warnings += $w; $w
+                } else { '' }
+            }
+        } catch {}
+
+        try {
+            $permPol = Invoke-MgGraphRequest -Method GET -Uri 'https://graph.microsoft.com/v1.0/policies/authorizationPolicy' -ErrorAction SilentlyContinue
+            $defaultPerms = @($permPol.defaultUserRolePermissions.permissionGrantPoliciesAssigned)
+            $userCanConsent = ($defaultPerms | Where-Object { $_ -like 'ManagePermissionGrantsForSelf.microsoft-user-default-legacy*' }).Count -gt 0
+            $checks += [PSCustomObject]@{
+                Id          = 'COP-APP-01'
+                Category    = if ($isTr) { 'Uygulama & Ajan Onay Yönetişimi' } else { 'App & Agent Consent Governance' }
+                Status      = if (-not $userCanConsent) { 'Pass' } else { 'Fail' }
+                Title       = if ($isTr) { 'Kullanıcıların Üçüncü Taraf Uygulama / Ajan Onay Yetkisi' } else { 'End-User Third-Party App & Plugin Consent' }
+                Detail      = "Policies: $(($defaultPerms -join ', '))"
+                Explanation = if ($isTr) { 'Son kullanıcıların onayı serbestse kontrolsüz Copilot eklentileri ve OAuth ajanları kurumsal verilere erişim talep edebilir.' } else { 'Unrestricted user OAuth consent allows unvetted Copilot plugins and third-party agents to access tenant data.' }
+                Warning     = if ($userCanConsent) {
+                    $w = if ($isTr) { 'UYARI: Son kullanıcılar varsayılan uygulama onayı verebiliyor; Yönetici Onay İş Akışı (Admin Consent) açılmalıdır.' } else { 'WARNING: Legacy user app consent is enabled; enforce Admin Consent Workflow.' }
+                    $warnings += $w; $w
+                } else { '' }
+            }
+        } catch {}
+
+        $labelCount = 0
+        try {
+            $lblResp = Invoke-MgGraphRequest -Method GET -Uri 'https://graph.microsoft.com/beta/security/informationProtection/sensitivityLabels' -ErrorAction Stop
+            if ($lblResp -and $lblResp.value) { $labelCount = @($lblResp.value).Count }
+        } catch {
+            try {
+                if (Get-Command Get-Label -ErrorAction SilentlyContinue) { $labelCount = @(Get-Label -ErrorAction SilentlyContinue).Count }
+            } catch {}
+        }
+        $checks += [PSCustomObject]@{
+            Id          = 'COP-PURVIEW-01'
+            Category    = if ($isTr) { 'Purview Etiketleme & Aşırı Paylaşım Kalkanı' } else { 'Purview Labels & Oversharing Shield' }
+            Status      = if ($labelCount -gt 0) { 'Pass' } else { 'Fail' }
+            Title       = if ($isTr) { 'Microsoft Purview Hassasiyet Etiketleri (Sensitivity Labels)' } else { 'Microsoft Purview Sensitivity Labels Coverage' }
+            Detail      = if ($isTr) { "Algılanan etiket sayısı: $labelCount" } else { "Detected sensitivity labels: $labelCount" }
+            Explanation = if ($isTr) { 'Copilot yanıt üretirken dosya şifreleme ve etiket haklarını dikkate alır; etiketsiz ortamlarda hassas dokümanlar geniş kitlelerce özetlenebilir.' } else { 'Copilot honors Purview label encryption and extraction rights; without labels, sensitive files remain exposed to broad internal discovery.' }
+            Warning     = if ($labelCount -eq 0) {
+                $w = if ($isTr) { 'KRİTİK UYARI: Purview Hassasiyet Etiketi algılanmadı! Copilot dağıtımı öncesi etiketleme ve Restricted SharePoint Search değerlendirilmelidir.' } else { 'CRITICAL WARNING: Zero Purview sensitivity labels detected! Deploy labeling and Restricted Content Discovery before Copilot.' }
+                $warnings += $w; $w
+            } else { '' }
+        }
+    }
+
+    # 3. SharePoint RAC / Restricted Content Discovery check (Live SPO or FastTrack snapshot or explicit warning)
+    if ($ftData -and $ftData.PSObject.Properties['SharePoint']) {
+        $racCount = if ($ftData.SharePoint.PSObject.Properties['RacPolicySites']) { @($ftData.SharePoint.RacPolicySites).Count } else { 0 }
+        $rcdCount = if ($ftData.SharePoint.PSObject.Properties['RestrictedSites']) { @($ftData.SharePoint.RestrictedSites).Count } else { 0 }
+        $checks += [PSCustomObject]@{
+            Id          = 'COP-SPO-FT'
+            Category    = if ($isTr) { 'SharePoint RAC & İçerik Kısıtlama' } else { 'SharePoint RAC & Content Discovery' }
+            Status      = if ($racCount -gt 0 -or $rcdCount -gt 0) { 'Pass' } else { 'Warning' }
+            Title       = if ($isTr) { 'SharePoint RAC ve Kısıtlı İçerik Keşfi (FastTrack)' } else { 'SharePoint RAC & Restricted Content Discovery' }
+            Detail      = "RAC Sites: $racCount | Restricted Discovery Sites: $rcdCount"
+            Explanation = if ($isTr) { 'FastTrack SharePoint verisine göre aşırı paylaşım koruması (SAM RAC / RCD) uygulanmış site sayıları.' } else { 'Site counts protected by Restricted Access Control (RAC) or Restricted Content Discovery from FastTrack export.' }
+            Warning     = if ($racCount -eq 0 -and $rcdCount -eq 0) { if ($isTr) { 'UYARI: Hiçbir SharePoint sitesinde RAC/RCD kısıtı bulunmadı.' } else { 'WARNING: No SharePoint sites have RAC/RCD restrictions.' } } else { '' }
+        }
+    } else {
+        $spoAvail = [bool](Get-Command Get-SPOTenant -ErrorAction SilentlyContinue)
+        if ($spoAvail -and $hasLiveGraph) {
+            try {
+                $spoT = Get-SPOTenant -ErrorAction Stop
+                $rss = [bool]($spoT.PSObject.Properties['RestrictedSearchMode'] -and $spoT.RestrictedSearchMode -eq 'Enabled')
+                $checks += [PSCustomObject]@{
+                    Id          = 'COP-SPO-01'
+                    Category    = if ($isTr) { 'SharePoint Aşırı Paylaşım Kalkanı' } else { 'SharePoint Oversharing Shield' }
+                    Status      = if ($rss) { 'Pass' } else { 'Warning' }
+                    Title       = if ($isTr) { 'Restricted SharePoint Search & Paylaşım Durumu' } else { 'Restricted SharePoint Search & Sharing Posture' }
+                    Detail      = "SharingCapability=$($spoT.SharingCapability) | RestrictedSearch=$($spoT.RestrictedSearchMode)"
+                    Explanation = if ($isTr) { 'SharePoint varsayılan paylaşım kapsamı ve kısıtlı arama modu Copilot indeks sınırını belirler.' } else { 'SharePoint tenant sharing posture and Restricted Search control Copilot search scope.' }
+                    Warning     = if (-not $rss) { if ($isTr) { 'UYARI: Restricted SharePoint Search etkin değil; herkesle paylaşılan siteler taranabilir.' } else { 'WARNING: Restricted SharePoint Search is not enabled.' } } else { '' }
+                }
+            } catch {
+                $spoAvail = $false
+            }
+        }
+        if (-not $spoAvail) {
+            $w = if ($isTr) { 'BİLGİ/UYARI: SharePoint Online modülü bağlı olmadığı için RAC / Restricted Content Discovery kontrolü otomatik yapılamadı; FastTrack Get-M365CopilotReadiness.ps1 çıktısını -InputFastTrackJsonPath ile bağlayabilir veya SharePoint yönetim merkezinden doğrulayabilirsiniz.' } else { 'NOTICE/WARNING: SharePoint Online module is not connected; RAC / Restricted Content Discovery could not be queried directly. Pass -InputFastTrackJsonPath or verify in SharePoint Admin Center.' }
+            $warnings += $w
+            $checks += [PSCustomObject]@{
+                Id          = 'COP-SPO-01'
+                Category    = if ($isTr) { 'SharePoint Aşırı Paylaşım Kalkanı' } else { 'SharePoint Oversharing Shield' }
+                Status      = 'Warning'
+                Title       = if ($isTr) { 'SharePoint RAC / Restricted Content Discovery Kontrolü' } else { 'SharePoint RAC / Restricted Content Discovery' }
+                Detail      = if ($isTr) { 'SharePoint Online bağlantısı yok (kısmi kapsam)' } else { 'SharePoint Online not connected (partial scope)' }
+                Explanation = if ($isTr) { 'Copilot dağıtımında İK/Finans gibi hassas sitelerde Restricted Access Control (RAC) ve Site Permission Review zorunludur.' } else { 'Sensitive SharePoint sites require Restricted Access Control (RAC) and permission audits prior to Copilot enablement.' }
+                Warning     = $w
+            }
+        }
+    }
+
+    # 4. AI Agents & Guest Ratios from TenantInsights
+    if ($TenantInsights) {
+        $uCnt = [int]$TenantInsights.UserCount
+        $gCnt = [int]$TenantInsights.GuestCount
+        $agCnt = [int]$TenantInsights.TotalAgents
+        $guestPct = if ($uCnt -gt 0) { [Math]::Round(($gCnt / $uCnt) * 100, 1) } else { 0 }
+        $checks += [PSCustomObject]@{
+            Id          = 'COP-AGENT-01'
+            Category    = if ($isTr) { 'Ajan 365 & Misafir Yoğunluğu' } else { 'Agent 365 & Guest Exposure' }
+            Status      = if ($guestPct -le 15) { 'Pass' } else { 'Warning' }
+            Title       = if ($isTr) { 'Kiracı Misafir Oranı ve Aktif AI Ajan Envanteri' } else { 'Tenant Guest Ratio & Active AI Agent Inventory' }
+            Detail      = if ($isTr) { "Kullanıcı: $uCnt | Misafir: $gCnt (%$guestPct) | AI Ajanı: $agCnt" } else { "Users: $uCnt | Guests: $gCnt ($guestPct%) | AI Agents: $agCnt" }
+            Explanation = if ($isTr) { 'Yüksek harici misafir oranı ve yönetişimsiz Copilot Studio / A365 ajanları veri sınırlarını zorlayabilir.' } else { 'High guest ratios and ungoverned AI Agents expand internal and external data access paths.' }
+            Warning     = if ($guestPct -gt 15) { if ($isTr) { "UYARI: Kiracıdaki misafir oranı (%$guestPct) yüksek; düzenli Access Reviews önerilir." } else { "WARNING: High guest ratio ($guestPct%); enable Entra Access Reviews." } } else { '' }
+        }
+    }
+
+    $passC = @($checks | Where-Object { $_.Status -eq 'Pass' }).Count
+    $totC = [Math]::Max(1, $checks.Count)
+    $readinessScore = [Math]::Round(($passC / $totC) * 100, 1)
+    $maturity = if ($readinessScore -ge 85) { 'L4 - Managed' } elseif ($readinessScore -ge 65) { 'L3 - Defined' } elseif ($readinessScore -ge 40) { 'L2 - Repeatable' } else { 'L1 - Initial' }
+
+    return [PSCustomObject]@{
+        Score              = $readinessScore
+        MaturityLevel      = $maturity
+        EligibleBaseSeats  = $eligibleBaseSeats
+        CopilotSeats       = $copilotSeats
+        FastTrackImported  = ($null -ne $ftData)
+        Warnings           = @($warnings | Where-Object { $_ } | Select-Object -Unique)
+        Checks             = @($checks)
+    }
+}
+
+Export-ModuleMember -Function Connect-ZtLens, Invoke-ZtLensAssessment, Get-ZtLensFrameworks, Get-ZtLensLicenseRoi, Get-ZtLensLicenseWaste, Get-ZtLensCopilotReadiness, Compare-ZtLensReports, Export-ZtLensExecutiveSummary

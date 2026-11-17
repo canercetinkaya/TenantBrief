@@ -92,6 +92,7 @@
     <button class="nav-btn" onclick="switchView('findings', 'QUICKWINS', this)" id="navQuickWins"><span>Hızlı Kazanımlar</span><span class="cnt" id="cntQuick">0</span></button>
     <button class="nav-btn" onclick="switchView('frameworks', null, this)" id="navFrameworks">Uyumluluk Çerçeveleri</button>
     <button class="nav-btn" onclick="switchView('roi', null, this)" id="navRoi">Lisans ROI &amp; Simülatör</button>
+    <button class="nav-btn" onclick="switchView('copilot', null, this)" id="navCopilot">Copilot Hazırlık &amp; ROI</button>
     <button class="nav-btn" onclick="switchView('roadmap', null, this)" id="navRoadmap">30-60-90 Gün Planı</button>
   </aside>
 
@@ -132,7 +133,15 @@
     <section id="tab-roi" class="tab-panel">
       <div class="card" id="roiBox" style="margin-bottom:16px;"></div>
       <div class="card" id="skuRoiBox" style="margin-bottom:16px;"></div>
+      <div class="card" id="wasteRoiBox" style="margin-bottom:16px;"></div>
       <div class="card" id="minLicBox"></div>
+    </section>
+
+    <section id="tab-copilot" class="tab-panel">
+      <div class="cards" id="copilotSummaryCards"></div>
+      <div class="card" id="copilotWarningsBox" style="margin-bottom:16px;"></div>
+      <div class="card" id="copilotChecksBox" style="margin-bottom:16px;"></div>
+      <div class="card" id="copilotCalcBox"></div>
     </section>
 
     <section id="tab-roadmap" class="tab-panel">
@@ -184,6 +193,7 @@
       document.getElementById('navQuickWins').firstChild.textContent = 'Quick Wins';
       document.getElementById('navFrameworks').textContent = 'Frameworks';
       document.getElementById('navRoi').textContent = 'License ROI & Simulator';
+      document.getElementById('navCopilot').textContent = 'Copilot Readiness & ROI';
       document.getElementById('navRoadmap').textContent = '30-60-90 Roadmap';
       document.getElementById('btnCsv').textContent = 'Export CSV';
       document.getElementById('btnPrint').textContent = 'Print / PDF';
@@ -406,6 +416,96 @@
     } else {
       document.getElementById('skuRoiBox').innerHTML = `<h3 style="margin-bottom:6px;">${isTr ? 'Gerçek Kiracı Lisans Kullanımı (subscribedSkus)' : 'Live Tenant License Utilization (subscribedSkus)'}</h3><p style="font-size:13px;color:var(--muted);">${isTr ? 'Canlı kiracı bağlantısı (Connect-ZtLens + Invoke-ZtLensAssessment) ile çalıştırıldığında satın alınan/atanan lisanslar ve tahmini aylık atıl USD bütçesi burada otomatik listelenir.' : 'When executed with a live tenant session, purchased vs. assigned SKUs and estimated monthly idle USD spend are automatically populated here.'}</p>`;
     }
+
+    // M365 License Waste & Overlap Analysis (R1-R7)
+    const waste = DATA.LicenseROI?.WasteAnalysis;
+    if (waste) {
+      const ovRows = (waste.OverlapSamples || []).map(o => `<tr><td><code>${esc(o.Pair)}</code></td><td><code>${esc(o.Redundant)}</code></td><td style="color:var(--ok)"><strong>$${o.SavedMo}/ay</strong></td><td style="font-size:12px;">${esc(o.Reason)}</td></tr>`).join('');
+      document.getElementById('wasteRoiBox').innerHTML = `
+        <h3 style="margin-bottom:10px;">${isTr ? 'Lisans İsrafı ve Mükerrer SKU Çakışma Denetimi (R1–R7)' : 'License Waste & Redundant SKU Overlap Audit (R1–R7)'}</h3>
+        <div class="cards" style="margin-bottom:12px;">
+          <div class="card"><div class="lbl">${isTr ? 'Devre Dışı Lisanslı Hesap' : 'Disabled Licensed Users'}</div><div class="val" style="color:var(--fail)">${waste.DisabledLicensedUsers}</div><div style="font-size:11.5px;color:var(--muted);">$${waste.DisabledUsdMo}/mo</div></div>
+          <div class="card"><div class="lbl">${isTr ? '90+ Gün Pasif Lisanslı' : 'Inactive 90+ Days'}</div><div class="val" style="color:var(--warn)">${waste.SignInActivityAvailable ? waste.Inactive90dUsers : (isTr ? 'Yetki Yok' : 'N/A')}</div><div style="font-size:11.5px;color:var(--muted);">${waste.SignInActivityAvailable ? ('$' + waste.InactiveUsdMo + '/mo') : 'AuditLog.Read.All'}</div></div>
+          <div class="card"><div class="lbl">${isTr ? 'Mükerrer / Çakışan SKU' : 'Duplicate SKU Overlaps'}</div><div class="val" style="color:var(--warn)">${waste.DuplicateOverlapCount}</div><div style="font-size:11.5px;color:var(--muted);">$${waste.DuplicateOverlapUsdMo}/mo</div></div>
+          <div class="card"><div class="lbl">${isTr ? 'Lisanslı Misafir Hesap' : 'Licensed Guests'}</div><div class="val" style="color:var(--warn)">${waste.LicensedGuests}</div><div style="font-size:11.5px;color:var(--muted);">$${waste.GuestUsdMo}/mo</div></div>
+          <div class="card"><div class="lbl">${isTr ? 'Kurtarılabilir Yıllık Tasarruf' : 'Recoverable Annual Savings'}</div><div class="val" style="color:var(--ok)">$${waste.TotalRecoverableUsdYr}</div><div style="font-size:11.5px;color:var(--muted);">$${waste.TotalRecoverableUsdMo}/mo</div></div>
+        </div>
+        ${ovRows ? `<table class="md-table"><thead><tr><th>${isTr ? 'Çakışan SKU Çifti' : 'Overlapping SKUs'}</th><th>${isTr ? 'Fazla SKU' : 'Redundant'}</th><th>${isTr ? 'Tasarruf' : 'Savings'}</th><th>${isTr ? 'Açıklama' : 'Rationale'}</th></tr></thead><tbody>${ovRows}</tbody></table>` : `<p style="font-size:12.5px;color:var(--muted);">${isTr ? 'Kullanıcı bazında bilinen mükerrer SKU çakışması (E5+E3, E3+EXO Plan 1 vb.) tespit edilmedi.' : 'No duplicate/overlapping user SKU assignments detected.'}</p>`}
+      `;
+    } else {
+      document.getElementById('wasteRoiBox').innerHTML = `<h3 style="margin-bottom:6px;">${isTr ? 'Lisans İsrafı ve Çakışma Denetimi (R1–R7)' : 'License Waste & Overlap Audit (R1–R7)'}</h3><p style="font-size:13px;color:var(--muted);">${isTr ? 'Canlı kiracı oturumunda devre dışı bırakılmış lisanslı kullanıcılar, 90+ gün pasif lisanslar, lisanslı misafirler ve mükerrer SKU çakışmaları (E5+E3 vb.) otomatik analiz edilir.' : 'In live tenant mode, disabled licensed accounts, 90+ day inactive users, licensed guests, and overlapping SKUs are audited automatically.'}</p>`;
+    }
+
+    // Copilot & Agent Readiness + Interactive ROI Calculator
+    const cr = DATA.CopilotReadiness;
+    if (cr) {
+      document.getElementById('copilotSummaryCards').innerHTML = `
+        <div class="card"><div class="lbl">${isTr ? 'Copilot Hazırlık Puanı' : 'Copilot Readiness Score'}</div><div class="val" style="color:${cr.Score >= 70 ? 'var(--ok)' : 'var(--warn)'}">${cr.Score}%</div></div>
+        <div class="card"><div class="lbl">${isTr ? 'Olgunluk Düzeyi' : 'Maturity Level'}</div><div class="val" style="font-size:20px;">${esc(cr.MaturityLevel || 'L1')}</div></div>
+        <div class="card"><div class="lbl">${isTr ? 'Uygun Temel Lisans' : 'Eligible Base Seats'}</div><div class="val">${cr.EligibleBaseSeats ?? 0}</div></div>
+        <div class="card"><div class="lbl">${isTr ? 'Aktif Copilot Lisansı' : 'Active Copilot Seats'}</div><div class="val">${cr.CopilotSeats ?? 0}</div></div>
+      `;
+      const warnList = (cr.Warnings || []).map(w => `<div style="padding:10px 12px;margin-bottom:8px;border-radius:8px;background:rgba(245,158,11,.10);border:1px solid rgba(245,158,11,.4);color:#fde68a;font-size:13px;">⚠ ${esc(w)}</div>`).join('');
+      document.getElementById('copilotWarningsBox').innerHTML = `
+        <h3 style="margin-bottom:8px;">${isTr ? 'Copilot Güvenlik Uyarıları ve Veri Sınırı Değerlendirmesi' : 'Copilot Security Warnings & Data Boundary Assessment'}</h3>
+        ${warnList || `<p style="font-size:13px;color:var(--ok);">✓ ${isTr ? 'Ölçülen Graph politikalarında kritik Copilot aşırı paylaşım uyarısı algılanmadı.' : 'No critical oversharing warnings detected across queried Graph policies.'}</p>`}
+      `;
+      const crRows = (cr.Checks || []).map(c => {
+        const pillCls = c.Status === 'Pass' ? 'Passed' : (c.Status === 'Fail' ? 'Failed' : 'Investigate');
+        return `<tr>
+          <td><span class="pill ${pillCls}">${esc(c.Status)}</span></td>
+          <td><strong>${esc(c.Title)}</strong><div style="font-size:11.5px;color:var(--muted);">${esc(c.Category)} · <code>${esc(c.Detail)}</code></div></td>
+          <td style="font-size:12.5px;"><div>${esc(c.Explanation)}</div>${c.Warning ? `<div style="margin-top:4px;color:#fcd34d;">⚠ ${esc(c.Warning)}</div>` : ''}</td>
+        </tr>`;
+      }).join('');
+      document.getElementById('copilotChecksBox').innerHTML = `
+        <h3 style="margin-bottom:10px;">${isTr ? 'Microsoft 365 Copilot & Agent 365 Hazırlık Kontrolleri' : 'Microsoft 365 Copilot & Agent 365 Readiness Checks'}</h3>
+        <table class="md-table"><thead><tr><th>${isTr ? 'Durum' : 'Status'}</th><th>${isTr ? 'Kontrol & Bulgu' : 'Check & Detail'}</th><th>${isTr ? 'Açıklama ve Uyarı' : 'Explanation & Warning'}</th></tr></thead><tbody>${crRows}</tbody></table>
+      `;
+    }
+    const defUsers = Math.max(10, Math.min(500, cr?.EligibleBaseSeats || ti?.UserCount || 50));
+    const reclaimYr = Number(DATA.LicenseROI?.WasteAnalysis?.TotalRecoverableUsdYr ?? DATA.LicenseROI?.TotalIdleUsdYr ?? 0);
+    document.getElementById('copilotCalcBox').innerHTML = `
+      <h3 style="margin-bottom:6px;">${isTr ? 'Etkileşimli Microsoft 365 Copilot & Agent Studio ROI Hesaplayıcı (Çevrimdışı)' : 'Interactive Microsoft 365 Copilot & Agent Studio ROI Calculator (Offline)'}</h3>
+      <p style="font-size:12.5px;color:var(--muted);margin-bottom:12px;">${isTr ? 'Hesaplamalar tamamen tarayıcı içinde yapılır; hiçbir finansal veri dışarı gönderilmez. Birim fiyatlar liste fiyatı ($30/koltuk/ay Copilot + $200/kiracı/ay Studio + $0.008/mesaj PAYG) referansıdır.' : 'All math runs locally in browser using Microsoft reference pricing ($30/seat/mo Copilot + $200/tenant/mo Studio + $0.008/msg PAYG).'}</p>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:10px;margin-bottom:14px;">
+        <div><label style="font-size:12px;color:var(--muted);display:block;margin-bottom:4px;">${isTr ? 'Birim Şablonu' : 'Department Preset'}</label><select id="cPreset" onchange="applyCopilotPreset()" style="width:100%;background:#0b1120;color:var(--text);border:1px solid var(--border);border-radius:6px;padding:7px;"><option value="custom">${isTr ? 'Kiracı Mevcut Kullanıcı' : 'Tenant Baseline'}</option><option value="it">IT (200 users, 3.5h/wk)</option><option value="sales">${isTr ? 'Satış (50, 3.0h/wk)' : 'Sales (50, 3.0h/wk)'}</option><option value="fin">${isTr ? 'Finans (20, 2.5h/wk)' : 'Finance (20, 2.5h/wk)'}</option><option value="cs">${isTr ? 'Müşteri Hizm. (10, 4.0h/wk)' : 'Customer Service (10, 4.0h/wk)'}</option></select></div>
+        <div><label style="font-size:12px;color:var(--muted);display:block;margin-bottom:4px;">${isTr ? 'Copilot Koltuk ($30/ay)' : 'Copilot Seats ($30/mo)'}</label><input id="cSeats" type="number" min="1" value="${defUsers}" oninput="calcCopilotRoi()" style="width:100%;background:#0b1120;color:var(--text);border:1px solid var(--border);border-radius:6px;padding:7px;" /></div>
+        <div><label style="font-size:12px;color:var(--muted);display:block;margin-bottom:4px;">${isTr ? 'Yıllık Çalışan Maliyeti ($)' : 'Avg Annual Salary ($)'}</label><input id="cSalary" type="number" min="10000" step="1000" value="48000" oninput="calcCopilotRoi()" style="width:100%;background:#0b1120;color:var(--text);border:1px solid var(--border);border-radius:6px;padding:7px;" /></div>
+        <div><label style="font-size:12px;color:var(--muted);display:block;margin-bottom:4px;">${isTr ? 'Haftalık Tasarruf (Saat)' : 'Hours Saved / Week'}</label><input id="cHours" type="number" min="0.5" max="15" step="0.5" value="2.5" oninput="calcCopilotRoi()" style="width:100%;background:#0b1120;color:var(--text);border:1px solid var(--border);border-radius:6px;padding:7px;" /></div>
+        <div><label style="font-size:12px;color:var(--muted);display:block;margin-bottom:4px;">${isTr ? 'Gerçekleşme Oranı (%)' : 'Value Realization (%)'}</label><input id="cRealize" type="number" min="10" max="100" step="5" value="65" oninput="calcCopilotRoi()" style="width:100%;background:#0b1120;color:var(--text);border:1px solid var(--border);border-radius:6px;padding:7px;" /></div>
+        <div><label style="font-size:12px;color:var(--muted);display:block;margin-bottom:4px;">${isTr ? 'Aylık PAYG Ajan Mesajı' : 'Monthly PAYG Agent Msgs'}</label><input id="cMsgs" type="number" min="0" step="5000" value="25000" oninput="calcCopilotRoi()" style="width:100%;background:#0b1120;color:var(--text);border:1px solid var(--border);border-radius:6px;padding:7px;" /></div>
+      </div>
+      <div id="copilotRoiOutput"></div>
+    `;
+    window.applyCopilotPreset = function() {
+      const p = document.getElementById('cPreset').value;
+      const map = { it:[200,3.5,65000], sales:[50,3.0,60000], fin:[20,2.5,58000], cs:[10,4.0,42000] };
+      if (map[p]) { document.getElementById('cSeats').value = map[p][0]; document.getElementById('cHours').value = map[p][1]; document.getElementById('cSalary').value = map[p][2]; }
+      calcCopilotRoi();
+    };
+    window.calcCopilotRoi = function() {
+      const seats = Math.max(1, Number(document.getElementById('cSeats').value) || 1);
+      const sal = Math.max(1000, Number(document.getElementById('cSalary').value) || 48000);
+      const hrs = Math.max(0.1, Number(document.getElementById('cHours').value) || 2.5);
+      const realPct = Math.min(1, Math.max(0.05, (Number(document.getElementById('cRealize').value) || 65) / 100));
+      const msgs = Math.max(0, Number(document.getElementById('cMsgs').value) || 0);
+      const annualCost = Math.round((seats * 30 * 12) + (200 * 12) + (msgs * 0.008 * 12));
+      const hourlyRate = sal / 2080;
+      const annualGain = Math.round(seats * hrs * 48 * hourlyRate * realPct);
+      const netYr = annualGain - annualCost;
+      const roiPct = annualCost > 0 ? Math.round((netYr / annualCost) * 100) : 0;
+      const breakevenDays = annualGain > 0 ? Math.min(999, Math.round((annualCost / annualGain) * 365)) : 999;
+      const fundedPct = annualCost > 0 ? Math.min(100, Math.round((reclaimYr / annualCost) * 100)) : 0;
+      document.getElementById('copilotRoiOutput').innerHTML = `<div class="cards" style="margin-bottom:0;">
+        <div class="card"><div class="lbl">${isTr ? 'Yıllık Copilot + Studio Yatırımı' : 'Annual Investment'}</div><div class="val">$${annualCost.toLocaleString()}</div></div>
+        <div class="card"><div class="lbl">${isTr ? 'Yıllık Verimlilik Değeri' : 'Annual Productivity Value'}</div><div class="val" style="color:var(--ok)">$${annualGain.toLocaleString()}</div></div>
+        <div class="card"><div class="lbl">${isTr ? 'Net Yıllık ROI' : 'Net Annual ROI'}</div><div class="val" style="color:${netYr >= 0 ? 'var(--ok)' : 'var(--fail)'}">$${netYr.toLocaleString()} (${roiPct}%)</div></div>
+        <div class="card"><div class="lbl">${isTr ? 'Başabaş Süresi (Gün)' : 'Breakeven (Days)'}</div><div class="val">${breakevenDays} ${isTr ? 'gün' : 'days'}</div></div>
+        <div class="card"><div class="lbl">${isTr ? 'Atıl Lisanstan Finansman' : 'Self-Funded via Idle SKUs'}</div><div class="val" style="color:var(--accent)">${fundedPct}%</div></div>
+      </div>`;
+    };
+    calcCopilotRoi();
 
     // Offline Deterministic Executive Remediation Digest (Zero external AI data sharing)
     const highFailed = F.filter(x => x.Status === 'Failed' && x.Risk === 'High');
