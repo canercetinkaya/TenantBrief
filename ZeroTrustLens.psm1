@@ -442,7 +442,7 @@ function Invoke-ZtLensAssessment {
                 }
                 & $addLog "[Stage 2/5] Running CISA ScubaGear checks (aad baseline — reusing active Graph session)..."
                 $null = Invoke-SCuBA -ProductNames @('aad') -LogIn:$false -DisconnectOnExit:$false -OPAPath $opaDir -OutPath $scubaOut -Quiet 6>$null 3>$null
-                $scubaJson = Get-ChildItem -Path $scubaOut -Filter 'ScubaResults.json' -Recurse -ErrorAction SilentlyContinue | Select-Object -First 1
+                $scubaJson = Get-ChildItem -Path $scubaOut -Filter 'ScubaResults*.json' -Recurse -ErrorAction SilentlyContinue | Select-Object -First 1
                 if (-not $scubaJson) {
                     $scubaJson = Get-ChildItem -Path $scubaOut -Filter '*Report.json' -Recurse -ErrorAction SilentlyContinue | Select-Object -First 1
                 }
@@ -472,7 +472,8 @@ function Invoke-ZtLensAssessment {
                         $item = if ($wrap.PSObject.Properties['Item']) { $wrap.Item } else { $wrap }
                         $ctrl = if ($item.PSObject.Properties['Control ID']) { [string]$item.'Control ID' } elseif ($item.PSObject.Properties['Control']) { [string]$item.Control } else { "$($scCount + 1)" }
                         $reqRaw = if ($item.PSObject.Properties['Requirement']) { [string]$item.Requirement } else { "SCuBA Control $ctrl" }
-                        $req  = ([System.Net.WebUtility]::HtmlDecode(($reqRaw -replace '<[^>]+>', ' ')) -replace '\s+', ' ').Trim()
+                        $reqClean = ($reqRaw -replace "<div class=['""]policy-indicators['""]>[\s\S]*$", '') -replace '<[^>]+>', ' '
+                        $req  = ([System.Net.WebUtility]::HtmlDecode($reqClean) -replace '\s+', ' ').Trim()
                         $res  = if ($item.PSObject.Properties['Result']) { [string]$item.Result } else { '' }
                         $crit = if ($item.PSObject.Properties['Criticality']) { [string]$item.Criticality } else { 'Should' }
                         $detRaw = if ($item.PSObject.Properties['Details']) { [string]$item.Details } else { '' }
@@ -545,7 +546,7 @@ function Invoke-ZtLensAssessment {
                     & $addLog "[Stage 3/5] ORCA skipped: Exchange Online session not connected or returned no domains."
                 } else {
                     & $addLog "[Stage 3/5] Running Microsoft ORCA checks (Defender for Office 365)..."
-                    Import-Module ORCA -ErrorAction Stop
+                    Import-Module ORCA -Global -ErrorAction Stop
                     $null = Invoke-ORCA -Connect:$false -SCC:$false -PerformVersionCheck:$false -InstallModules:$false -ShowSurvey:$false -Output @('JSON') -OutputOptions @{ JSON = @{ OutputDirectory = $orcaOut } } 6>$null 3>$null
                     $orcaFile = Get-ChildItem -Path $orcaOut -Filter '*.json' -Recurse -ErrorAction SilentlyContinue | Select-Object -First 1
                     if ($orcaFile) {
