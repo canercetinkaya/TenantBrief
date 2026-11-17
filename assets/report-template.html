@@ -222,8 +222,8 @@
       const detailBlock = f.Result
         ? `<div style="margin-bottom:10px;"><strong>${isTr ? 'Tespit & Etkilenen Kaynaklar:' : 'Finding & Affected Resources:'}</strong><div style="margin-top:4px;color:#cbd5e1;white-space:pre-wrap;">${f.Result}</div></div>`
         : '';
-      const descBlock = (!isTr && f.Description)
-        ? `<div><strong>Technical Reference:</strong><div style="color:#94a3b8;white-space:pre-wrap;margin-top:4px;">${f.Description}</div></div>`
+      const descBlock = f.Description
+        ? `<div><strong>${isTr ? 'Açıklama ve Microsoft Önerisi:' : 'Technical Reference:'}</strong><div style="color:#94a3b8;white-space:pre-wrap;margin-top:4px;">${f.Description}</div></div>`
         : '';
       return `<div class="rem-box">${summaryBlock}${impBlock}${detailBlock}${descBlock}</div>`;
     }
