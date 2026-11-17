@@ -236,7 +236,7 @@
         (st === 'ALL' || f.Status === st) &&
         (rk === 'ALL' || f.Risk === rk) &&
         ((f.Title || '').toLowerCase().includes(q) || (f.Pillar || '').toLowerCase().includes(q) || (f.Id || '').toLowerCase().includes(q))
-      ).slice(0, 150);
+      );
 
       document.getElementById('findingsList').innerHTML = list.map(f => `
         <div class="finding">
