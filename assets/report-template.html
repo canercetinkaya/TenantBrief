@@ -119,6 +119,7 @@
         </div>
       </div>
       <div class="card" id="mfaBanner" style="margin-bottom:20px;font-size:13.5px;color:var(--muted);"></div>
+      <div class="card" id="pillarMatrixCard" style="margin-bottom:20px;"></div>
       <div class="card" id="execActionDigest" style="margin-bottom:20px;"></div>
     </section>
 
@@ -128,6 +129,7 @@
 
     <section id="tab-roi" class="tab-panel">
       <div class="card" id="roiBox" style="margin-bottom:16px;"></div>
+      <div class="card" id="skuRoiBox" style="margin-bottom:16px;"></div>
       <div class="card" id="minLicBox"></div>
     </section>
 
@@ -271,13 +273,55 @@
     `;
 
     const ti = DATA.TenantInsights || {};
+    const secureLabel = ti.SecureScoreCurrent !== null && ti.SecureScoreCurrent !== undefined
+      ? `${ti.SecureScoreCurrent} / ${ti.SecureScoreMax}`
+      : (isTr ? 'Canlı Oturumda Çekilir' : 'Live Run Only');
     document.getElementById('tenantInsightCards').innerHTML = `
       <div class="card"><div class="lbl">${isTr ? 'Kullanıcı / Misafir' : 'Users / Guests'}</div><div class="val">${ti.UserCount ?? '-'} / ${ti.GuestCount ?? '-'}</div></div>
       <div class="card"><div class="lbl">${isTr ? 'Grup / Uygulama' : 'Groups / Apps'}</div><div class="val">${ti.GroupCount ?? '-'} / ${ti.ApplicationCount ?? '-'}</div></div>
-      <div class="card"><div class="lbl">${isTr ? 'Cihaz / Yönetilen' : 'Devices / Managed'}</div><div class="val">${ti.DeviceCount ?? '-'} / ${ti.ManagedDeviceCount ?? '-'}</div></div>
-      <div class="card"><div class="lbl">${isTr ? 'Uyumlu / Uyumsuz Cihaz' : 'Compliant / Non-Compliant'}</div><div class="val">${ti.CompliantDevices ?? 0} / ${ti.NonCompliantDevices ?? 0}</div></div>
+      <div class="card"><div class="lbl">${isTr ? 'Cihaz / Uyumlu' : 'Devices / Compliant'}</div><div class="val">${ti.DeviceCount ?? '-'} / ${ti.CompliantDevices ?? 0}</div></div>
+      <div class="card"><div class="lbl">${isTr ? 'Ayrıcalıklı MFA (Phish-Res / Zayıf)' : 'Priv. MFA (Phish-Res / Phishable)'}</div><div class="val" style="font-size:20px;">${ti.PrivPhishResistant ?? 0} / ${(ti.PrivPhishable ?? 0) + (ti.PrivSingleFactor ?? 0)}</div></div>
+      <div class="card"><div class="lbl">${isTr ? 'Microsoft Secure Score / AI Agent' : 'Secure Score / AI Agents'}</div><div class="val" style="font-size:18px;">${esc(secureLabel)} · ${ti.TotalAgents ?? 0}</div></div>
     `;
     document.getElementById('mfaBanner').innerHTML = `<strong>${isTr ? 'MFA & Koşullu Erişim Kapsamı:' : 'MFA & Conditional Access Coverage:'}</strong> ${esc(ti.MfaCoverageDesc || (isTr ? 'Veri yok' : 'No data'))}`;
+
+    // CISO Risk Posture Matrix by Pillar
+    const matrixPillars = [
+      { key: 'Identity', label: isTr ? 'Identity (Kimlik)' : 'Identity', nav: 'navIdentity' },
+      { key: 'Devices', label: isTr ? 'Devices (Cihazlar)' : 'Devices', nav: 'navDevices' },
+      { key: 'Network', label: isTr ? 'Network (Ağ)' : 'Network', nav: 'navNetwork' },
+      { key: 'DataAI', label: 'Data & AI', nav: 'navDataAI' },
+      { key: 'SecOps', label: 'SecOps', nav: 'navSecOps' }
+    ];
+    const matrixRows = matrixPillars.map(mp => {
+      const items = F.filter(x => {
+        const p = x.Pillar || '';
+        if (mp.key === 'DataAI') return p.includes('Data') || p.includes('AI');
+        if (mp.key === 'Network') return p.includes('Network') || p.includes('Infrastructure');
+        return p.includes(mp.key);
+      });
+      const pass = items.filter(x => x.Status === 'Passed').length;
+      const fail = items.filter(x => x.Status === 'Failed').length;
+      const hi   = items.filter(x => x.Status === 'Failed' && x.Risk === 'High').length;
+      const med  = items.filter(x => x.Status === 'Failed' && x.Risk === 'Medium').length;
+      const evalC = pass + fail;
+      const pct = evalC > 0 ? Math.round((pass / evalC) * 100) : 0;
+      return `<tr style="cursor:pointer;" onclick="switchView('findings', '${mp.key}', document.getElementById('${mp.nav}'))">
+        <td><strong>${mp.label}</strong></td>
+        <td>${items.length}</td>
+        <td style="color:var(--ok)">${pass}</td>
+        <td style="color:var(--fail)"><strong>${hi}</strong></td>
+        <td style="color:var(--warn)">${med}</td>
+        <td><strong>${pct}%</strong></td>
+      </tr>`;
+    }).join('');
+    document.getElementById('pillarMatrixCard').innerHTML = `
+      <h3 style="margin-bottom:8px;">${isTr ? 'Sütun Bazlı Risk ve Olgunluk Matrisi (Detay için satıra tıklayın)' : 'Pillar Risk & Maturity Matrix (Click row to drill down)'}</h3>
+      <table class="md-table">
+        <thead><tr><th>${isTr ? 'Güvenlik Sütunu' : 'Pillar'}</th><th>${isTr ? 'Toplam' : 'Total'}</th><th>Passed</th><th>${isTr ? 'Yüksek Açık' : 'High Failed'}</th><th>${isTr ? 'Orta Açık' : 'Med Failed'}</th><th>${isTr ? 'Olgunluk' : 'Maturity'}</th></tr></thead>
+        <tbody>${matrixRows}</tbody>
+      </table>
+    `;
 
     // SVG Donut Chart
     const total = Math.max(1, s.Total);
@@ -340,6 +384,21 @@
       `<tr><td><code>${esc(k)}</code></td><td>${v.total}</td><td style="color:var(--fail)">${v.failed}</td><td style="color:var(--skip)">${v.skipped}</td></tr>`
     ).join('');
     document.getElementById('minLicBox').innerHTML = `<h3 style="margin-bottom:10px;">${isTr ? 'Kontrollerin Minimum Lisans Gereksinimi Dağılımı' : 'Minimum License Requirements Breakdown'}</h3><table class="md-table"><thead><tr><th>SKU / Plan</th><th>${isTr ? 'Toplam' : 'Total'}</th><th>Failed</th><th>Skipped</th></tr></thead><tbody>${licRows}</tbody></table>`;
+
+    const skus = DATA.LicenseROI?.Skus || [];
+    if (skus.length > 0) {
+      const skuRows = skus.map(k => `<tr><td><strong>${esc(k.ProductName)}</strong><div style="font-size:11px;color:var(--muted);">${esc(k.SkuPartNumber)}</div></td><td>${k.Purchased}</td><td>${k.Assigned}</td><td style="color:var(--warn)">${k.Unassigned}</td><td>${k.UtilizationPercent}%</td><td style="color:var(--fail)"><strong>$${k.EstimatedIdleUsdMo}</strong></td></tr>`).join('');
+      document.getElementById('skuRoiBox').innerHTML = `
+        <h3 style="margin-bottom:10px;">${isTr ? 'Gerçek Kiracı Lisans Kullanımı ve Atıl Maliyet (USD)' : 'Live Tenant License Utilization & Idle Cost (USD)'}</h3>
+        <div class="cards" style="margin-bottom:12px;">
+          <div class="card"><div class="lbl">${isTr ? 'Tahmini Aylık Atıl Bütçe' : 'Est. Monthly Idle Spend'}</div><div class="val" style="color:var(--fail)">$${DATA.LicenseROI.TotalIdleUsdMo ?? 0}</div></div>
+          <div class="card"><div class="lbl">${isTr ? 'Tahmini Yıllık Atıl Bütçe' : 'Est. Annual Idle Spend'}</div><div class="val" style="color:var(--fail)">$${DATA.LicenseROI.TotalIdleUsdYr ?? 0}</div></div>
+        </div>
+        <table class="md-table"><thead><tr><th>${isTr ? 'Ürün / SKU' : 'Product / SKU'}</th><th>${isTr ? 'Satın Alınan' : 'Purchased'}</th><th>${isTr ? 'Atanan' : 'Assigned'}</th><th>${isTr ? 'Atıl' : 'Unassigned'}</th><th>${isTr ? 'Kullanım' : 'Utilization'}</th><th>${isTr ? 'Atıl $/Ay' : 'Idle $/Mo'}</th></tr></thead><tbody>${skuRows}</tbody></table>
+      `;
+    } else {
+      document.getElementById('skuRoiBox').innerHTML = `<h3 style="margin-bottom:6px;">${isTr ? 'Gerçek Kiracı Lisans Kullanımı (subscribedSkus)' : 'Live Tenant License Utilization (subscribedSkus)'}</h3><p style="font-size:13px;color:var(--muted);">${isTr ? 'Canlı kiracı bağlantısı (Connect-ZtLens + Invoke-ZtLensAssessment) ile çalıştırıldığında satın alınan/atanan lisanslar ve tahmini aylık atıl USD bütçesi burada otomatik listelenir.' : 'When executed with a live tenant session, purchased vs. assigned SKUs and estimated monthly idle USD spend are automatically populated here.'}</p>`;
+    }
 
     // Offline Deterministic Executive Remediation Digest (Zero external AI data sharing)
     const highFailed = F.filter(x => x.Status === 'Failed' && x.Risk === 'High');

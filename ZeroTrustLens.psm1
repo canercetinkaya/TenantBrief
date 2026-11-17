@@ -535,6 +535,35 @@ function Invoke-ZtLensAssessment {
     $tOverview = if ($ti -and $ti.PSObject.Properties['TenantOverview'].Value) { $ti.TenantOverview } else { $null }
     $mfaDesc = if ($ti -and $ti.PSObject.Properties['OverviewCaMfaAllUsers'].Value) { [string]$ti.OverviewCaMfaAllUsers.description } else { '' }
     $devComp = if ($ti -and $ti.PSObject.Properties['DeviceOverview'].Value -and $ti.DeviceOverview.PSObject.Properties['DeviceCompliance'].Value) { $ti.DeviceOverview.DeviceCompliance } else { $null }
+    $agentOv = if ($ti -and $ti.PSObject.Properties['AgentOverview'].Value) { $ti.AgentOverview } else { $null }
+    $privAuth = if ($ti -and $ti.PSObject.Properties['OverviewAuthMethodsPrivilegedUsers'].Value) { $ti.OverviewAuthMethodsPrivilegedUsers } else { $null }
+
+    $privSingle = 0; $privPhishable = 0; $privPhishRes = 0
+    if ($privAuth -and $privAuth.nodes) {
+        foreach ($n in $privAuth.nodes) {
+            if ($n.source -eq 'Users' -and $n.target -eq 'Single factor') { $privSingle = [int]$n.value }
+            elseif ($n.source -eq 'Users' -and $n.target -eq 'Phishable') { $privPhishable = [int]$n.value }
+            elseif ($n.source -eq 'Users' -and $n.target -eq 'Phish resistant') { $privPhishRes = [int]$n.value }
+        }
+    }
+
+    $skuRoiList = @()
+    $secureCurrent = $null
+    $secureMax = $null
+    if (-not $InputReportJson) {
+        try {
+            if (Get-MgContext -ErrorAction SilentlyContinue) {
+                $skuRoiList = @(Get-ZtLensLicenseRoi)
+                $scResp = Invoke-MgGraphRequest -Method GET -Uri 'https://graph.microsoft.com/v1.0/security/secureScores?$top=1' -ErrorAction SilentlyContinue
+                if ($scResp -and $scResp.value -and $scResp.value.Count -gt 0) {
+                    $secureCurrent = [Math]::Round([double]$scResp.value[0].currentScore, 1)
+                    $secureMax = [Math]::Round([double]$scResp.value[0].maxScore, 1)
+                }
+            }
+        } catch {}
+    }
+    $totalIdleMo = [Math]::Round(($skuRoiList | Measure-Object -Property EstimatedIdleUsdMo -Sum).Sum, 2)
+    $totalIdleYr = [Math]::Round($totalIdleMo * 12, 2)
 
     $reportObj = [PSCustomObject]@{
         Tenant         = $tenantDisplay
@@ -549,6 +578,12 @@ function Invoke-ZtLensAssessment {
             ManagedDeviceCount   = if ($tOverview) { [int]$tOverview.ManagedDeviceCount } else { 0 }
             CompliantDevices     = if ($devComp) { [int]$devComp.compliantDeviceCount } else { 0 }
             NonCompliantDevices  = if ($devComp) { [int]$devComp.nonCompliantDeviceCount } else { 0 }
+            TotalAgents          = if ($agentOv) { [int]$agentOv.TotalAgents } else { 0 }
+            PrivSingleFactor     = $privSingle
+            PrivPhishable        = $privPhishable
+            PrivPhishResistant   = $privPhishRes
+            SecureScoreCurrent   = $secureCurrent
+            SecureScoreMax       = $secureMax
             MfaCoverageDesc      = $mfaDesc
         }
         Summary        = [PSCustomObject]@{
@@ -562,8 +597,11 @@ function Invoke-ZtLensAssessment {
         }
         Frameworks = @($frameworkCards)
         LicenseROI = [PSCustomObject]@{
-            Summary = $roiSummary
-            Gaps    = @($roiGapsList)
+            Summary         = $roiSummary
+            Gaps            = @($roiGapsList)
+            Skus            = @($skuRoiList)
+            TotalIdleUsdMo  = $totalIdleMo
+            TotalIdleUsdYr  = $totalIdleYr
         }
         Roadmap    = @($roadmap)
         Findings   = @($findings)
@@ -781,7 +819,7 @@ function Export-ZtLensExecutiveSummary {
     <div class="card"><div>Total</div><div class="val">$($data.Summary.Total)</div></div>
     <div class="card"><div>Passed</div><div class="val">$($data.Summary.Passed)</div></div>
     <div class="card"><div>Failed (High)</div><div class="val">$($data.Summary.Failed) ($($data.Summary.HighRiskFailed))</div></div>
-    <div class="card"><div>Skipped (ROI Blind Spot)</div><div class="val">$($data.Summary.Skipped)</div></div>
+    <div class="card"><div>$(if ($Language -eq 'tr') { 'Atıl Lisans (Yıllık USD)' } else { 'Idle License (Annual USD)' })</div><div class="val">`$$($data.LicenseROI.TotalIdleUsdYr)</div></div>
   </div>
   <table>
     <thead><tr><th>Framework</th><th>Passed / Total</th><th>Score</th></tr></thead>
