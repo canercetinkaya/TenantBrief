@@ -52,6 +52,13 @@ Describe 'ZeroTrustLens Module' {
         $w.Inactive90dUsers | Should -Be 1
     }
 
+    It 'Documents every exported cmdlet with comment-based help' {
+        foreach ($cmd in (Get-Module ZeroTrustLens).ExportedFunctions.Keys) {
+            $help = Get-Help $cmd -ErrorAction SilentlyContinue
+            $help.Synopsis | Should -Not -BeNullOrEmpty -Because "$cmd needs a synopsis"
+        }
+    }
+
     It 'Follows @odata.nextLink pagination when enumerating users' {
         InModuleScope ZeroTrustLens {
             $script:__pagingCalls = 0

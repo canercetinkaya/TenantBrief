@@ -162,6 +162,32 @@ Anonymized sample reports generated from an actual tenant export (showing the in
 
 ---
 
+## Development & Tests
+
+```powershell
+Install-Module Pester -Scope CurrentUser -MinimumVersion 5.0 -Force   # once
+Invoke-Pester ./tests -Output Detailed
+```
+
+| Path | Scope |
+| --- | --- |
+| `tests/ZeroTrustLens.Tests.ps1` | Unit tests: exports, frameworks, license ROI/waste, pagination, Copilot readiness |
+| `tests/ZeroTrustLens.Pipeline.Tests.ps1` | End-to-end `Invoke-ZtLensAssessment` run in offline mode, plus report comparison and executive summary |
+| `tests/fixtures/ZeroTrustAssessmentReport.sample.json` | Anonymized raw export used by the pipeline tests; no tenant access required |
+
+The pipeline tests exercise the full five-stage report path (`-InputReportJson`), so the
+HTML/JSON contract can be changed without a live tenant. The same suite runs in CI
+(`.github/workflows/ci.yml`) on every push and pull request to `master`.
+
+### Module layout
+
+`ZeroTrustLens.psm1` is split into two regions: **internal pipeline helpers** (progress
+dashboards, ScubaGear/ORCA collectors, correlation, framework scoring, finding mapping)
+and the **exported cmdlets**. Only the eight cmdlets listed in `FunctionsToExport` are
+public; helpers stay private to the module.
+
+---
+
 ## Technical Article & License
 
 - **Technical Deep-Dive (TR):** [ZeroTrustLens: Microsoft 365 Lisans ROI ve Çoklu Çerçeve Analizi](https://canercetinkaya.com/tr/blog/zerotrustlens-m365-lisans-roi-uyumluluk-analizi)

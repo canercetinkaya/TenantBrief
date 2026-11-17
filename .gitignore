@@ -3,3 +3,7 @@ ZeroTrustLensReport/
 *.log
 .DS_Store
 Thumbs.db
+
+# Pester -CI / local test artifacts
+testResults.xml
+*.TestResults.xml

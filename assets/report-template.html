@@ -179,6 +179,8 @@
   <script>
     const DATA = {{REPORT_JSON}};
     const isTr = DATA.Language === 'tr';
+    const statusLabel = s => !isTr ? (s || '') : ({ Passed: 'Geçti', Failed: 'Başarısız', Skipped: 'Atlandı', Investigate: 'İncele', Planned: 'Planlandı', Pass: 'Geçti', Fail: 'Başarısız' }[s] || s || '');
+    const riskLabel = r => !isTr ? (r || '') : ({ High: 'Yüksek', Medium: 'Orta', Low: 'Düşük' }[r] || r || '');
     let activePillarFilter = 'ALL';
     let activeStatusFilter = 'ALL';
     let activeRiskFilter = 'ALL';
@@ -453,7 +455,7 @@
       const crRows = (cr.Checks || []).map(c => {
         const pillCls = c.Status === 'Pass' ? 'Passed' : (c.Status === 'Fail' ? 'Failed' : 'Investigate');
         return `<tr>
-          <td><span class="pill ${pillCls}">${esc(c.Status)}</span></td>
+          <td><span class="pill ${pillCls}">${esc(statusLabel(c.Status))}</span></td>
           <td><strong>${esc(c.Title)}</strong><div style="font-size:11.5px;color:var(--muted);">${esc(c.Category)} · <code>${esc(c.Detail)}</code></div></td>
           <td style="font-size:12.5px;"><div>${esc(c.Explanation)}</div>${c.Warning ? `<div style="margin-top:4px;color:#fcd34d;">⚠ ${esc(c.Warning)}</div>` : ''}</td>
         </tr>`;
@@ -547,8 +549,8 @@
       const pRows = items.map(x => `
         <tr>
           <td><strong>${esc(x.Title)}</strong><div style="font-size:11.5px;color:var(--muted);">${esc(x.Pillar)} · ${esc(x.Category)}</div></td>
-          <td><span class="pill ${esc(x.Status)}">${esc(x.Status)}</span></td>
-          <td>${esc(x.Risk)}</td>
+          <td><span class="pill ${esc(x.Status)}">${esc(statusLabel(x.Status))}</span></td>
+          <td>${esc(riskLabel(x.Risk))}</td>
           <td style="font-size:12px;">${esc(isTr ? (x.RemediationTr || '') : (x.Description || '').slice(0, 140))}</td>
         </tr>
       `).join('');
@@ -566,11 +568,11 @@
     function renderFilterChips() {
       const statuses = ['ALL', 'Failed', 'Passed', 'Skipped', 'Investigate', 'Planned'];
       document.getElementById('statusChips').innerHTML = `<span style="font-size:12px;color:var(--muted);">${isTr ? 'Durum:' : 'Status:'}</span>` +
-        statuses.map(st => `<button class="chip ${activeStatusFilter === st ? 'active' : ''}" onclick="setStatus('${st}')">${st === 'ALL' ? (isTr ? 'Tümü' : 'All') : st}</button>`).join('');
+        statuses.map(st => `<button class="chip ${activeStatusFilter === st ? 'active' : ''}" onclick="setStatus('${st}')">${st === 'ALL' ? (isTr ? 'Tümü' : 'All') : statusLabel(st)}</button>`).join('');
 
       const risks = ['ALL', 'High', 'Medium', 'Low'];
       document.getElementById('riskChips').innerHTML = `<span style="font-size:12px;color:var(--muted);">Risk:</span>` +
-        risks.map(rk => `<button class="chip ${activeRiskFilter === rk ? 'active' : ''}" onclick="setRisk('${rk}')">${rk === 'ALL' ? (isTr ? 'Tümü' : 'All') : rk}</button>`).join('');
+        risks.map(rk => `<button class="chip ${activeRiskFilter === rk ? 'active' : ''}" onclick="setRisk('${rk}')">${rk === 'ALL' ? (isTr ? 'Tümü' : 'All') : riskLabel(rk)}</button>`).join('');
     }
     function setStatus(s) { activeStatusFilter = s; renderFilterChips(); renderFindings(); }
     function setRisk(r) { activeRiskFilter = r; renderFilterChips(); renderFindings(); }
@@ -629,8 +631,8 @@
                 </div>
               </div>
               <div style="white-space:nowrap;">
-                <span class="pill ${esc(f.Status)}">${esc(f.Status)}</span>
-                <span class="pill">${esc(f.Risk)}</span>
+                <span class="pill ${esc(f.Status)}">${esc(statusLabel(f.Status))}</span>
+                <span class="pill">${esc(riskLabel(f.Risk))}</span>
               </div>
             </div>
             <details>

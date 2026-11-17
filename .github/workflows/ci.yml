@@ -17,4 +17,4 @@ jobs:
           if (-not (Get-Module -ListAvailable -Name Pester | Where-Object Version -ge '5.0')) {
             Install-Module Pester -Force -SkipPublisherCheck -Scope CurrentUser
           }
-          Invoke-Pester -Path ./tests/ZeroTrustLens.Tests.ps1 -CI
+          Invoke-Pester -Path ./tests -CI
