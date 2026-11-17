@@ -85,6 +85,8 @@
     <button class="nav-btn" onclick="switchView('findings', 'Network', this)" id="navNetwork"><span>Network (Ağ)</span><span class="cnt" id="cntNetwork">0</span></button>
     <button class="nav-btn" onclick="switchView('findings', 'DataAI', this)" id="navDataAI"><span>Data &amp; AI</span><span class="cnt" id="cntDataAI">0</span></button>
     <button class="nav-btn" onclick="switchView('findings', 'SecOps', this)" id="navSecOps"><span>SecOps</span><span class="cnt" id="cntSecOps">0</span></button>
+    <button class="nav-btn" onclick="switchView('findings', 'CISA SCuBA', this)" id="navScuba"><span>CISA SCuBA</span><span class="cnt" id="cntScuba">0</span></button>
+    <button class="nav-btn" onclick="switchView('findings', 'ORCA', this)" id="navOrca"><span>MDO / E-posta (ORCA)</span><span class="cnt" id="cntOrca">0</span></button>
     <button class="nav-btn" onclick="switchView('findings', 'ALL', this)" id="navAllFindings"><span>Tüm Bulgular</span><span class="cnt" id="cntAll">0</span></button>
     <div class="nav-grp" id="grpExec">Yönetici &amp; CISO</div>
     <button class="nav-btn" onclick="switchView('findings', 'QUICKWINS', this)" id="navQuickWins"><span>Hızlı Kazanımlar</span><span class="cnt" id="cntQuick">0</span></button>
@@ -176,6 +178,7 @@
     if (!isTr) {
       document.getElementById('navOverview').textContent = 'Overview';
       document.getElementById('grpPillars').textContent = 'Security Pillars';
+      document.getElementById('navOrca').firstChild.textContent = 'Email / MDO (ORCA)';
       document.getElementById('navAllFindings').firstChild.textContent = 'All Findings';
       document.getElementById('grpExec').textContent = 'Executive & CISO';
       document.getElementById('navQuickWins').firstChild.textContent = 'Quick Wins';
@@ -254,6 +257,8 @@
     document.getElementById('cntNetwork').textContent = F.filter(x => (x.Pillar || '').includes('Network') || (x.Pillar || '').includes('Infrastructure')).length;
     document.getElementById('cntDataAI').textContent = F.filter(x => (x.Pillar || '').includes('Data') || (x.Pillar || '').includes('AI')).length;
     document.getElementById('cntSecOps').textContent = F.filter(x => (x.Pillar || '').includes('SecOps')).length;
+    document.getElementById('cntScuba').textContent = F.filter(x => (x.Pillar || '').includes('CISA SCuBA')).length;
+    document.getElementById('cntOrca').textContent = F.filter(x => (x.Pillar || '').includes('ORCA')).length;
     document.getElementById('cntQuick').textContent = F.filter(x => x.Status === 'Failed' && x.ImplementationCost === 'Low').length;
 
     // Populate SFI & Category Dropdowns
@@ -291,7 +296,9 @@
       { key: 'Devices', label: isTr ? 'Devices (Cihazlar)' : 'Devices', nav: 'navDevices' },
       { key: 'Network', label: isTr ? 'Network (Ağ)' : 'Network', nav: 'navNetwork' },
       { key: 'DataAI', label: 'Data & AI', nav: 'navDataAI' },
-      { key: 'SecOps', label: 'SecOps', nav: 'navSecOps' }
+      { key: 'SecOps', label: 'SecOps', nav: 'navSecOps' },
+      { key: 'CISA SCuBA', label: 'CISA SCuBA Baseline', nav: 'navScuba' },
+      { key: 'ORCA', label: isTr ? 'E-posta Güvenliği (ORCA)' : 'Email Security (ORCA)', nav: 'navOrca' }
     ];
     const matrixRows = matrixPillars.map(mp => {
       const items = F.filter(x => {

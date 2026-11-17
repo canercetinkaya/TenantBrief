@@ -35,7 +35,9 @@
         "Data": "PR.DS (Data Security & Leakage Prevention)",
         "Infrastructure": "PR.PS (Secure Cloud Configuration)",
         "SecOps": "DE.CM / RS.MA (Continuous Monitoring & Incident Management)",
-        "AI": "GV.RM / PR.DS (AI Risk Management & Data Protection)"
+        "AI": "GV.RM / PR.DS (AI Risk Management & Data Protection)",
+        "CISA SCuBA": "PR.PS / PR.AA (Federal M365 Baseline Configuration & Hardening)",
+        "Defender for Office 365 (ORCA)": "PR.DS / DE.CM (Email & Anti-Phishing Protection)"
       }
     },
     "CIS_M365": {
@@ -50,7 +52,9 @@
         "Data": "CIS Section 3 (Microsoft Purview & Data Governance)",
         "Infrastructure": "CIS Azure Foundations",
         "SecOps": "CIS Section 2 & 6 (Defender XDR & Auditing)",
-        "AI": "CIS Section 3 & 5 (Copilot & AI Access Governance)"
+        "AI": "CIS Section 3 & 5 (Copilot & AI Access Governance)",
+        "CISA SCuBA": "CIS Section 1, 5 & 7 (Entra, EXO, Defender & Teams Hardening)",
+        "Defender for Office 365 (ORCA)": "CIS Section 2 (Microsoft Defender for Office 365 & Exchange)"
       }
     },
     "KVKK_TR": {
@@ -65,7 +69,9 @@
         "Data": "Veri Sınıflandırma, DLP, Şifreleme ve Veri Maskeleme",
         "Infrastructure": "Bulut Altyapısı ve Anahtar Yönetimi",
         "SecOps": "Sızma/Anomali İzleme, SIEM ve Olay Müdahale",
-        "AI": "Kişisel Verilerin Üretken Yapay Zekâya Sızmasının Önlenmesi"
+        "AI": "Kişisel Verilerin Üretken Yapay Zekâya Sızmasının Önlenmesi",
+        "CISA SCuBA": "Bulut Platformu Sıkılaştırma, Yetki Sınırları ve Denetim Logları",
+        "Defender for Office 365 (ORCA)": "Zararlı Yazılım, Oltalama ve E-posta Veri Sızıntısı Önleme"
       }
     }
   }

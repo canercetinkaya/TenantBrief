@@ -5,24 +5,30 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>ZeroTrustLens — {{TITLE}}</title>
   <style>
-    :root { --bg:#090d16; --card:#111827; --border:#1e293b; --text:#e2e8f0; --muted:#94a3b8; --accent:#38bdf8; --ok:#22c55e; }
+    :root { --bg:#090d16; --card:#111827; --border:#1e293b; --text:#e2e8f0; --muted:#94a3b8; --accent:#38bdf8; --ok:#22c55e; --warn:#f59e0b; --fail:#ef4444; }
     * { box-sizing:border-box; margin:0; padding:0; }
-    body { font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif; background:var(--bg); color:var(--text); min-height:100vh; display:flex; align-items:center; justify-content:center; padding:24px; }
-    .box { width:100%; max-width:780px; background:var(--card); border:1px solid var(--border); border-radius:16px; padding:28px; box-shadow:0 20px 50px rgba(0,0,0,.45); }
-    .top { display:flex; justify-content:space-between; align-items:center; margin-bottom:18px; border-bottom:1px solid var(--border); padding-bottom:14px; }
+    body { font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif; background:var(--bg); color:var(--text); min-height:100vh; padding:28px 18px; display:flex; justify-content:center; }
+    .box { width:100%; max-width:920px; background:var(--card); border:1px solid var(--border); border-radius:16px; padding:26px; box-shadow:0 20px 50px rgba(0,0,0,.45); height:fit-content; }
+    .top { display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; border-bottom:1px solid var(--border); padding-bottom:14px; }
     .brand { display:flex; align-items:center; gap:12px; font-size:20px; font-weight:700; }
     .logo { width:34px; height:34px; border-radius:9px; background:linear-gradient(135deg,#0ea5e9,#6366f1); display:flex; align-items:center; justify-content:center; font-weight:800; color:#fff; }
     .badge { font-size:12px; padding:4px 10px; border-radius:999px; background:rgba(56,189,248,.15); color:var(--accent); border:1px solid rgba(56,189,248,.35); }
-    .pbar-wrap { height:8px; background:#1e293b; border-radius:999px; overflow:hidden; margin-bottom:18px; }
-    .pbar { height:100%; background:linear-gradient(90deg,#0ea5e9,#22c55e); width:10%; transition:width .4s ease; }
-    .stage { display:flex; align-items:center; justify-content:space-between; padding:11px 14px; border-radius:10px; background:rgba(255,255,255,.02); border:1px solid var(--border); margin-bottom:8px; font-size:14px; }
-    .stage.active { border-color:var(--accent); background:rgba(56,189,248,.07); }
-    .stage.done { border-color:rgba(34,197,94,.4); background:rgba(34,197,94,.06); }
-    .dot { width:10px; height:10px; border-radius:50%; background:var(--muted); margin-right:12px; display:inline-block; }
-    .active .dot { background:var(--accent); box-shadow:0 0 10px var(--accent); }
-    .done .dot { background:var(--ok); }
-    .log-box { margin-top:14px; background:#060911; border:1px solid var(--border); border-radius:10px; padding:12px 14px; font-family:ui-monospace,Consolas,monospace; font-size:12px; color:#cbd5e1; max-height:170px; overflow-y:auto; line-height:1.55; }
-    .meta { display:flex; justify-content:space-between; margin-top:16px; font-size:13px; color:var(--muted); }
+    .notice { background:rgba(245,158,11,.08); border:1px solid rgba(245,158,11,.35); color:#fde68a; border-radius:10px; padding:10px 14px; font-size:13px; margin-bottom:16px; }
+    .pbar-wrap { height:9px; background:#1e293b; border-radius:999px; overflow:hidden; margin-bottom:14px; }
+    .pbar { height:100%; background:linear-gradient(90deg,#0ea5e9,#22c55e); width:5%; transition:width .35s ease; }
+    .stages { display:grid; grid-template-columns:repeat(auto-fit,minmax(160px,1fr)); gap:8px; margin-bottom:16px; }
+    .stage { padding:9px 11px; border-radius:9px; background:rgba(255,255,255,.02); border:1px solid var(--border); font-size:12.5px; display:flex; align-items:center; gap:8px; }
+    .stage.active { border-color:var(--accent); background:rgba(56,189,248,.09); color:#f8fafc; font-weight:600; }
+    .stage.done { border-color:rgba(34,197,94,.4); background:rgba(34,197,94,.07); color:#86efac; }
+    .stats { display:flex; gap:18px; flex-wrap:wrap; font-size:13px; color:var(--muted); margin-bottom:12px; padding-bottom:10px; border-bottom:1px solid var(--border); }
+    .stats strong { color:var(--text); }
+    .task { display:flex; justify-content:space-between; align-items:flex-start; padding:9px 12px; border-radius:8px; background:#0b1120; border:1px solid var(--border); margin-bottom:6px; font-size:13px; }
+    .task.running { border-color:rgba(56,189,248,.45); }
+    .task-det { font-size:11.5px; color:var(--muted); margin-top:3px; font-family:ui-monospace,Consolas,monospace; }
+    .st-run { color:var(--accent); font-weight:600; font-size:12px; }
+    .st-done { color:var(--ok); font-weight:600; font-size:12px; }
+    .st-fail { color:var(--fail); font-weight:600; font-size:12px; }
+    .tasks-wrap { max-height:380px; overflow-y:auto; }
   </style>
 </head>
 <body>
@@ -31,49 +37,71 @@
       <div class="brand"><div class="logo">ZL</div><span>ZeroTrustLens</span></div>
       <span class="badge" id="statusBadge">{{RUNNING}}</span>
     </div>
+    <div class="notice">{{NOTICE}}</div>
     <div class="pbar-wrap"><div class="pbar" id="pbar"></div></div>
-    <div id="stages"></div>
-    <div id="detail" style="margin-top:10px;font-size:12.5px;color:var(--accent);font-family:monospace;min-height:18px;"></div>
-    <div class="log-box" id="logBox"></div>
-    <div class="meta">
-      <span id="elapsed">00:00</span>
-      <span>Read-Only Multi-Engine Assessment</span>
+    <div class="stages" id="stages"></div>
+    <div class="stats">
+      <span><strong id="ztPhase">-</strong></span>
+      <span>{{LBL_COMPLETED}}: <strong id="doneCnt">0 / 0</strong></span>
+      <span>{{LBL_FAILED}}: <strong id="failCnt" style="color:var(--fail)">0</strong></span>
+      <span>{{LBL_ELAPSED}}: <strong id="elapsed">00:00</strong></span>
     </div>
+    <div class="tasks-wrap" id="tasksList"></div>
   </div>
   <script>
     const start = Date.now();
     const labels = {{LABELS_JSON}};
     function fmt(ms) {
-      const s = Math.floor(ms / 1000);
+      const s = Math.max(0, Math.floor(ms / 1000));
       return String(Math.floor(s / 60)).padStart(2, '0') + ':' + String(s % 60).padStart(2, '0');
+    }
+    function esc(s) {
+      return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
     }
     async function poll() {
       document.getElementById('elapsed').textContent = fmt(Date.now() - start);
       try {
         const res = await fetch('/status.json?t=' + Date.now());
         if (!res.ok) return;
-        const data = await res.json();
-        const pct = data.done ? 100 : Math.min(95, Math.max(8, Math.round((data.stage / labels.length) * 85)));
-        document.getElementById('pbar').style.width = pct + '%';
-        const container = document.getElementById('stages');
-        container.innerHTML = '';
-        labels.forEach((lbl, idx) => {
+        const d = await res.json();
+        document.getElementById('stages').innerHTML = labels.map((lbl, idx) => {
           const step = idx + 1;
-          const cls = step < data.stage ? 'done' : (step === data.stage ? 'active' : '');
-          const state = step < data.stage ? '✓' : (step === data.stage ? '...' : '');
-          container.innerHTML += `<div class="stage ${cls}"><div><span class="dot"></span>${lbl}</div><span>${state}</span></div>`;
-        });
-        if (data.detail) document.getElementById('detail').textContent = '▸ ' + data.detail;
-        if (Array.isArray(data.logs)) {
-          document.getElementById('logBox').innerHTML = data.logs.map(l => `<div>${l}</div>`).join('');
-        }
-        if (data.done) {
-          document.getElementById('statusBadge').textContent = data.doneLabel;
+          const cls = step < d.stage ? 'done' : (step === d.stage ? 'active' : '');
+          const icon = step < d.stage ? '✓' : (step === d.stage ? '●' : '○');
+          return `<div class="stage ${cls}"><span>${icon}</span><span>${esc(lbl)}</span></div>`;
+        }).join('');
+
+        let pct = Math.round(((d.stage - 1) / labels.length) * 100);
+        if (d.stage === 1 && d.ztTotal > 0) {
+          const inner = Math.min(1, d.ztCompleted / d.ztTotal);
+          pct = Math.max(4, Math.round(inner * 60));
+        } else if (d.done) { pct = 100; }
+        document.getElementById('pbar').style.width = Math.max(4, pct) + '%';
+
+        document.getElementById('ztPhase').textContent = d.ztStageName || labels[d.stage - 1] || '';
+        document.getElementById('doneCnt').textContent = `${d.ztCompleted || 0} / ${d.ztTotal || 0}`;
+        document.getElementById('failCnt').textContent = d.ztFailed || 0;
+
+        const workers = Array.isArray(d.workers) ? d.workers : [];
+        document.getElementById('tasksList').innerHTML = workers.map(w => {
+          const isRun = w.status === 'Running';
+          const isFail = w.status === 'Failed';
+          const cls = isRun ? 'running' : '';
+          const stCls = isRun ? 'st-run' : (isFail ? 'st-fail' : 'st-done');
+          const dur = w.startedAt ? fmt(Date.now() - new Date(w.startedAt).getTime()) : '';
+          return `<div class="task ${cls}">
+            <div><div><strong>${esc(w.name)}</strong></div>${w.detail ? `<div class="task-det">↳ ${esc(w.detail)}</div>` : ''}</div>
+            <div style="text-align:right;white-space:nowrap;"><div class="${stCls}">${esc(w.status)}</div><div class="task-det">${dur}</div></div>
+          </div>`;
+        }).join('');
+
+        if (d.done) {
+          document.getElementById('statusBadge').textContent = d.doneLabel;
         }
       } catch {}
     }
     poll();
-    setInterval(poll, 1200);
+    setInterval(poll, 1000);
   </script>
 </body>
 </html>
