@@ -6,78 +6,109 @@
   <title>ZeroTrustLens — {{TITLE}}</title>
   <style>
     :root {
-      --bg:#0b0f19; --card:#131a2a; --card2:#0f1624; --border:#1f2a44;
+      --bg:#090d16; --card:#111827; --card2:#0d1320; --border:#1e293b;
       --text:#e2e8f0; --muted:#94a3b8; --accent:#38bdf8;
       --ok:#22c55e; --fail:#ef4444; --warn:#f59e0b; --skip:#a855f7;
     }
     * { box-sizing:border-box; margin:0; padding:0; }
     body { font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif; background:var(--bg); color:var(--text); display:flex; min-height:100vh; }
-    .sidebar { width:250px; background:var(--card2); border-right:1px solid var(--border); padding:22px 14px; display:flex; flex-direction:column; gap:6px; position:sticky; top:0; height:100vh; }
-    .brand { display:flex; align-items:center; gap:10px; font-size:18px; font-weight:700; padding:0 10px 16px; border-bottom:1px solid var(--border); margin-bottom:10px; }
+    .sidebar { width:270px; background:var(--card2); border-right:1px solid var(--border); padding:20px 14px; display:flex; flex-direction:column; gap:4px; position:sticky; top:0; height:100vh; overflow-y:auto; flex-shrink:0; }
+    .brand { display:flex; align-items:center; gap:10px; font-size:18px; font-weight:700; padding:0 8px 14px; border-bottom:1px solid var(--border); margin-bottom:8px; }
     .logo { width:32px; height:32px; border-radius:8px; background:linear-gradient(135deg,#0ea5e9,#6366f1); display:flex; align-items:center; justify-content:center; font-weight:800; color:#fff; font-size:14px; }
-    .nav-btn { background:transparent; border:none; color:var(--muted); text-align:left; padding:10px 12px; border-radius:8px; cursor:pointer; font-size:14px; font-weight:500; transition:.15s; }
+    .nav-grp { font-size:11px; text-transform:uppercase; letter-spacing:.06em; color:var(--muted); padding:10px 10px 4px; font-weight:700; }
+    .nav-btn { background:transparent; border:none; color:var(--muted); text-align:left; padding:9px 10px; border-radius:8px; cursor:pointer; font-size:13.5px; font-weight:500; transition:.15s; display:flex; justify-content:space-between; align-items:center; width:100%; }
     .nav-btn:hover { background:rgba(56,189,248,.08); color:var(--text); }
     .nav-btn.active { background:rgba(56,189,248,.16); color:var(--accent); font-weight:600; }
-    .main { flex:1; padding:28px; max-width:1280px; margin:0 auto; width:100%; }
-    .header { display:flex; justify-content:space-between; align-items:center; margin-bottom:24px; flex-wrap:wrap; gap:12px; }
-    .meta { font-size:13px; color:var(--muted); }
+    .cnt { font-size:11px; background:#1e293b; color:var(--muted); padding:2px 7px; border-radius:999px; }
+    .nav-btn.active .cnt { background:rgba(56,189,248,.22); color:var(--accent); }
+    .main { flex:1; padding:26px 30px; max-width:1360px; margin:0 auto; width:100%; }
+    .header { display:flex; justify-content:space-between; align-items:center; margin-bottom:22px; flex-wrap:wrap; gap:12px; border-bottom:1px solid var(--border); padding-bottom:16px; }
+    .meta { font-size:13px; color:var(--muted); margin-top:4px; }
+    .btn { background:rgba(56,189,248,.14); color:var(--accent); border:1px solid rgba(56,189,248,.35); padding:7px 13px; border-radius:8px; font-size:12.5px; font-weight:600; cursor:pointer; }
+    .btn:hover { background:rgba(56,189,248,.24); }
     .tab-panel { display:none; }
     .tab-panel.active { display:block; }
-    .cards { display:grid; grid-template-columns:repeat(auto-fit,minmax(180px,1fr)); gap:14px; margin-bottom:22px; }
-    .card { background:var(--card); border:1px solid var(--border); border-radius:12px; padding:16px; }
-    .card .lbl { font-size:12px; color:var(--muted); margin-bottom:6px; }
-    .card .val { font-size:28px; font-weight:700; }
-    .charts-row { display:grid; grid-template-columns:300px 1fr; gap:18px; margin-bottom:22px; }
-    @media (max-width:900px) { body { flex-direction:column; } .sidebar { width:100%; height:auto; position:static; flex-direction:row; overflow-x:auto; } .charts-row { grid-template-columns:1fr; } }
+    .cards { display:grid; grid-template-columns:repeat(auto-fit,minmax(175px,1fr)); gap:12px; margin-bottom:20px; }
+    .card { background:var(--card); border:1px solid var(--border); border-radius:12px; padding:15px; }
+    .card .lbl { font-size:12px; color:var(--muted); margin-bottom:5px; }
+    .card .val { font-size:26px; font-weight:700; }
+    .charts-row { display:grid; grid-template-columns:280px 1fr; gap:16px; margin-bottom:20px; }
+    @media (max-width:960px) { body { flex-direction:column; } .sidebar { width:100%; height:auto; position:static; flex-direction:row; flex-wrap:wrap; } .charts-row { grid-template-columns:1fr; } }
     .bar-row { margin-bottom:12px; }
     .bar-head { display:flex; justify-content:space-between; font-size:13px; margin-bottom:5px; }
     .bar-track { height:10px; background:#1e293b; border-radius:999px; overflow:hidden; }
     .bar-fill { height:100%; background:linear-gradient(90deg,#0ea5e9,#22c55e); border-radius:999px; }
-    .filters { display:flex; gap:10px; flex-wrap:wrap; margin-bottom:14px; }
-    input, select { background:var(--card); color:var(--text); border:1px solid var(--border); border-radius:8px; padding:8px 12px; font-size:13px; }
+    .filter-bar { background:var(--card); border:1px solid var(--border); border-radius:12px; padding:14px; margin-bottom:14px; display:flex; flex-direction:column; gap:10px; }
+    .filter-row { display:flex; gap:8px; flex-wrap:wrap; align-items:center; }
+    .chip { background:#0b1120; border:1px solid var(--border); color:var(--muted); padding:5px 10px; border-radius:999px; font-size:12px; cursor:pointer; transition:.15s; }
+    .chip:hover { border-color:var(--accent); color:var(--text); }
+    .chip.active { background:rgba(56,189,248,.16); border-color:var(--accent); color:var(--accent); font-weight:600; }
+    input, select { background:#0b1120; color:var(--text); border:1px solid var(--border); border-radius:8px; padding:7px 11px; font-size:13px; }
+    input { min-width:240px; flex:1; }
     .finding { background:var(--card); border:1px solid var(--border); border-radius:10px; padding:14px 16px; margin-bottom:10px; }
-    .finding-top { display:flex; justify-content:space-between; align-items:center; gap:10px; flex-wrap:wrap; }
-    .pill { font-size:11px; padding:3px 9px; border-radius:999px; font-weight:600; }
+    .finding-top { display:flex; justify-content:space-between; align-items:flex-start; gap:12px; flex-wrap:wrap; }
+    .f-meta { display:flex; gap:6px; flex-wrap:wrap; margin-top:6px; font-size:11.5px; color:var(--muted); }
+    .tag { background:#1e293b; padding:2px 8px; border-radius:6px; }
+    .pill { font-size:11px; padding:3px 9px; border-radius:999px; font-weight:600; display:inline-block; }
     .pill.Passed { background:rgba(34,197,94,.15); color:var(--ok); }
     .pill.Failed { background:rgba(239,68,68,.15); color:var(--fail); }
     .pill.Skipped { background:rgba(168,85,247,.15); color:var(--skip); }
     .pill.Investigate, .pill.Planned { background:rgba(245,158,11,.15); color:var(--warn); }
     details { margin-top:10px; border-top:1px solid var(--border); padding-top:10px; }
     summary { cursor:pointer; color:var(--accent); font-size:13px; font-weight:600; }
-    .rem-box { margin-top:8px; background:#090d16; border:1px solid var(--border); border-radius:8px; padding:12px; font-size:12.5px; line-height:1.55; }
-    pre { background:#05080f; padding:10px; border-radius:6px; overflow-x:auto; margin-top:6px; color:#7dd3fc; font-size:12px; }
+    .rem-box { margin-top:8px; background:#090d16; border:1px solid var(--border); border-radius:8px; padding:14px; font-size:13px; line-height:1.6; }
+    .md-table { width:100%; border-collapse:collapse; margin:10px 0; font-size:12.5px; }
+    .md-table th, .md-table td { border:1px solid var(--border); padding:7px 10px; text-align:left; }
+    .md-table th { background:#131c31; color:var(--accent); }
+    .md-ul { margin:6px 0 8px 20px; }
+    a { color:var(--accent); text-decoration:none; }
+    a:hover { text-decoration:underline; }
   </style>
 </head>
 <body>
   <aside class="sidebar">
     <div class="brand"><div class="logo">ZL</div><span>ZeroTrustLens</span></div>
-    <button class="nav-btn active" onclick="showTab('overview', this)" id="navOverview">Overview</button>
-    <button class="nav-btn" onclick="showTab('frameworks', this)" id="navFrameworks">Frameworks</button>
-    <button class="nav-btn" onclick="showTab('roi', this)" id="navRoi">License ROI</button>
-    <button class="nav-btn" onclick="showTab('roadmap', this)" id="navRoadmap">30-60-90 Roadmap</button>
-    <button class="nav-btn" onclick="showTab('findings', this)" id="navFindings">All Findings</button>
+    <button class="nav-btn active" onclick="switchView('overview', null, this)" id="navOverview">Genel Bakış</button>
+    <div class="nav-grp" id="grpPillars">Güvenlik Sütunları</div>
+    <button class="nav-btn" onclick="switchView('findings', 'Identity', this)" id="navIdentity"><span>Identity (Kimlik)</span><span class="cnt" id="cntIdentity">0</span></button>
+    <button class="nav-btn" onclick="switchView('findings', 'Devices', this)" id="navDevices"><span>Devices (Cihazlar)</span><span class="cnt" id="cntDevices">0</span></button>
+    <button class="nav-btn" onclick="switchView('findings', 'Network', this)" id="navNetwork"><span>Network (Ağ)</span><span class="cnt" id="cntNetwork">0</span></button>
+    <button class="nav-btn" onclick="switchView('findings', 'DataAI', this)" id="navDataAI"><span>Data &amp; AI</span><span class="cnt" id="cntDataAI">0</span></button>
+    <button class="nav-btn" onclick="switchView('findings', 'SecOps', this)" id="navSecOps"><span>SecOps</span><span class="cnt" id="cntSecOps">0</span></button>
+    <button class="nav-btn" onclick="switchView('findings', 'ALL', this)" id="navAllFindings"><span>Tüm Bulgular</span><span class="cnt" id="cntAll">0</span></button>
+    <div class="nav-grp" id="grpExec">Yönetici &amp; CISO</div>
+    <button class="nav-btn" onclick="switchView('findings', 'QUICKWINS', this)" id="navQuickWins"><span>Hızlı Kazanımlar</span><span class="cnt" id="cntQuick">0</span></button>
+    <button class="nav-btn" onclick="switchView('frameworks', null, this)" id="navFrameworks">Uyumluluk Çerçeveleri</button>
+    <button class="nav-btn" onclick="switchView('roi', null, this)" id="navRoi">Lisans ROI &amp; Simülatör</button>
+    <button class="nav-btn" onclick="switchView('roadmap', null, this)" id="navRoadmap">30-60-90 Gün Planı</button>
   </aside>
 
   <main class="main">
     <div class="header">
       <div>
-        <h1 id="pageTitle">ZeroTrustLens</h1>
+        <h1 id="pageTitle">ZeroTrustLens — v2.0</h1>
         <div class="meta" id="tenantMeta"></div>
+      </div>
+      <div style="display:flex;gap:8px;">
+        <button class="btn" onclick="exportCsv()" id="btnCsv">CSV İndir</button>
+        <button class="btn" onclick="window.print()" id="btnPrint">PDF / Yazdır</button>
       </div>
     </div>
 
     <section id="tab-overview" class="tab-panel active">
       <div class="cards" id="summaryCards"></div>
+      <div class="cards" id="tenantInsightCards"></div>
       <div class="charts-row">
         <div class="card" style="display:flex;flex-direction:column;align-items:center;justify-content:center;">
-          <div class="lbl" id="donutLbl">Posture Distribution</div>
+          <div class="lbl" id="donutLbl">Kontrol Dağılımı</div>
           <svg id="donutChart" width="180" height="180" viewBox="0 0 42 42"></svg>
         </div>
         <div class="card">
-          <div class="lbl" style="margin-bottom:12px;" id="fwChartLbl">Compliance Frameworks</div>
+          <div class="lbl" style="margin-bottom:12px;" id="fwChartLbl">Çerçeve Uyum Puanları</div>
           <div id="overviewFwBars"></div>
         </div>
       </div>
+      <div class="card" id="mfaBanner" style="margin-bottom:20px;font-size:13.5px;color:var(--muted);"></div>
     </section>
 
     <section id="tab-frameworks" class="tab-panel">
@@ -85,7 +116,8 @@
     </section>
 
     <section id="tab-roi" class="tab-panel">
-      <div class="card" id="roiBox"></div>
+      <div class="card" id="roiBox" style="margin-bottom:16px;"></div>
+      <div class="card" id="minLicBox"></div>
     </section>
 
     <section id="tab-roadmap" class="tab-panel">
@@ -93,22 +125,27 @@
     </section>
 
     <section id="tab-findings" class="tab-panel">
-      <div class="filters">
-        <input type="text" id="searchInput" placeholder="Search..." oninput="renderFindings()" />
-        <select id="statusFilter" onchange="renderFindings()">
-          <option value="ALL">All Statuses</option>
-          <option value="Failed">Failed</option>
-          <option value="Passed">Passed</option>
-          <option value="Skipped">Skipped</option>
-          <option value="Investigate">Investigate</option>
-          <option value="Planned">Planned</option>
-        </select>
-        <select id="riskFilter" onchange="renderFindings()">
-          <option value="ALL">All Risks</option>
-          <option value="High">High</option>
-          <option value="Medium">Medium</option>
-          <option value="Low">Low</option>
-        </select>
+      <div class="filter-bar">
+        <div class="filter-row">
+          <input type="text" id="searchInput" placeholder="ID, başlık, kategori, SFI veya lisans ara..." oninput="renderFindings()" />
+          <select id="sfiFilter" onchange="renderFindings()"><option value="ALL">Tüm SFI Sütunları</option></select>
+          <select id="catFilter" onchange="renderFindings()"><option value="ALL">Tüm Kategoriler</option></select>
+          <select id="costFilter" onchange="renderFindings()">
+            <option value="ALL">Tüm Maliyetler</option>
+            <option value="Low">Düşük Maliyet (Hızlı)</option>
+            <option value="Medium">Orta Maliyet</option>
+            <option value="High">Yüksek Maliyet</option>
+          </select>
+        </div>
+        <div class="filter-row" id="statusChips"></div>
+        <div class="filter-row" id="riskChips"></div>
+        <div style="display:flex;justify-content:space-between;align-items:center;font-size:12.5px;color:var(--muted);">
+          <span id="showingCount"></span>
+          <div style="display:flex;gap:8px;">
+            <button class="chip" onclick="toggleAllDetails(true)" id="btnExpandAll">Tümünü Aç</button>
+            <button class="chip" onclick="toggleAllDetails(false)" id="btnCollapseAll">Tümünü Kapat</button>
+          </div>
+        </div>
       </div>
       <div id="findingsList"></div>
     </section>
@@ -117,40 +154,122 @@
   <script>
     const DATA = {{REPORT_JSON}};
     const isTr = DATA.Language === 'tr';
+    let activePillarFilter = 'ALL';
+    let activeStatusFilter = 'ALL';
+    let activeRiskFilter = 'ALL';
+    let currentFiltered = [];
 
-    if (isTr) {
-      document.getElementById('navOverview').textContent = 'Genel Bakış';
-      document.getElementById('navFrameworks').textContent = 'Uyumluluk Çerçeveleri';
-      document.getElementById('navRoi').textContent = 'Lisans ROI & Kör Nokta';
-      document.getElementById('navRoadmap').textContent = '30-60-90 Gün Yol Haritası';
-      document.getElementById('navFindings').textContent = 'Tüm Bulgular';
-      document.getElementById('donutLbl').textContent = 'Kontrol Dağılımı';
-      document.getElementById('fwChartLbl').textContent = 'Çerçeve Uyum Puanları';
-      document.getElementById('searchInput').placeholder = 'Bulgu veya kategori ara...';
+    if (!isTr) {
+      document.getElementById('navOverview').textContent = 'Overview';
+      document.getElementById('grpPillars').textContent = 'Security Pillars';
+      document.getElementById('navAllFindings').firstChild.textContent = 'All Findings';
+      document.getElementById('grpExec').textContent = 'Executive & CISO';
+      document.getElementById('navQuickWins').firstChild.textContent = 'Quick Wins';
+      document.getElementById('navFrameworks').textContent = 'Frameworks';
+      document.getElementById('navRoi').textContent = 'License ROI & Simulator';
+      document.getElementById('navRoadmap').textContent = '30-60-90 Roadmap';
+      document.getElementById('btnCsv').textContent = 'Export CSV';
+      document.getElementById('btnPrint').textContent = 'Print / PDF';
+      document.getElementById('donutLbl').textContent = 'Control Distribution';
+      document.getElementById('fwChartLbl').textContent = 'Framework Compliance';
+      document.getElementById('searchInput').placeholder = 'Search ID, title, category, SFI or license...';
+      document.getElementById('btnExpandAll').textContent = 'Expand All';
+      document.getElementById('btnCollapseAll').textContent = 'Collapse All';
     }
 
     document.getElementById('tenantMeta').textContent = `${DATA.Tenant} | ${isTr ? 'Salt Okunur Değerlendirme' : 'Read-Only Assessment'}`;
 
-    function showTab(id, btn) {
-      document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
-      document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
-      document.getElementById('tab-' + id).classList.add('active');
-      btn.classList.add('active');
+    function esc(s) {
+      return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
     }
 
+    function renderMd(md) {
+      if (!md) return '';
+      const lines = esc(md).split(/\r?\n/);
+      let out = '', inTable = false, inList = false;
+      for (let i = 0; i < lines.length; i++) {
+        let ln = lines[i].trim();
+        if (ln.startsWith('|') && ln.endsWith('|')) {
+          if (/^\|[\s\-:|]+\|$/.test(ln)) continue;
+          if (inList) { out += '</ul>'; inList = false; }
+          if (!inTable) { out += '<table class="md-table"><tbody>'; inTable = true; }
+          const cells = ln.slice(1, -1).split('|').map(c => c.trim());
+          const tag = (i + 1 < lines.length && /^\|[\s\-:|]+\|$/.test(lines[i+1].trim())) ? 'th' : 'td';
+          out += '<tr>' + cells.map(c => `<${tag}>${inlineMd(c)}</${tag}>`).join('') + '</tr>';
+          continue;
+        }
+        if (inTable) { out += '</tbody></table>'; inTable = false; }
+        if (ln.startsWith('- ') || ln.startsWith('* ')) {
+          if (!inList) { out += '<ul class="md-ul">'; inList = true; }
+          out += `<li>${inlineMd(ln.slice(2))}</li>`;
+          continue;
+        }
+        if (inList) { out += '</ul>'; inList = false; }
+        if (ln) out += `<p style="margin-bottom:6px;">${inlineMd(ln)}</p>`;
+      }
+      if (inTable) out += '</tbody></table>';
+      if (inList) out += '</ul>';
+      return out;
+    }
+
+    function inlineMd(s) {
+      return s
+        .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
+        .replace(/\[([^\]]+)\]\((https?:\/\/[^)]+)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer">$1 ↗</a>');
+    }
+
+    function switchView(tabId, pillarMode, btn) {
+      document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+      document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+      document.getElementById('tab-' + tabId).classList.add('active');
+      if (btn) btn.classList.add('active');
+      if (tabId === 'findings') {
+        activePillarFilter = pillarMode || 'ALL';
+        activeStatusFilter = 'ALL';
+        activeRiskFilter = 'ALL';
+        renderFilterChips();
+        renderFindings();
+      }
+    }
+
+    // Populate Pillar Counts
+    const F = DATA.Findings || [];
+    document.getElementById('cntAll').textContent = F.length;
+    document.getElementById('cntIdentity').textContent = F.filter(x => (x.Pillar || '').includes('Identity')).length;
+    document.getElementById('cntDevices').textContent = F.filter(x => (x.Pillar || '').includes('Devices')).length;
+    document.getElementById('cntNetwork').textContent = F.filter(x => (x.Pillar || '').includes('Network') || (x.Pillar || '').includes('Infrastructure')).length;
+    document.getElementById('cntDataAI').textContent = F.filter(x => (x.Pillar || '').includes('Data') || (x.Pillar || '').includes('AI')).length;
+    document.getElementById('cntSecOps').textContent = F.filter(x => (x.Pillar || '').includes('SecOps')).length;
+    document.getElementById('cntQuick').textContent = F.filter(x => x.Status === 'Failed' && x.ImplementationCost === 'Low').length;
+
+    // Populate SFI & Category Dropdowns
+    const sfiSet = [...new Set(F.map(x => x.SfiPillar).filter(Boolean))].sort();
+    sfiSet.forEach(s => document.getElementById('sfiFilter').innerHTML += `<option value="${esc(s)}">${esc(s)}</option>`);
+    const catSet = [...new Set(F.map(x => x.Category).filter(Boolean))].sort();
+    catSet.forEach(c => document.getElementById('catFilter').innerHTML += `<option value="${esc(c)}">${esc(c)}</option>`);
+
+    // Summary & Tenant Insights
     const s = DATA.Summary;
     document.getElementById('summaryCards').innerHTML = `
       <div class="card"><div class="lbl">${isTr ? 'Toplam Kontrol' : 'Total Checks'}</div><div class="val">${s.Total}</div></div>
       <div class="card"><div class="lbl">${isTr ? 'Başarılı' : 'Passed'}</div><div class="val" style="color:var(--ok)">${s.Passed}</div></div>
       <div class="card"><div class="lbl">${isTr ? 'Başarısız (Yüksek)' : 'Failed (High)'}</div><div class="val" style="color:var(--fail)">${s.Failed} (${s.HighRiskFailed})</div></div>
+      <div class="card"><div class="lbl">${isTr ? 'İnceleme / Planlanan' : 'Investigate / Planned'}</div><div class="val" style="color:var(--warn)">${s.Investigate + s.Planned}</div></div>
       <div class="card"><div class="lbl">${isTr ? 'Atlanan (Lisans ROI)' : 'Skipped (License ROI)'}</div><div class="val" style="color:var(--skip)">${s.Skipped}</div></div>
     `;
 
+    const ti = DATA.TenantInsights || {};
+    document.getElementById('tenantInsightCards').innerHTML = `
+      <div class="card"><div class="lbl">${isTr ? 'Kullanıcı / Misafir' : 'Users / Guests'}</div><div class="val">${ti.UserCount ?? '-'} / ${ti.GuestCount ?? '-'}</div></div>
+      <div class="card"><div class="lbl">${isTr ? 'Grup / Uygulama' : 'Groups / Apps'}</div><div class="val">${ti.GroupCount ?? '-'} / ${ti.ApplicationCount ?? '-'}</div></div>
+      <div class="card"><div class="lbl">${isTr ? 'Cihaz / Yönetilen' : 'Devices / Managed'}</div><div class="val">${ti.DeviceCount ?? '-'} / ${ti.ManagedDeviceCount ?? '-'}</div></div>
+      <div class="card"><div class="lbl">${isTr ? 'Uyumlu / Uyumsuz Cihaz' : 'Compliant / Non-Compliant'}</div><div class="val">${ti.CompliantDevices ?? 0} / ${ti.NonCompliantDevices ?? 0}</div></div>
+    `;
+    document.getElementById('mfaBanner').innerHTML = `<strong>${isTr ? 'MFA & Koşullu Erişim Kapsamı:' : 'MFA & Conditional Access Coverage:'}</strong> ${esc(ti.MfaCoverageDesc || (isTr ? 'Veri yok' : 'No data'))}`;
+
     // SVG Donut Chart
     const total = Math.max(1, s.Total);
-    const pPct = (s.Passed / total) * 100;
-    const fPct = (s.Failed / total) * 100;
-    const skPct = (s.Skipped / total) * 100;
+    const pPct = (s.Passed / total) * 100, fPct = (s.Failed / total) * 100, skPct = (s.Skipped / total) * 100;
     document.getElementById('donutChart').innerHTML = `
       <circle cx="21" cy="21" r="15.915" fill="transparent" stroke="#1e293b" stroke-width="5"></circle>
       <circle cx="21" cy="21" r="15.915" fill="transparent" stroke="#22c55e" stroke-width="5" stroke-dasharray="${pPct} ${100 - pPct}" stroke-dashoffset="25"></circle>
@@ -161,21 +280,18 @@
 
     const fwHtml = DATA.Frameworks.map(f => `
       <div class="bar-row">
-        <div class="bar-head"><span>${f.Name}</span><span>${f.Passed} / ${f.Evaluated} (<strong>${f.Score}%</strong>)</span></div>
+        <div class="bar-head"><span>${esc(f.Name)}</span><span>${f.Passed} / ${f.Evaluated} (<strong>${f.Score}%</strong>)</span></div>
         <div class="bar-track"><div class="bar-fill" style="width:${f.Score}%"></div></div>
       </div>
     `).join('');
     document.getElementById('overviewFwBars').innerHTML = fwHtml;
     document.getElementById('fwDetailBars').innerHTML = fwHtml;
 
+    // License ROI + Simulator + Minimum License Breakdown
     document.getElementById('roiBox').innerHTML = `
       <h3 style="margin-bottom:10px;">${isTr ? 'Lisans ROI & Çerçeve Etki Simülasyonu' : 'License ROI & Framework Impact Simulator'}</h3>
-      <p style="color:var(--muted);font-size:14px;line-height:1.6;margin-bottom:16px;">
-        ${isTr
-          ? `Toplam <strong>${s.Skipped}</strong> kontrol atlandı (Skipped) ve <strong>${s.Planned}</strong> kontrol planlandı (Planned). Aşağıdaki simülasyon ile bu lisans kör noktalarını veya yüksek riskli bulguları kapattığınızda uyumluluk skorlarınızın nasıl değişeceğini görebilirsiniz.`
-          : `A total of <strong>${s.Skipped}</strong> checks were Skipped and <strong>${s.Planned}</strong> are Planned. Use the simulator below to preview how closing license blind spots or high-risk findings improves your compliance scores.`}
-      </p>
-      <div style="display:flex;gap:16px;flex-wrap:wrap;margin-bottom:16px;">
+      <p style="color:var(--muted);font-size:13.5px;line-height:1.6;margin-bottom:14px;">${esc(DATA.LicenseROI?.Summary || '')}</p>
+      <div style="display:flex;gap:16px;flex-wrap:wrap;margin-bottom:14px;">
         <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13.5px;">
           <input type="checkbox" id="simHigh" onchange="runSim()" /> ${isTr ? `Yüksek riskli ${s.HighRiskFailed} bulguyu çöz` : `Fix ${s.HighRiskFailed} High-risk findings`}
         </label>
@@ -185,7 +301,6 @@
       </div>
       <div id="simResults"></div>
     `;
-
     function runSim() {
       const fixHigh = document.getElementById('simHigh').checked;
       const fixSkip = document.getElementById('simSkipped').checked;
@@ -195,63 +310,122 @@
       document.getElementById('simResults').innerHTML = DATA.Frameworks.map(f => {
         const simScore = Math.min(100, Math.round(((f.Passed + addedPass) / newEval) * 1000) / 10);
         const delta = Math.round((simScore - f.Score) * 10) / 10;
-        return `<div class="bar-row"><div class="bar-head"><span>${f.Name}</span><span>${f.Score}% → <strong style="color:var(--ok)">${simScore}%</strong> (+${delta}%)</span></div><div class="bar-track"><div class="bar-fill" style="width:${simScore}%"></div></div></div>`;
+        return `<div class="bar-row"><div class="bar-head"><span>${esc(f.Name)}</span><span>${f.Score}% → <strong style="color:var(--ok)">${simScore}%</strong> (+${delta}%)</span></div><div class="bar-track"><div class="bar-fill" style="width:${simScore}%"></div></div></div>`;
       }).join('');
     }
     runSim();
 
-    const high = DATA.Findings.filter(x => x.Status === 'Failed' && x.Risk === 'High').length;
-    const med = DATA.Findings.filter(x => x.Status === 'Failed' && x.Risk === 'Medium').length;
-    const low = DATA.Findings.filter(x => x.Status === 'Failed' && x.Risk === 'Low').length;
-    document.getElementById('roadmapCards').innerHTML = `
-      <div class="card"><div class="lbl">${isTr ? '0-30 Gün (Yüksek Risk)' : '0-30 Days (High Risk)'}</div><div class="val" style="color:var(--fail)">${high}</div></div>
-      <div class="card"><div class="lbl">${isTr ? '31-60 Gün (Orta Risk)' : '31-60 Days (Medium Risk)'}</div><div class="val" style="color:var(--warn)">${med}</div></div>
-      <div class="card"><div class="lbl">${isTr ? '61-90 Gün (Düşük Risk)' : '61-90 Days (Low Risk)'}</div><div class="val" style="color:var(--accent)">${low}</div></div>
-    `;
+    const licCounts = {};
+    F.filter(x => x.MinimumLicense).forEach(x => {
+      x.MinimumLicense.split(',').map(z => z.trim()).filter(Boolean).forEach(l => {
+        if (!licCounts[l]) licCounts[l] = { total: 0, skipped: 0, failed: 0 };
+        licCounts[l].total++;
+        if (x.Status === 'Skipped') licCounts[l].skipped++;
+        if (x.Status === 'Failed') licCounts[l].failed++;
+      });
+    });
+    const licRows = Object.entries(licCounts).sort((a,b) => b[1].total - a[1].total).map(([k,v]) =>
+      `<tr><td><code>${esc(k)}</code></td><td>${v.total}</td><td style="color:var(--fail)">${v.failed}</td><td style="color:var(--skip)">${v.skipped}</td></tr>`
+    ).join('');
+    document.getElementById('minLicBox').innerHTML = `<h3 style="margin-bottom:10px;">${isTr ? 'Kontrollerin Minimum Lisans Gereksinimi Dağılımı' : 'Minimum License Requirements Breakdown'}</h3><table class="md-table"><thead><tr><th>SKU / Plan</th><th>${isTr ? 'Toplam' : 'Total'}</th><th>Failed</th><th>Skipped</th></tr></thead><tbody>${licRows}</tbody></table>`;
 
-    function getRemediation(f) {
-      const trSummary = f.Status === 'Skipped'
-        ? `Bu kontrol mevcut kiracı ortamında uygulanabilir olmadığı veya ilgili lisans/modül etkinleştirilmediği için atlandı (Lisans ROI kör noktası).`
-        : (f.Status === 'Failed'
-          ? `Bu kontrol başarısız oldu. "${f.Pillar}" kategorisi altındaki ilgili ilkeyi Microsoft yönetim portalında önce Report-only (Denetim) kipinde yapılandırıp doğrulayın.`
-          : `Bu kontrol mevcut yapılandırmada başarılı veya inceleme aşamasındadır.`);
-      const summaryBlock = isTr
-        ? `<div style="margin-bottom:10px;padding:8px 10px;background:rgba(56,189,248,.08);border-left:3px solid var(--accent);border-radius:4px;"><strong>Türkçe İyileştirme Adımları:</strong><div style="margin-top:4px;">${f.RemediationTr || trSummary}</div></div>`
-        : '';
-      const impBlock = f.Impact ? `<div style="margin-bottom:8px;"><strong>${isTr ? 'Etki:' : 'Impact:'}</strong> <span style="color:#fcd34d;">${f.Impact}</span></div>` : '';
-      const detailBlock = f.Result
-        ? `<div style="margin-bottom:10px;"><strong>${isTr ? 'Tespit & Etkilenen Kaynaklar:' : 'Finding & Affected Resources:'}</strong><div style="margin-top:4px;color:#cbd5e1;white-space:pre-wrap;">${f.Result}</div></div>`
-        : '';
-      const descBlock = f.Description
-        ? `<div><strong>${isTr ? 'Açıklama ve Microsoft Önerisi:' : 'Technical Reference:'}</strong><div style="color:#94a3b8;white-space:pre-wrap;margin-top:4px;">${f.Description}</div></div>`
-        : '';
-      return `<div class="rem-box">${summaryBlock}${impBlock}${detailBlock}${descBlock}</div>`;
+    // Roadmap
+    document.getElementById('roadmapCards').innerHTML = (DATA.Roadmap || []).map(r => `
+      <div class="card"><div class="lbl">${esc(r.Phase)}</div><div class="val" style="margin-bottom:8px;">${r.Count}</div><div style="font-size:13px;color:var(--muted);">${esc(r.Focus)}</div></div>
+    `).join('');
+
+    function renderFilterChips() {
+      const statuses = ['ALL', 'Failed', 'Passed', 'Skipped', 'Investigate', 'Planned'];
+      document.getElementById('statusChips').innerHTML = `<span style="font-size:12px;color:var(--muted);">${isTr ? 'Durum:' : 'Status:'}</span>` +
+        statuses.map(st => `<button class="chip ${activeStatusFilter === st ? 'active' : ''}" onclick="setStatus('${st}')">${st === 'ALL' ? (isTr ? 'Tümü' : 'All') : st}</button>`).join('');
+
+      const risks = ['ALL', 'High', 'Medium', 'Low'];
+      document.getElementById('riskChips').innerHTML = `<span style="font-size:12px;color:var(--muted);">Risk:</span>` +
+        risks.map(rk => `<button class="chip ${activeRiskFilter === rk ? 'active' : ''}" onclick="setRisk('${rk}')">${rk === 'ALL' ? (isTr ? 'Tümü' : 'All') : rk}</button>`).join('');
     }
+    function setStatus(s) { activeStatusFilter = s; renderFilterChips(); renderFindings(); }
+    function setRisk(r) { activeRiskFilter = r; renderFilterChips(); renderFindings(); }
+    function toggleAllDetails(open) { document.querySelectorAll('#findingsList details').forEach(d => d.open = open); }
 
     function renderFindings() {
       const q = document.getElementById('searchInput').value.toLowerCase();
-      const st = document.getElementById('statusFilter').value;
-      const rk = document.getElementById('riskFilter').value;
-      const list = DATA.Findings.filter(f =>
-        (st === 'ALL' || f.Status === st) &&
-        (rk === 'ALL' || f.Risk === rk) &&
-        ((f.Title || '').toLowerCase().includes(q) || (f.Pillar || '').toLowerCase().includes(q) || (f.Id || '').toLowerCase().includes(q))
-      );
+      const sfi = document.getElementById('sfiFilter').value;
+      const cat = document.getElementById('catFilter').value;
+      const cst = document.getElementById('costFilter').value;
 
-      document.getElementById('findingsList').innerHTML = list.map(f => `
-        <div class="finding">
-          <div class="finding-top">
-            <div><strong>${f.Id}</strong> — ${f.Title} <span style="color:var(--muted);font-size:12px;">(${f.Pillar})</span></div>
-            <div><span class="pill ${f.Status}">${f.Status}</span> <span class="pill">${f.Risk}</span></div>
+      currentFiltered = F.filter(f => {
+        const pStr = f.Pillar || '';
+        if (activePillarFilter === 'DataAI' && !pStr.includes('Data') && !pStr.includes('AI')) return false;
+        else if (activePillarFilter === 'Network' && !pStr.includes('Network') && !pStr.includes('Infrastructure')) return false;
+        else if (activePillarFilter === 'QUICKWINS' && !(f.Status === 'Failed' && f.ImplementationCost === 'Low')) return false;
+        else if (!['ALL', 'DataAI', 'Network', 'QUICKWINS'].includes(activePillarFilter) && !pStr.includes(activePillarFilter)) return false;
+
+        if (activeStatusFilter !== 'ALL' && f.Status !== activeStatusFilter) return false;
+        if (activeRiskFilter !== 'ALL' && f.Risk !== activeRiskFilter) return false;
+        if (sfi !== 'ALL' && f.SfiPillar !== sfi) return false;
+        if (cat !== 'ALL' && f.Category !== cat) return false;
+        if (cst !== 'ALL' && f.ImplementationCost !== cst) return false;
+
+        if (q) {
+          const hay = `${f.Id} ${f.Title} ${f.Category} ${f.SfiPillar} ${f.MinimumLicense} ${f.Pillar}`.toLowerCase();
+          if (!hay.includes(q)) return false;
+        }
+        return true;
+      });
+
+      document.getElementById('showingCount').textContent = isTr
+        ? `Gösterilen: ${currentFiltered.length} / ${F.length} kontrol`
+        : `Showing ${currentFiltered.length} of ${F.length} checks`;
+
+      document.getElementById('findingsList').innerHTML = currentFiltered.map(f => {
+        const trBox = isTr
+          ? `<div style="margin-bottom:10px;padding:8px 10px;background:rgba(56,189,248,.08);border-left:3px solid var(--accent);border-radius:4px;"><strong>Türkçe İyileştirme Adımları:</strong><div style="margin-top:4px;">${esc(f.RemediationTr)}</div></div>`
+          : '';
+        const impBlock = f.Impact ? `<div style="margin-bottom:8px;"><strong>${isTr ? 'Etki:' : 'Impact:'}</strong> <span style="color:#fcd34d;">${esc(f.Impact)}</span></div>` : '';
+        const resBlock = f.Result ? `<div style="margin-bottom:10px;"><strong>${isTr ? 'Tespit & Etkilenen Kaynaklar:' : 'Finding & Affected Resources:'}</strong>${renderMd(f.Result)}</div>` : '';
+        const skipBlock = f.SkippedReason ? `<div style="margin-bottom:10px;color:#d8b4fe;"><strong>${isTr ? 'Atlanma Nedeni:' : 'Skipped Reason:'}</strong> ${renderMd(f.SkippedReason)}</div>` : '';
+        const descBlock = f.Description ? `<div><strong>${isTr ? 'Açıklama ve Microsoft Önerisi:' : 'Description & Recommendation:'}</strong>${renderMd(f.Description)}</div>` : '';
+
+        return `
+          <div class="finding">
+            <div class="finding-top">
+              <div>
+                <strong>${esc(f.Id)}</strong> — ${esc(f.Title)}
+                <div class="f-meta">
+                  <span class="tag">${esc(f.Pillar)}</span>
+                  <span class="tag">${esc(f.Category)}</span>
+                  ${f.SfiPillar ? `<span class="tag">SFI: ${esc(f.SfiPillar)}</span>` : ''}
+                  ${f.MinimumLicense ? `<span class="tag">${isTr ? 'Lisans:' : 'License:'} ${esc(f.MinimumLicense)}</span>` : ''}
+                  <span class="tag">${isTr ? 'Maliyet:' : 'Cost:'} ${esc(f.ImplementationCost)}</span>
+                </div>
+              </div>
+              <div style="white-space:nowrap;">
+                <span class="pill ${esc(f.Status)}">${esc(f.Status)}</span>
+                <span class="pill">${esc(f.Risk)}</span>
+              </div>
+            </div>
+            <details>
+              <summary>${isTr ? 'Detaylar, Etkilenen Kaynaklar ve İyileştirme Adımları' : 'Details, Affected Resources & Remediation'}</summary>
+              <div class="rem-box">${trBox}${impBlock}${resBlock}${skipBlock}${descBlock}</div>
+            </details>
           </div>
-          <details>
-            <summary>${isTr ? 'PowerShell ve Portal Düzeltme Adımları' : 'PowerShell & Portal Remediation Steps'}</summary>
-            ${getRemediation(f)}
-          </details>
-        </div>
-      `).join('');
+        `;
+      }).join('');
     }
-    renderFindings();
+
+    function exportCsv() {
+      const rows = [['Id','Pillar','Category','SfiPillar','Status','Risk','Cost','License','Title']];
+      (currentFiltered.length ? currentFiltered : F).forEach(f => {
+        rows.push([f.Id, f.Pillar, f.Category, f.SfiPillar, f.Status, f.Risk, f.ImplementationCost, f.MinimumLicense, f.Title].map(v => '"' + String(v || '').replace(/"/g,'""') + '"'));
+      });
+      const blob = new Blob([rows.map(r => r.join(',')).join('\n')], { type: 'text/csv;charset=utf-8;' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = `ZeroTrustLens-${DATA.Language}.csv`;
+      a.click();
+    }
+
+    renderFilterChips();
   </script>
 </body>
 </html>

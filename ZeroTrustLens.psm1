@@ -254,6 +254,10 @@ function Invoke-ZtLensAssessment {
                 TestStatus    = $t.TestStatus
                 TestRisk      = $t.TestRisk
                 TestPillar    = $t.TestPillar
+                TestCategory  = $t.PSObject.Properties['TestCategory'].Value
+                TestSfiPillar = $t.PSObject.Properties['TestSfiPillar'].Value
+                TestImplCost  = $t.PSObject.Properties['TestImplementationCost'].Value
+                TestMinLic    = $t.PSObject.Properties['TestMinimumLicense'].Value
                 SkippedReason = $t.PSObject.Properties['SkippedReason'].Value
                 TestResult    = $t.PSObject.Properties['TestResult'].Value
                 TestImpact    = $t.PSObject.Properties['TestImpact'].Value
@@ -409,6 +413,66 @@ function Invoke-ZtLensAssessment {
     $activeFwForTable = if ($Framework -eq 'All') { 'ISO27001' } else { $Framework }
     $pillarMap = $fwConfig.$activeFwForTable.pillarMap
 
+    # Batch-translate titles & descriptions in chunks of 40 when TranslatorKey is set
+    $trCachePath = Join-Path $PSScriptRoot 'data\tr-translation-cache.json'
+    $trCache = @{}
+    if ($Language -eq 'tr' -and (Test-Path $trCachePath)) {
+        try {
+            $loaded = Get-Content -Path $trCachePath -Raw -Encoding UTF8 | ConvertFrom-Json
+            foreach ($p in $loaded.PSObject.Properties) { $trCache[$p.Name] = $p.Value }
+        } catch {}
+    }
+
+    if ($Language -eq 'tr' -and $TranslatorKey) {
+        $toTranslate = @()
+        foreach ($t in $tests) {
+            $k = [string]$t.TestId
+            if ($k -and -not $trCache.ContainsKey($k)) { $toTranslate += $t }
+        }
+        if ($toTranslate.Count -gt 0) {
+            Write-Host "[ZeroTrustLens] Translating $($toTranslate.Count) controls via Azure AI Translator..." -ForegroundColor Cyan
+            for ($i = 0; $i -lt $toTranslate.Count; $i += 15) {
+                $chunk = $toTranslate[$i..([Math]::Min($i + 14, $toTranslate.Count - 1))]
+                $payload = @()
+                foreach ($item in $chunk) {
+                    $dText = [string]$item.TestDesc
+                    if ($dText.Length -gt 1000) { $dText = $dText.Substring(0, 1000) }
+                    $payload += @{ Text = [string]$item.TestTitle }
+                    $payload += @{ Text = $dText }
+                }
+                $jsonBody = $payload | ConvertTo-Json -Compress
+                $trResp = $null
+                for ($attempt = 1; $attempt -le 2; $attempt++) {
+                    try {
+                        $trResp = Invoke-RestMethod -Method Post -Uri 'https://api.cognitive.microsofttranslator.com/translate?api-version=3.0&from=en&to=tr' -Headers @{
+                            'Ocp-Apim-Subscription-Key'    = $TranslatorKey
+                            'Ocp-Apim-Subscription-Region' = 'global'
+                            'Content-Type'                 = 'application/json; charset=utf-8'
+                        } -Body ([System.Text.Encoding]::UTF8.GetBytes($jsonBody)) -ErrorAction Stop
+                        break
+                    } catch {
+                        if ($attempt -eq 1 -and $_.Exception.Message -match '429') {
+                            Start-Sleep -Seconds 25
+                        } else {
+                            Write-Warning "[ZeroTrustLens] Translator batch skipped: $($_.Exception.Message)"
+                        }
+                    }
+                }
+                if ($trResp) {
+                    for ($j = 0; $j -lt $chunk.Count; $j++) {
+                        $tItem = $chunk[$j]
+                        $trCache[[string]$tItem.TestId] = [PSCustomObject]@{
+                            Title = [string]$trResp[$j * 2].translations[0].text
+                            Desc  = [string]$trResp[$j * 2 + 1].translations[0].text
+                        }
+                    }
+                }
+                Start-Sleep -Seconds 4
+            }
+            try { $trCache | ConvertTo-Json -Depth 3 | Out-File -FilePath $trCachePath -Encoding UTF8 } catch {}
+        }
+    }
+
     $findings = foreach ($t in $tests) {
         $pillarStr = if ($t.TestPillar -is [System.Array]) { ($t.TestPillar -join ', ') } else { [string]$t.TestPillar }
         $primaryPillar = if ($t.TestPillar -is [System.Array]) { [string]$t.TestPillar[0] } else { [string]$t.TestPillar }
@@ -420,17 +484,10 @@ function Invoke-ZtLensAssessment {
         $fTitle = [string]$t.TestTitle
         $fDesc  = [string]$t.TestDesc
         $fImp   = [string]$t.TestImpact
-        if ($Language -eq 'tr' -and $TranslatorKey -and $fTitle) {
-            try {
-                $body = @(@{ Text = $fTitle }, @{ Text = ($fDesc.Substring(0, [Math]::Min(1200, $fDesc.Length))) }) | ConvertTo-Json -Compress
-                $trResp = Invoke-RestMethod -Method Post -Uri 'https://api.cognitive.microsofttranslator.com/translate?api-version=3.0&from=en&to=tr' -Headers @{
-                    'Ocp-Apim-Subscription-Key'    = $TranslatorKey
-                    'Ocp-Apim-Subscription-Region' = 'global'
-                    'Content-Type'                 = 'application/json; charset=utf-8'
-                } -Body ([System.Text.Encoding]::UTF8.GetBytes($body)) -ErrorAction Stop
-                if ($trResp[0].translations[0].text) { $fTitle = $trResp[0].translations[0].text }
-                if ($trResp[1].translations[0].text) { $fDesc  = $trResp[1].translations[0].text }
-            } catch {}
+        $tid    = [string]$t.TestId
+        if ($Language -eq 'tr' -and $trCache.ContainsKey($tid)) {
+            if ($trCache[$tid].Title) { $fTitle = [string]$trCache[$tid].Title }
+            if ($trCache[$tid].Desc)  { $fDesc  = [string]$trCache[$tid].Desc }
         }
         if ($Language -eq 'tr' -and $fImp) {
             $fImp = $fImp -replace '^High$', 'Yüksek' -replace '^Medium$', 'Orta' -replace '^Low$', 'Düşük'
@@ -446,27 +503,49 @@ function Invoke-ZtLensAssessment {
             default          { 'Microsoft 365 Yönetim Merkezi' }
         }
         $remTr = "1. $portalName üzerinden '$fTitle' kontrolüne karşılık gelen ilkeyi açın. 2. Değişikliği önce Denetim (Report-only) kipinde pilot gruba uygulayıp oturum açma/olay günlüklerini doğrulayın. 3. Etki analizi sonrası kademeli olarak Zorunlu (Enforce) durumuna geçin."
+        $minLicStr = if ($t.TestMinLic -is [System.Array]) { ($t.TestMinLic -join ', ') } else { [string]$t.TestMinLic }
         [PSCustomObject]@{
-            Id           = $t.TestId
-            Pillar       = if ($pillarStr) { $pillarStr } else { 'General' }
-            Status       = [string]$t.TestStatus
-            Risk         = if ($t.TestRisk) { [string]$t.TestRisk } else { 'Low' }
-            Title        = $fTitle
-            FrameworkRef = $fwRef
-            Result        = [string]$t.TestResult
-            Impact        = $fImp
-            Description   = $fDesc
-            RemediationTr = $remTr
+            Id                 = $t.TestId
+            Pillar             = if ($pillarStr) { $pillarStr } else { 'General' }
+            PrimaryPillar      = if ($primaryPillar) { $primaryPillar } else { 'General' }
+            Category           = if ($t.TestCategory) { [string]$t.TestCategory } else { 'General' }
+            SfiPillar          = if ($t.TestSfiPillar) { [string]$t.TestSfiPillar } else { '' }
+            ImplementationCost = if ($t.TestImplCost) { [string]$t.TestImplCost } else { 'Medium' }
+            MinimumLicense     = $minLicStr
+            Status             = [string]$t.TestStatus
+            Risk               = if ($t.TestRisk) { [string]$t.TestRisk } else { 'Low' }
+            Title              = $fTitle
+            FrameworkRef       = $fwRef
+            Result             = [string]$t.TestResult
+            Impact             = $fImp
+            Description        = $fDesc
+            SkippedReason      = [string]$t.SkippedReason
+            RemediationTr      = $remTr
         }
     }
 
     $tenantDisplay = if ($Anonymize) { 'contoso.onmicrosoft.com (Anonymized)' } else { [string]$raw.Domain }
+    $ti = $raw.PSObject.Properties['TenantInfo'].Value
+    $tOverview = if ($ti -and $ti.PSObject.Properties['TenantOverview'].Value) { $ti.TenantOverview } else { $null }
+    $mfaDesc = if ($ti -and $ti.PSObject.Properties['OverviewCaMfaAllUsers'].Value) { [string]$ti.OverviewCaMfaAllUsers.description } else { '' }
+    $devComp = if ($ti -and $ti.PSObject.Properties['DeviceOverview'].Value -and $ti.DeviceOverview.PSObject.Properties['DeviceCompliance'].Value) { $ti.DeviceOverview.DeviceCompliance } else { $null }
 
     $reportObj = [PSCustomObject]@{
-        Tenant     = $tenantDisplay
-        Language   = $Language
-        Framework  = $Framework
-        Summary    = [PSCustomObject]@{
+        Tenant         = $tenantDisplay
+        Language       = $Language
+        Framework      = $Framework
+        TenantInsights = [PSCustomObject]@{
+            UserCount            = if ($tOverview) { [int]$tOverview.UserCount } else { 0 }
+            GuestCount           = if ($tOverview) { [int]$tOverview.GuestCount } else { 0 }
+            GroupCount           = if ($tOverview) { [int]$tOverview.GroupCount } else { 0 }
+            ApplicationCount     = if ($tOverview) { [int]$tOverview.ApplicationCount } else { 0 }
+            DeviceCount          = if ($tOverview) { [int]$tOverview.DeviceCount } else { 0 }
+            ManagedDeviceCount   = if ($tOverview) { [int]$tOverview.ManagedDeviceCount } else { 0 }
+            CompliantDevices     = if ($devComp) { [int]$devComp.compliantDeviceCount } else { 0 }
+            NonCompliantDevices  = if ($devComp) { [int]$devComp.nonCompliantDeviceCount } else { 0 }
+            MfaCoverageDesc      = $mfaDesc
+        }
+        Summary        = [PSCustomObject]@{
             Total          = $tests.Count
             Passed         = $passedCount
             Failed         = $failedCount
