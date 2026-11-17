@@ -45,14 +45,24 @@ function Connect-ZtLens {
     try { Disconnect-ExchangeOnline -Confirm:$false -ErrorAction SilentlyContinue | Out-Null } catch {}
 
     Write-Host "[ZeroTrustLens] Checking ZeroTrustAssessment, ScubaGear, ORCA & PSGallery dependencies..." -ForegroundColor Cyan
-    foreach ($dep in @('Microsoft.Graph.Beta.Teams', 'Microsoft.Online.SharePoint.PowerShell', 'ScubaGear', 'ORCA')) {
+    foreach ($dep in @('Microsoft.Graph.Beta.Teams', 'Microsoft.Online.SharePoint.PowerShell', 'powershell-yaml', 'ScubaGear', 'ORCA')) {
         if (-not (Get-Module -ListAvailable -Name $dep)) {
-            Write-Warning "Module '$dep' is not installed. Installing from PSGallery (CurrentUser)..."
+            Write-Host "[ZeroTrustLens] Installing missing module '$dep' from PSGallery..." -ForegroundColor Yellow
             try {
                 Install-Module -Name $dep -Repository PSGallery -Scope CurrentUser -Force -AllowClobber -ErrorAction Stop
             } catch {
                 Write-Warning "Could not auto-install '$dep': $($_.Exception.Message)"
             }
+        }
+    }
+    $opaExe = Join-Path $env:USERPROFILE '.scubagear\Tools\opa_windows_amd64.exe'
+    if (-not (Test-Path $opaExe) -and (Get-Module -ListAvailable -Name 'ScubaGear')) {
+        Write-Host "[ZeroTrustLens] Installing OPA executable for ScubaGear..." -ForegroundColor Yellow
+        try {
+            Import-Module ScubaGear -ErrorAction SilentlyContinue 2>$null 3>$null | Out-Null
+            Install-OPAforSCuBA | Out-Null
+        } catch {
+            Write-Warning "Could not auto-install OPA: $($_.Exception.Message)"
         }
     }
 
@@ -154,19 +164,28 @@ function Invoke-ZtLensAssessment {
 
     $rawOut = Join-Path $OutputPath 'raw-zt'
     $progressJob = $null
-    $progressState = [hashtable]::Synchronized(@{ Stage = 1; Done = $false; Stop = $false; RawOut = $rawOut })
+    $logQueue = [System.Collections.ArrayList]::Synchronized((New-Object System.Collections.ArrayList))
+    $progressState = [hashtable]::Synchronized(@{ Stage = 1; Done = $false; Stop = $false; RawOut = $rawOut; Logs = $logQueue })
+    $addLog = {
+        param([string]$Msg)
+        $line = "[$(Get-Date -Format 'HH:mm:ss')] $Msg"
+        [void]$progressState.Logs.Add($line)
+        if ($progressState.Logs.Count -gt 30) { $progressState.Logs.RemoveAt(0) }
+        Write-Host $line -ForegroundColor Cyan
+    }
+
     if (-not $NoBrowser -and -not $InputReportJson) {
         $port = 8925
         $progressHtmlPath = Join-Path $PSScriptRoot 'assets\progress-template.html'
         if (Test-Path $progressHtmlPath) {
             $pHtml = Get-Content -Path $progressHtmlPath -Raw -Encoding UTF8
             $labelsJson = if ($Language -eq 'tr') {
-                '["1. Kiraci Verileri ve Guvenlik Kontrolleri","2. Lisans ROI ve Kor Nokta Analizi","3. Uyumluluk Cerceveleri Puanlamasi","4. ZeroTrustLens Rapor Uretimi"]'
+                '["1. ZeroTrustAssessment (Kiracı Veri Toplama & Testler)","2. CISA ScubaGear (Güvenlik Taban Hattı)","3. Microsoft ORCA (Defender for Office 365)","4. Korelasyon, Lisans ROI & Çerçeve Puanlama","5. ZeroTrustLens Rapor Üretimi"]'
             } else {
-                '["1. Tenant Data & Security Checks","2. License ROI & Blind-Spot Analysis","3. Compliance Framework Scoring","4. Generating ZeroTrustLens Report"]'
+                '["1. ZeroTrustAssessment (Tenant Data & Checks)","2. CISA ScubaGear (Security Baselines)","3. Microsoft ORCA (Defender for Office 365)","4. Correlation, License ROI & Framework Scoring","5. Generating ZeroTrustLens Reports"]'
             }
-            $pHtml = $pHtml.Replace('{{LANG}}', $Language).Replace('{{TITLE}}', $(if ($Language -eq 'tr') { 'Canli Degerlendirme' } else { 'Live Assessment' })).Replace('{{RUNNING}}', $(if ($Language -eq 'tr') { 'Calisiyor' } else { 'Running' })).Replace('{{LABELS_JSON}}', $labelsJson)
-            $doneLbl = if ($Language -eq 'tr') { 'Tamamlandi' } else { 'Completed' }
+            $pHtml = $pHtml.Replace('{{LANG}}', $Language).Replace('{{TITLE}}', $(if ($Language -eq 'tr') { 'Canlı Değerlendirme' } else { 'Live Assessment' })).Replace('{{RUNNING}}', $(if ($Language -eq 'tr') { 'Çalışıyor' } else { 'Running' })).Replace('{{LABELS_JSON}}', $labelsJson)
+            $doneLbl = if ($Language -eq 'tr') { 'Tamamlandı' } else { 'Completed' }
             $rs = [runspacefactory]::CreateRunspace()
             $rs.Open()
             $rs.SessionStateProxy.SetVariable('State', $progressState)
@@ -192,13 +211,13 @@ function Invoke-ZtLensAssessment {
                             $ctx.Response.ContentType = 'application/json; charset=utf-8'
                             $detail = ''
                             if ($State.RawOut -and (Test-Path $State.RawOut)) {
-                                $latest = Get-ChildItem -Path $State.RawOut -Recurse -File -ErrorAction SilentlyContinue | Sort-Object LastWriteTime -Descending | Select-Object -First 1
+                                $allFiles = @(Get-ChildItem -Path $State.RawOut -Recurse -File -ErrorAction SilentlyContinue)
+                                $latest = $allFiles | Sort-Object LastWriteTime -Descending | Select-Object -First 1
                                 if ($latest) {
-                                    $cnt = (Get-ChildItem -Path $State.RawOut -Recurse -File -ErrorAction SilentlyContinue).Count
-                                    $detail = "$cnt files | $($latest.Name)"
+                                    $detail = "$($allFiles.Count) items processed | active: $($latest.Name)"
                                 }
                             }
-                            (@{ stage = $State.Stage; done = $State.Done; doneLabel = $DoneLbl; detail = $detail } | ConvertTo-Json -Compress)
+                            (@{ stage = $State.Stage; done = $State.Done; doneLabel = $DoneLbl; detail = $detail; logs = @($State.Logs) } | ConvertTo-Json -Compress)
                         } else {
                             $ctx.Response.ContentType = 'text/html; charset=utf-8'
                             $Html
@@ -222,12 +241,33 @@ function Invoke-ZtLensAssessment {
     $sourceJsonPath = $InputReportJson
     if (-not $sourceJsonPath) {
         if (-not (Get-Module -ListAvailable -Name 'ZeroTrustAssessment')) {
-        throw "Required module 'ZeroTrustAssessment' is not installed. Run: Install-Module ZeroTrustAssessment -Scope CurrentUser"
-    }
-    Import-Module ZeroTrustAssessment -ErrorAction SilentlyContinue 2>$null 3>$null | Out-Null
-        $rawOut = Join-Path $OutputPath 'raw-zt'
-        Write-Host "[ZeroTrustLens] Running read-only tenant assessment (live progress will open in browser)..." -ForegroundColor Cyan
-        $null = Invoke-ZtAssessment -Path $rawOut -DisableTelemetry 6>$null 3>$null 2>$null
+            throw "Required module 'ZeroTrustAssessment' is not installed. Run: Install-Module ZeroTrustAssessment -Scope CurrentUser"
+        }
+        & $addLog "[Stage 1/5] Starting read-only ZeroTrustAssessment (ZeroTrustLens dashboard active)..."
+        $ztRs = [runspacefactory]::CreateRunspace()
+        $ztRs.Open()
+        $ztPs = [powershell]::Create()
+        $ztPs.Runspace = $ztRs
+        $ztPs.AddScript({
+            param($OutDir)
+            Import-Module ZeroTrustAssessment -ErrorAction SilentlyContinue 2>$null 3>$null | Out-Null
+            Invoke-ZtAssessment -Path $OutDir -DisableTelemetry -NoBrowser 6>$null 3>$null 2>$null
+        }).AddArgument($rawOut) | Out-Null
+        $ztHandle = $ztPs.BeginInvoke()
+        $lastCnt = -1
+        while (-not $ztHandle.IsCompleted) {
+            Start-Sleep -Seconds 6
+            if (Test-Path $rawOut) {
+                $files = @(Get-ChildItem -Path $rawOut -Recurse -File -ErrorAction SilentlyContinue)
+                if ($files.Count -ne $lastCnt -and $files.Count -gt 0) {
+                    $lastCnt = $files.Count
+                    $latest = $files | Sort-Object LastWriteTime -Descending | Select-Object -First 1
+                    & $addLog "[Stage 1/5] Processed $lastCnt artifacts (latest: $($latest.Name))"
+                }
+            }
+        }
+        try { $ztPs.EndInvoke($ztHandle) } catch {}
+        $ztPs.Dispose(); $ztRs.Close(); $ztRs.Dispose()
         $sourceJsonPath = Join-Path $rawOut 'zt-export\ZeroTrustAssessmentReport.json'
     }
     $progressState.Stage = 2
@@ -276,55 +316,74 @@ function Invoke-ZtLensAssessment {
     if (-not $InputReportJson) {
         if (Get-Module -ListAvailable -Name 'ScubaGear') {
             try {
-                Write-Host "[ZeroTrustLens] ScubaGear detected. Running CISA SCuBA checks (read-only)..." -ForegroundColor Cyan
+                & $addLog "[Stage 2/5] Running CISA ScubaGear checks (aad, exo, defender — reusing active session)..."
                 $scubaOut = Join-Path $OutputPath 'raw-scuba'
                 Import-Module ScubaGear -ErrorAction Stop
-                $null = Invoke-SCuBA -OutPath $scubaOut -Quiet 6>$null 3>$null 2>$null
+                $null = Invoke-SCuBA -ProductNames @('aad', 'exo', 'defender') -LogIn:$false -DisconnectOnExit:$false -OutPath $scubaOut -Quiet 6>$null 3>$null 2>$null
                 $scubaJson = Get-ChildItem -Path $scubaOut -Filter 'ScubaResults.json' -Recurse -ErrorAction SilentlyContinue | Select-Object -First 1
                 if ($scubaJson) {
                     $scubaData = Get-Content -Path $scubaJson.FullName -Raw -Encoding UTF8 | ConvertFrom-Json
+                    $scCount = 0
                     foreach ($prop in $scubaData.Results.PSObject.Properties) {
                         foreach ($item in @($prop.Value)) {
+                            $scCount++
                             $tests += [PSCustomObject]@{
-                                TestId       = "SCUBA-$($item.Control)"
-                                TestTitle    = [string]$item.Requirement
-                                TestStatus   = if ($item.Result -eq 'Pass') { 'Passed' } else { 'Failed' }
-                                TestRisk     = if ($item.Criticality -eq 'Shall') { 'High' } else { 'Medium' }
-                                TestPillar   = 'CISA SCuBA'
+                                TestId          = "SCUBA-$($item.Control)"
+                                TestTitle       = [string]$item.Requirement
+                                TestStatus      = if ($item.Result -eq 'Pass') { 'Passed' } else { 'Failed' }
+                                TestRisk        = if ($item.Criticality -eq 'Shall') { 'High' } else { 'Medium' }
+                                TestPillar      = 'CISA SCuBA'
+                                TestCategory    = [string]$prop.Name
+                                TestResult      = [string]$item.Details
+                                TestDescription = [string]$item.Requirement
                             }
                         }
                     }
+                    & $addLog "[Stage 2/5] ScubaGear completed: $scCount controls merged."
                 }
             } catch {
-                Write-Warning "[ZeroTrustLens] ScubaGear execution skipped: $($_.Exception.Message)"
+                & $addLog "[Stage 2/5] ScubaGear skipped: $($_.Exception.Message)"
             }
         }
 
+        $progressState.Stage = 3
         if (Get-Module -ListAvailable -Name 'ORCA') {
             try {
-                Write-Host "[ZeroTrustLens] ORCA detected. Running Defender for Office 365 checks (read-only)..." -ForegroundColor Cyan
+                & $addLog "[Stage 3/5] Running Microsoft ORCA checks (Defender for Office 365)..."
                 $orcaOut = Join-Path $OutputPath 'raw-orca'
                 if (-not (Test-Path $orcaOut)) { New-Item -ItemType Directory -Path $orcaOut -Force | Out-Null }
                 Import-Module ORCA -ErrorAction Stop
-                $orcaJsonPath = Join-Path $orcaOut 'orca.json'
-                $null = Get-ORCAReport -Output JSON -OutputOptions @{ FilePath = $orcaJsonPath } 6>$null 3>$null 2>$null
-                if (Test-Path $orcaJsonPath) {
-                    $orcaData = Get-Content -Path $orcaJsonPath -Raw -Encoding UTF8 | ConvertFrom-Json
-                    foreach ($item in @($orcaData.Checks)) {
+                $null = Invoke-ORCA -Connect:$false -SCC:$false -PerformVersionCheck:$false -InstallModules:$false -ShowSurvey:$false -Output @('JSON') -OutputOptions @{ JSON = @{ OutputDirectory = $orcaOut } } 6>$null 3>$null 2>$null
+                $orcaFile = Get-ChildItem -Path $orcaOut -Filter '*.json' -Recurse -ErrorAction SilentlyContinue | Select-Object -First 1
+                if ($orcaFile) {
+                    $orcaData = Get-Content -Path $orcaFile.FullName -Raw -Encoding UTF8 | ConvertFrom-Json
+                    $orcaItems = if ($orcaData.Checks) { @($orcaData.Checks) } else { @($orcaData) }
+                    $ocCount = 0
+                    foreach ($item in $orcaItems) {
+                        $cName = if ($item.Name) { [string]$item.Name } else { [string]$item.CheckName }
+                        if (-not $cName) { continue }
+                        $ocCount++
+                        $st = [string]$item.Result
                         $tests += [PSCustomObject]@{
-                            TestId     = "ORCA-$($item.CheckName)"
-                            TestTitle  = [string]$item.CheckName
-                            TestStatus = if ($item.Status -eq 'OK') { 'Passed' } else { 'Failed' }
-                            TestRisk   = 'Medium'
-                            TestPillar = 'Defender for Office 365 (ORCA)'
+                            TestId          = "ORCA-$($item.Control)"
+                            TestTitle       = $cName
+                            TestStatus      = if ($st -match 'Pass|OK') { 'Passed' } else { 'Failed' }
+                            TestRisk        = 'Medium'
+                            TestPillar      = 'Defender for Office 365 (ORCA)'
+                            TestCategory    = if ($item.Area) { [string]$item.Area } else { 'Defender for Office 365' }
+                            TestResult      = [string]$item.FailRecommendation
+                            TestDescription = [string]$item.Importance
                         }
                     }
+                    & $addLog "[Stage 3/5] ORCA completed: $ocCount controls merged."
                 }
             } catch {
-                Write-Warning "[ZeroTrustLens] ORCA execution skipped: $($_.Exception.Message)"
+                & $addLog "[Stage 3/5] ORCA skipped: $($_.Exception.Message)"
             }
         }
     }
+    $progressState.Stage = 4
+    & $addLog "[Stage 4/5] Computing License ROI, Secure Score & Multi-Framework Scores..."
 
     $passedCount = @($tests | Where-Object { $_.TestStatus -eq 'Passed' }).Count
     $failedCount = @($tests | Where-Object { $_.TestStatus -eq 'Failed' }).Count
@@ -657,16 +716,26 @@ function Invoke-ZtLensAssessment {
         $html = $html.Replace($k, $replacements[$k])
     }
 
+    $progressState.Stage = 5
+    & $addLog "[Stage 5/5] Writing HTML, JSON and Executive Summary reports..."
     $reportHtmlPath = Join-Path $OutputPath "ZeroTrustLensReport-$($Language.ToUpper()).html"
     $html | Set-Content -Path $reportHtmlPath -Encoding UTF8
+
+    $execSummaryPath = Join-Path $OutputPath "ZeroTrustLens-ExecutiveSummary-$($Language.ToUpper()).html"
+    $null = Export-ZtLensExecutiveSummary -InputLensJsonPath $reportJsonPath -OutputHtmlPath $execSummaryPath -Language $Language
+
+    $progressState.Done = $true
+    if ($progressJob) {
+        Start-Sleep -Seconds 2
+        $progressState.Stop = $true
+        try { $progressJob.Ps.EndInvoke($progressJob.Handle) } catch {}
+        try { $progressJob.Ps.Dispose(); $progressJob.Rs.Close(); $progressJob.Rs.Dispose() } catch {}
+    }
 
     Write-Host "[ZeroTrustLens] Report generated: $reportHtmlPath" -ForegroundColor Green
     if (-not $NoBrowser) {
         Start-Process $reportHtmlPath
     }
-
-    $execSummaryPath = Join-Path $OutputPath "ZeroTrustLens-ExecutiveSummary-$($Language.ToUpper()).html"
-    $null = Export-ZtLensExecutiveSummary -InputLensJsonPath $reportJsonPath -OutputHtmlPath $execSummaryPath -Language $Language
 
     return [PSCustomObject]@{
         HtmlPath             = $reportHtmlPath

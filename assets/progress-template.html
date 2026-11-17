@@ -5,21 +5,24 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>ZeroTrustLens — {{TITLE}}</title>
   <style>
-    :root { --bg:#0b0f19; --card:#131a2a; --border:#1f2a44; --text:#e2e8f0; --muted:#94a3b8; --accent:#38bdf8; --ok:#22c55e; }
+    :root { --bg:#090d16; --card:#111827; --border:#1e293b; --text:#e2e8f0; --muted:#94a3b8; --accent:#38bdf8; --ok:#22c55e; }
     * { box-sizing:border-box; margin:0; padding:0; }
     body { font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif; background:var(--bg); color:var(--text); min-height:100vh; display:flex; align-items:center; justify-content:center; padding:24px; }
-    .box { width:100%; max-width:680px; background:var(--card); border:1px solid var(--border); border-radius:16px; padding:28px; box-shadow:0 20px 50px rgba(0,0,0,.45); }
-    .top { display:flex; justify-content:space-between; align-items:center; margin-bottom:24px; border-bottom:1px solid var(--border); padding-bottom:16px; }
+    .box { width:100%; max-width:780px; background:var(--card); border:1px solid var(--border); border-radius:16px; padding:28px; box-shadow:0 20px 50px rgba(0,0,0,.45); }
+    .top { display:flex; justify-content:space-between; align-items:center; margin-bottom:18px; border-bottom:1px solid var(--border); padding-bottom:14px; }
     .brand { display:flex; align-items:center; gap:12px; font-size:20px; font-weight:700; }
     .logo { width:34px; height:34px; border-radius:9px; background:linear-gradient(135deg,#0ea5e9,#6366f1); display:flex; align-items:center; justify-content:center; font-weight:800; color:#fff; }
     .badge { font-size:12px; padding:4px 10px; border-radius:999px; background:rgba(56,189,248,.15); color:var(--accent); border:1px solid rgba(56,189,248,.35); }
-    .stage { display:flex; align-items:center; justify-content:space-between; padding:12px 14px; border-radius:10px; background:rgba(255,255,255,.02); border:1px solid var(--border); margin-bottom:10px; }
+    .pbar-wrap { height:8px; background:#1e293b; border-radius:999px; overflow:hidden; margin-bottom:18px; }
+    .pbar { height:100%; background:linear-gradient(90deg,#0ea5e9,#22c55e); width:10%; transition:width .4s ease; }
+    .stage { display:flex; align-items:center; justify-content:space-between; padding:11px 14px; border-radius:10px; background:rgba(255,255,255,.02); border:1px solid var(--border); margin-bottom:8px; font-size:14px; }
     .stage.active { border-color:var(--accent); background:rgba(56,189,248,.07); }
     .stage.done { border-color:rgba(34,197,94,.4); background:rgba(34,197,94,.06); }
     .dot { width:10px; height:10px; border-radius:50%; background:var(--muted); margin-right:12px; display:inline-block; }
     .active .dot { background:var(--accent); box-shadow:0 0 10px var(--accent); }
     .done .dot { background:var(--ok); }
-    .meta { display:flex; justify-content:space-between; margin-top:18px; font-size:13px; color:var(--muted); }
+    .log-box { margin-top:14px; background:#060911; border:1px solid var(--border); border-radius:10px; padding:12px 14px; font-family:ui-monospace,Consolas,monospace; font-size:12px; color:#cbd5e1; max-height:170px; overflow-y:auto; line-height:1.55; }
+    .meta { display:flex; justify-content:space-between; margin-top:16px; font-size:13px; color:var(--muted); }
   </style>
 </head>
 <body>
@@ -28,11 +31,13 @@
       <div class="brand"><div class="logo">ZL</div><span>ZeroTrustLens</span></div>
       <span class="badge" id="statusBadge">{{RUNNING}}</span>
     </div>
+    <div class="pbar-wrap"><div class="pbar" id="pbar"></div></div>
     <div id="stages"></div>
-    <div id="detail" style="margin-top:10px;font-size:12px;color:var(--accent);font-family:monospace;min-height:18px;"></div>
+    <div id="detail" style="margin-top:10px;font-size:12.5px;color:var(--accent);font-family:monospace;min-height:18px;"></div>
+    <div class="log-box" id="logBox"></div>
     <div class="meta">
       <span id="elapsed">00:00</span>
-      <span>Read-Only Assessment</span>
+      <span>Read-Only Multi-Engine Assessment</span>
     </div>
   </div>
   <script>
@@ -48,6 +53,8 @@
         const res = await fetch('/status.json?t=' + Date.now());
         if (!res.ok) return;
         const data = await res.json();
+        const pct = data.done ? 100 : Math.min(95, Math.max(8, Math.round((data.stage / labels.length) * 85)));
+        document.getElementById('pbar').style.width = pct + '%';
         const container = document.getElementById('stages');
         container.innerHTML = '';
         labels.forEach((lbl, idx) => {
@@ -56,8 +63,9 @@
           const state = step < data.stage ? '✓' : (step === data.stage ? '...' : '');
           container.innerHTML += `<div class="stage ${cls}"><div><span class="dot"></span>${lbl}</div><span>${state}</span></div>`;
         });
-        if (data.detail) {
-          document.getElementById('detail').textContent = '▸ ' + data.detail;
+        if (data.detail) document.getElementById('detail').textContent = '▸ ' + data.detail;
+        if (Array.isArray(data.logs)) {
+          document.getElementById('logBox').innerHTML = data.logs.map(l => `<div>${l}</div>`).join('');
         }
         if (data.done) {
           document.getElementById('statusBadge').textContent = data.doneLabel;
@@ -65,7 +73,7 @@
       } catch {}
     }
     poll();
-    setInterval(poll, 1500);
+    setInterval(poll, 1200);
   </script>
 </body>
 </html>
