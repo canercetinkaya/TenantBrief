@@ -1,4 +1,4 @@
-BeforeAll {
+﻿BeforeAll {
     Import-Module (Join-Path $PSScriptRoot '..\TenantBrief.psd1') -Force
 }
 
@@ -338,6 +338,95 @@ Describe 'TenantBrief Module' {
             $f[0].RemediationTr | Should -Match 'Conditional Access Administrator'
             $f[1].RequiredRole | Should -Be 'Intune Administrator'
             $f[1].RemediationTr | Should -Be ''
+        }
+    }
+
+    It 'filters Maester NotRun/AD/AZDO/GitHub/CISA/ORCA entries and normalizes PesterTestSkipped errors to Skipped' {
+        InModuleScope TenantBrief {
+            $mockMaester = [PSCustomObject]@{
+                Tests = @(
+                    [PSCustomObject]@{ Id = 'AD.001'; Title = 'On-prem AD check'; Result = 'NotRun'; Block = 'Active Directory'; ResultDetail = [PSCustomObject]@{} },
+                    [PSCustomObject]@{ Id = 'AZDO.001'; Title = 'Azure DevOps repo'; Result = 'Skipped'; Block = 'Azure DevOps'; ResultDetail = [PSCustomObject]@{} },
+                    [PSCustomObject]@{ Id = 'CIS.GH.1.2.2'; Title = 'GitHub branch'; Result = 'Skipped'; Block = 'CIS'; ResultDetail = [PSCustomObject]@{} },
+                    [PSCustomObject]@{ Id = 'CISA.MS.AAD.1.1v1'; Title = 'Duplicate SCuBA'; Result = 'NotRun'; Block = 'CISA'; ResultDetail = [PSCustomObject]@{} },
+                    [PSCustomObject]@{
+                        Id = 'MT.1029'; Title = 'MT.1029: Stale accounts are not assigned to privileged roles.'; Result = 'Error'; Severity = 'High'; Block = 'Maester/Entra'
+                        ErrorRecord = @([PSCustomObject]@{ FullyQualifiedErrorId = 'PesterTestSkipped' })
+                        ResultDetail = [PSCustomObject]@{
+                            TestSkipped = 'Error'
+                            SkippedReason = 'Authorization failed due to missing permission scope RoleManagementAlert.Read.Directory.'
+                        }
+                    },
+                    [PSCustomObject]@{
+                        Id = 'CIS.M365.2.1.7'; Title = 'Ensure anti-phishing policy created'; Result = 'Failed'; Severity = 'High'; Block = 'CIS'
+                        ResultDetail = [PSCustomObject]@{ TestDescription = 'Anti-phish policy'; TestResult = 'Default only' }
+                    }
+                )
+            }
+            $res = @(Import-TenantBriefMaesterResults -MaesterResult $mockMaester)
+            $res.Count | Should -Be 2
+            ($res | Where-Object { $_.TestId -eq 'MT.1029' }).TestStatus | Should -Be 'Skipped'
+            ($res | Where-Object { $_.TestId -eq 'MT.1029' }).SkippedReason | Should -Match 'RoleManagementAlert\.Read\.Directory'
+            $cis = $res | Where-Object { $_.TestId -eq 'CIS.M365.2.1.7' }
+            $cis.TestSource | Should -Be 'CIS M365'
+            $cis.TestCategory | Should -Match 'Defender for Office 365'
+        }
+    }
+
+    It 'splits space-joined multi-pillars and attaches canonical DomainPillar, Sources and CorrelatedIds' {
+        InModuleScope TenantBrief {
+            $fwMap = (Get-Content (Join-Path (Split-Path $PSScriptRoot) 'data\framework-mappings.json') -Raw -Encoding UTF8 | ConvertFrom-Json).frameworks
+            $rawTests = @(
+                [PSCustomObject]@{ TestId = '21781'; TestTitle = 'Sensitivity labels cover AI data'; TestStatus = 'Failed'; TestRisk = 'High'; TestPillar = 'Data AI'; TestCategory = 'Information Protection' },
+                [PSCustomObject]@{ TestId = 'EIDSCA.AF01'; TestTitle = 'Sensitivity labels cover AI data'; TestStatus = 'Passed'; TestRisk = 'Low'; TestPillar = 'Maester (EIDSCA / CIS)'; TestSource = 'EIDSCA' }
+            )
+            $corr = @(New-TenantBriefCorrelatedTests -Tests $rawTests)
+            $corr.Count | Should -Be 1
+            $corr[0].TestPillar | Should -Contain 'Data'
+            $corr[0].TestPillar | Should -Contain 'AI'
+            $f = @(New-TenantBriefFindings -Tests $corr -PillarMap $fwMap.ISO27001.pillarMap -Language tr)
+            $f[0].FrameworkRef | Should -Not -Be 'General Control'
+            $f[0].Sources | Should -Contain 'ZeroTrust'
+            $f[0].Sources | Should -Contain 'EIDSCA'
+            $f[0].CorrelatedIds | Should -Contain '21781'
+            $f[0].CorrelatedIds | Should -Contain 'EIDSCA.AF01'
+            $f[0].DomainPillars | Should -Contain 'Data'
+            $f[0].DomainPillars | Should -Contain 'AI'
+        }
+    }
+
+    It 'counts DEVELOPERPACK_E5 as eligible base seat and emits COP-APP-01 under StrictMode' {
+        InModuleScope TenantBrief {
+            function Get-MgContext { param($ErrorAction) return [PSCustomObject]@{ Account = 'admin@contoso.onmicrosoft.com' } }
+            function Get-SPOTenant { param($ErrorAction) throw 'SPO unavailable' }
+            function Invoke-MgGraphRequest {
+                param($Method, $Uri, $ErrorAction)
+                switch -Wildcard ($Uri) {
+                    '*/policies/authorizationPolicy' {
+                        return [PSCustomObject]@{
+                            allowInvitesFrom = 'adminsAndGuestInviters'
+                            guestUserRoleId  = '2af84b1e-32c8-42b7-82bc-daa82404023b'
+                            defaultUserRolePermissions = [PSCustomObject]@{ permissionGrantPoliciesAssigned = @() }
+                        }
+                    }
+                    '*sensitivityLabels*' { return [PSCustomObject]@{ value = @([PSCustomObject]@{ id = 'lbl1' }) } }
+                    '*/admin/sharepoint/settings' { return @{ sharingCapability = 'disabled'; isResharingByExternalUsersEnabled = $false; sharingDomainRestrictionMode = 'none' } }
+                    default { return [PSCustomObject]@{ value = @() } }
+                }
+            }
+            try {
+                $mockSkus = @([PSCustomObject]@{ skuPartNumber = 'DEVELOPERPACK_E5'; prepaidUnits = @{ enabled = 25 }; consumedUnits = 1 })
+                $ti = [PSCustomObject]@{ UserCount = 1; GuestCount = 0; TotalAgents = 0 }
+                $cr = Get-TenantBriefCopilotReadiness -SubscribedSkus $mockSkus -TenantInsights $ti -Language tr
+                $cr.EligibleBaseSeats | Should -Be 25
+                $cr.MaturityLevel | Should -Match 'Yönetilen'
+                ($cr.Checks | Where-Object { $_.Id -eq 'COP-LIC-01' }).Status | Should -Be 'Pass'
+                $app = $cr.Checks | Where-Object { $_.Id -eq 'COP-APP-01' }
+                $app | Should -Not -BeNullOrEmpty
+                $app.Status | Should -Be 'Pass'
+            } finally {
+                Remove-Item function:Get-MgContext, function:Get-SPOTenant, function:Invoke-MgGraphRequest -ErrorAction SilentlyContinue
+            }
         }
     }
 }

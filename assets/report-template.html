@@ -49,11 +49,15 @@
     .finding-top { display:flex; justify-content:space-between; align-items:flex-start; gap:12px; flex-wrap:wrap; }
     .f-meta { display:flex; gap:6px; flex-wrap:wrap; margin-top:6px; font-size:11.5px; color:var(--muted); }
     .tag { background:#1e293b; padding:2px 8px; border-radius:6px; }
+    .tag.idtag { font-family:ui-monospace,SFMono-Regular,Menlo,monospace; color:var(--accent); background:rgba(56,189,248,.10); border:1px solid rgba(56,189,248,.25); }
+    .tag.src { background:rgba(99,102,241,.16); color:#c7d2fe; border:1px solid rgba(99,102,241,.35); font-weight:600; }
+    .tag.portal { background:rgba(20,184,166,.12); color:#5eead4; border:1px solid rgba(20,184,166,.3); }
     .pill { font-size:11px; padding:3px 9px; border-radius:999px; font-weight:600; display:inline-block; }
     .pill.Passed { background:rgba(34,197,94,.15); color:var(--ok); }
     .pill.Failed { background:rgba(239,68,68,.15); color:var(--fail); }
     .pill.Skipped { background:rgba(168,85,247,.15); color:var(--skip); }
     .pill.Investigate, .pill.Planned { background:rgba(245,158,11,.15); color:var(--warn); }
+    .pill.Error { background:rgba(244,63,94,.22); color:#fda4af; border:1px solid rgba(244,63,94,.45); }
     details { margin-top:10px; border-top:1px solid var(--border); padding-top:10px; }
     summary { cursor:pointer; color:var(--accent); font-size:13px; font-weight:600; }
     .rem-box { margin-top:8px; background:#090d16; border:1px solid var(--border); border-radius:8px; padding:14px; font-size:13px; line-height:1.6; }
@@ -80,16 +84,13 @@
     <div class="brand"><div class="logo">TB</div><span>TenantBrief</span></div>
     <button class="nav-btn active" onclick="switchView('overview', null, this)" id="navOverview">Genel Bakış</button>
     <div class="nav-grp" id="grpPillars">Güvenlik Sütunları</div>
-    <button class="nav-btn" onclick="switchView('findings', 'Identity', this)" id="navIdentity"><span>Identity (Kimlik)</span><span class="cnt" id="cntIdentity">0</span></button>
-    <button class="nav-btn" onclick="switchView('findings', 'Devices', this)" id="navDevices"><span>Devices (Cihazlar)</span><span class="cnt" id="cntDevices">0</span></button>
-    <button class="nav-btn" onclick="switchView('findings', 'Network', this)" id="navNetwork"><span>Network (Ağ)</span><span class="cnt" id="cntNetwork">0</span></button>
-    <button class="nav-btn" onclick="switchView('findings', 'DataAI', this)" id="navDataAI"><span>Data &amp; AI</span><span class="cnt" id="cntDataAI">0</span></button>
-    <button class="nav-btn" onclick="switchView('findings', 'SecOps', this)" id="navSecOps"><span>SecOps</span><span class="cnt" id="cntSecOps">0</span></button>
-    <button class="nav-btn" onclick="switchView('findings', 'CISA SCuBA', this)" id="navScuba"><span>CISA SCuBA</span><span class="cnt" id="cntScuba">0</span></button>
-    <button class="nav-btn" onclick="switchView('findings', 'ORCA', this)" id="navOrca"><span>MDO / E-posta (ORCA)</span><span class="cnt" id="cntOrca">0</span></button>
-    <button class="nav-btn" onclick="switchView('findings', 'Maester', this)" id="navMaester"><span>Maester (EIDSCA / CIS)</span><span class="cnt" id="cntMaester">0</span></button>
-    <button class="nav-btn" onclick="switchView('findings', 'EntraFalcon', this)" id="navFalcon"><span>EntraFalcon (Yetki Yolu)</span><span class="cnt" id="cntFalcon">0</span></button>
-    <button class="nav-btn" onclick="switchView('findings', 'ALL', this)" id="navAllFindings"><span>Tüm Bulgular</span><span class="cnt" id="cntAll">0</span></button>
+    <button class="nav-btn" onclick="switchView('findings', 'ALL', this)" id="navAllFindings"><span>Tüm Kontroller</span><span class="cnt" id="cntAll">0</span></button>
+    <button class="nav-btn" onclick="switchView('findings', 'Identity', this)" id="navIdentity"><span>Identity (Kimlik &amp; Erişim)</span><span class="cnt" id="cntIdentity">0</span></button>
+    <button class="nav-btn" onclick="switchView('findings', 'Devices', this)" id="navDevices"><span>Devices (Cihaz &amp; Uç Nokta)</span><span class="cnt" id="cntDevices">0</span></button>
+    <button class="nav-btn" onclick="switchView('findings', 'Network', this)" id="navNetwork"><span>Network &amp; Infra (Ağ &amp; Altyapı)</span><span class="cnt" id="cntNetwork">0</span></button>
+    <button class="nav-btn" onclick="switchView('findings', 'Data', this)" id="navData"><span>Data (Veri &amp; Purview)</span><span class="cnt" id="cntData">0</span></button>
+    <button class="nav-btn" onclick="switchView('findings', 'AI', this)" id="navAI"><span>AI &amp; Agents (Yapay Zekâ)</span><span class="cnt" id="cntAI">0</span></button>
+    <button class="nav-btn" onclick="switchView('findings', 'SecOps', this)" id="navSecOps"><span>SecOps &amp; E-posta (Defender/EXO)</span><span class="cnt" id="cntSecOps">0</span></button>
     <div class="nav-grp" id="grpExec">Yönetici &amp; CISO</div>
     <button class="nav-btn" onclick="switchView('findings', 'QUICKWINS', this)" id="navQuickWins"><span>Hızlı Kazanımlar</span><span class="cnt" id="cntQuick">0</span></button>
     <button class="nav-btn" onclick="switchView('frameworks', null, this)" id="navFrameworks">Uyumluluk Çerçeveleri</button>
@@ -127,6 +128,7 @@
       </div>
       <div class="card" id="mfaBanner" style="margin-bottom:20px;font-size:13.5px;color:var(--muted);"></div>
       <div class="card" id="pillarMatrixCard" style="margin-bottom:20px;"></div>
+      <div class="card" id="sourceCoverageCard" style="margin-bottom:20px;"></div>
       <div class="card" id="execActionDigest" style="margin-bottom:20px;"></div>
     </section>
 
@@ -156,7 +158,7 @@
     <section id="tab-findings" class="tab-panel">
       <div class="filter-bar">
         <div class="filter-row">
-          <input type="text" id="searchInput" placeholder="ID, başlık, kategori, SFI veya lisans ara..." oninput="renderFindings()" />
+          <input type="text" id="searchInput" placeholder="ID, başlık, kaynak, kategori, portal veya lisans ara..." oninput="renderFindings()" />
           <select id="sfiFilter" onchange="renderFindings()"><option value="ALL">Tüm SFI Sütunları</option></select>
           <select id="catFilter" onchange="renderFindings()"><option value="ALL">Tüm Kategoriler</option></select>
           <select id="costFilter" onchange="renderFindings()">
@@ -167,6 +169,7 @@
             <option value="Unknown">Bilinmeyen Maliyet</option>
           </select>
         </div>
+        <div class="filter-row" id="sourceChips"></div>
         <div class="filter-row" id="statusChips"></div>
         <div class="filter-row" id="riskChips"></div>
         <div style="display:flex;justify-content:space-between;align-items:center;font-size:12.5px;color:var(--muted);">
@@ -186,7 +189,9 @@
     const isTr = DATA.Language === 'tr';
     const statusLabel = s => !isTr ? (s || '') : ({ Passed: 'Geçti', Failed: 'Başarısız', Skipped: 'Atlandı', Investigate: 'İncele', Planned: 'Planlandı', Error: 'Hata', Pass: 'Geçti', Fail: 'Başarısız' }[s] || s || '');
     const riskLabel = r => !isTr ? (r || '') : ({ High: 'Yüksek', Medium: 'Orta', Low: 'Düşük' }[r] || r || '');
+    const costLabel = c => !isTr ? (c || '') : ({ Low: 'Düşük', Medium: 'Orta', High: 'Yüksek', Unknown: 'Bilinmiyor' }[c] || c || '');
     let activePillarFilter = 'ALL';
+    let activeSourceFilter = 'ALL';
     let activeStatusFilter = 'ALL';
     let activeRiskFilter = 'ALL';
     let currentFiltered = [];
@@ -194,9 +199,13 @@
     if (!isTr) {
       document.getElementById('navOverview').textContent = 'Overview';
       document.getElementById('grpPillars').textContent = 'Security Pillars';
-      document.getElementById('navOrca').firstChild.textContent = 'Email / MDO (ORCA)';
-      document.getElementById('navFalcon').firstChild.textContent = 'EntraFalcon (Attack Paths)';
-      document.getElementById('navAllFindings').firstChild.textContent = 'All Findings';
+      document.getElementById('navAllFindings').firstChild.textContent = 'All Controls';
+      document.getElementById('navIdentity').firstChild.textContent = 'Identity & Access';
+      document.getElementById('navDevices').firstChild.textContent = 'Devices & Endpoint';
+      document.getElementById('navNetwork').firstChild.textContent = 'Network & Infra';
+      document.getElementById('navData').firstChild.textContent = 'Data & Purview';
+      document.getElementById('navAI').firstChild.textContent = 'AI & Agents';
+      document.getElementById('navSecOps').firstChild.textContent = 'SecOps & Email (MDO/EXO)';
       document.getElementById('grpExec').textContent = 'Executive & CISO';
       document.getElementById('navQuickWins').firstChild.textContent = 'Quick Wins';
       document.getElementById('navFrameworks').textContent = 'Frameworks';
@@ -207,7 +216,10 @@
       document.getElementById('btnPrint').textContent = 'Print / PDF';
       document.getElementById('donutLbl').textContent = 'Control Distribution';
       document.getElementById('fwChartLbl').textContent = 'Framework Compliance';
-      document.getElementById('searchInput').placeholder = 'Search ID, title, category, SFI or license...';
+      document.getElementById('searchInput').placeholder = 'Search ID, title, source, category, portal or license...';
+      document.getElementById('sfiFilter').options[0].text = 'All SFI Pillars';
+      document.getElementById('catFilter').options[0].text = 'All Categories';
+      document.getElementById('costFilter').options[0].text = 'All Costs';
       document.getElementById('btnExpandAll').textContent = 'Expand All';
       document.getElementById('btnCollapseAll').textContent = 'Collapse All';
     }
@@ -253,13 +265,37 @@
         .replace(/\[([^\]]+)\]\((https?:\/\/[^)]+)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer">$1 ↗</a>');
     }
 
-    function switchView(tabId, pillarMode, btn) {
+    function getDomains(f) {
+      if (Array.isArray(f.DomainPillars) && f.DomainPillars.length) return f.DomainPillars;
+      if (f.DomainPillar) return String(f.DomainPillar).split(/\s*,\s*/).filter(Boolean);
+      const p = String(f.Pillar || '');
+      if (p.includes('Devices')) return ['Devices'];
+      if (p.includes('Network') || p.includes('Infrastructure')) return ['Network'];
+      if (p.includes('Data')) return ['Data'];
+      if (p.includes('AI')) return ['AI'];
+      if (p.includes('SecOps') || p.includes('ORCA')) return ['SecOps'];
+      return ['Identity'];
+    }
+
+    function getSources(f) {
+      if (Array.isArray(f.Sources) && f.Sources.length) return f.Sources;
+      if (f.Source) return String(f.Source).split(/\s*,\s*/).filter(Boolean);
+      const p = String(f.Pillar || '');
+      if (p.includes('SCuBA')) return ['CISA SCuBA'];
+      if (p.includes('ORCA')) return ['MDO / ORCA'];
+      if (p.includes('Maester')) return ['Maester'];
+      if (p.includes('EntraFalcon')) return ['EntraFalcon'];
+      return ['ZeroTrust'];
+    }
+
+    function switchView(tabId, pillarMode, btn, sourceMode) {
       document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
       document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
       document.getElementById('tab-' + tabId).classList.add('active');
       if (btn) btn.classList.add('active');
       if (tabId === 'findings') {
         activePillarFilter = pillarMode || 'ALL';
+        activeSourceFilter = sourceMode || 'ALL';
         activeStatusFilter = 'ALL';
         activeRiskFilter = 'ALL';
         renderFilterChips();
@@ -267,18 +303,16 @@
       }
     }
 
-    // Populate Pillar Counts
+    // Populate Canonical Pillar Counts
     const F = DATA.Findings || [];
+    const cntByDomain = dom => F.filter(x => getDomains(x).includes(dom)).length;
     document.getElementById('cntAll').textContent = F.length;
-    document.getElementById('cntIdentity').textContent = F.filter(x => (x.Pillar || '').includes('Identity')).length;
-    document.getElementById('cntDevices').textContent = F.filter(x => (x.Pillar || '').includes('Devices')).length;
-    document.getElementById('cntNetwork').textContent = F.filter(x => (x.Pillar || '').includes('Network') || (x.Pillar || '').includes('Infrastructure')).length;
-    document.getElementById('cntDataAI').textContent = F.filter(x => (x.Pillar || '').includes('Data') || (x.Pillar || '').includes('AI')).length;
-    document.getElementById('cntSecOps').textContent = F.filter(x => (x.Pillar || '').includes('SecOps')).length;
-    document.getElementById('cntScuba').textContent = F.filter(x => (x.Pillar || '').includes('CISA SCuBA')).length;
-    document.getElementById('cntOrca').textContent = F.filter(x => (x.Pillar || '').includes('ORCA')).length;
-    document.getElementById('cntMaester').textContent = F.filter(x => (x.Pillar || '').includes('Maester')).length;
-    document.getElementById('cntFalcon').textContent = F.filter(x => (x.Pillar || '').includes('EntraFalcon')).length;
+    document.getElementById('cntIdentity').textContent = cntByDomain('Identity');
+    document.getElementById('cntDevices').textContent = cntByDomain('Devices');
+    document.getElementById('cntNetwork').textContent = cntByDomain('Network');
+    document.getElementById('cntData').textContent = cntByDomain('Data');
+    document.getElementById('cntAI').textContent = cntByDomain('AI');
+    document.getElementById('cntSecOps').textContent = cntByDomain('SecOps');
     document.getElementById('cntQuick').textContent = F.filter(x => x.Status === 'Failed' && x.ImplementationCost === 'Low').length;
 
     // Populate SFI & Category Dropdowns
@@ -310,30 +344,25 @@
     `;
     document.getElementById('mfaBanner').innerHTML = `<strong>${isTr ? 'MFA & Koşullu Erişim Kapsamı:' : 'MFA & Conditional Access Coverage:'}</strong> ${esc(ti.MfaCoverageDesc || (isTr ? 'Veri yok' : 'No data'))}`;
 
-    // CISO Risk Posture Matrix by Pillar
+    // CISO Risk Posture Matrix across 6 Canonical Security Domains
     const matrixPillars = [
-      { key: 'Identity', label: isTr ? 'Identity (Kimlik)' : 'Identity', nav: 'navIdentity' },
-      { key: 'Devices', label: isTr ? 'Devices (Cihazlar)' : 'Devices', nav: 'navDevices' },
-      { key: 'Network', label: isTr ? 'Network (Ağ)' : 'Network', nav: 'navNetwork' },
-      { key: 'DataAI', label: 'Data & AI', nav: 'navDataAI' },
-      { key: 'SecOps', label: 'SecOps', nav: 'navSecOps' },
-      { key: 'CISA SCuBA', label: 'CISA SCuBA Baseline', nav: 'navScuba' },
-      { key: 'ORCA', label: isTr ? 'E-posta Güvenliği (ORCA)' : 'Email Security (ORCA)', nav: 'navOrca' },
-      { key: 'Maester', label: 'Maester (EIDSCA / CIS)', nav: 'navMaester' },
-      { key: 'EntraFalcon', label: 'EntraFalcon', nav: 'navFalcon' }
+      { key: 'Identity', label: isTr ? 'Identity (Kimlik & Erişim)' : 'Identity & Access', nav: 'navIdentity' },
+      { key: 'Devices', label: isTr ? 'Devices (Cihaz & Uç Nokta)' : 'Devices & Endpoint', nav: 'navDevices' },
+      { key: 'Network', label: isTr ? 'Network & Infra (Ağ & Altyapı)' : 'Network & Infra', nav: 'navNetwork' },
+      { key: 'Data', label: isTr ? 'Data (Veri & Purview)' : 'Data & Purview', nav: 'navData' },
+      { key: 'AI', label: isTr ? 'AI & Agents (Yapay Zekâ)' : 'AI & Agents', nav: 'navAI' },
+      { key: 'SecOps', label: isTr ? 'SecOps & E-posta (Defender/EXO)' : 'SecOps & Email (MDO/EXO)', nav: 'navSecOps' }
     ];
     const matrixRows = matrixPillars.map(mp => {
-      const items = F.filter(x => {
-        const p = x.Pillar || '';
-        if (mp.key === 'DataAI') return p.includes('Data') || p.includes('AI');
-        if (mp.key === 'Network') return p.includes('Network') || p.includes('Infrastructure');
-        return p.includes(mp.key);
-      });
+      const items = F.filter(x => getDomains(x).includes(mp.key));
       const pass = items.filter(x => x.Status === 'Passed').length;
       const fail = items.filter(x => x.Status === 'Failed').length;
       const hi   = items.filter(x => x.Status === 'Failed' && x.Risk === 'High').length;
       const med  = items.filter(x => x.Status === 'Failed' && x.Risk === 'Medium').length;
-      const evalC = pass + fail;
+      const lowF = items.filter(x => x.Status === 'Failed' && x.Risk === 'Low').length;
+      const invErr = items.filter(x => x.Status === 'Investigate' || x.Status === 'Error').length;
+      const skPlan = items.filter(x => x.Status === 'Skipped' || x.Status === 'Planned').length;
+      const evalC = pass + fail + invErr;
       const pct = evalC > 0 ? Math.round((pass / evalC) * 100) : 0;
       return `<tr style="cursor:pointer;" onclick="switchView('findings', '${mp.key}', document.getElementById('${mp.nav}'))">
         <td><strong>${mp.label}</strong></td>
@@ -341,15 +370,55 @@
         <td style="color:var(--ok)">${pass}</td>
         <td style="color:var(--fail)"><strong>${hi}</strong></td>
         <td style="color:var(--warn)">${med}</td>
+        <td>${lowF}</td>
+        <td style="color:var(--warn)">${invErr}</td>
+        <td style="color:var(--skip)">${skPlan}</td>
         <td><strong>${pct}%</strong></td>
       </tr>`;
     }).join('');
     document.getElementById('pillarMatrixCard').innerHTML = `
-      <h3 style="margin-bottom:8px;">${isTr ? 'Sütun Bazlı Risk ve Olgunluk Matrisi (Detay için satıra tıklayın)' : 'Pillar Risk & Maturity Matrix (Click row to drill down)'}</h3>
+      <h3 style="margin-bottom:8px;">${isTr ? 'Birleşik Güvenlik Sütunu Risk ve Olgunluk Matrisi (Detay için satıra tıklayın)' : 'Unified Security Pillar Risk & Maturity Matrix (Click row to drill down)'}</h3>
       <table class="md-table">
-        <thead><tr><th>${isTr ? 'Güvenlik Sütunu' : 'Pillar'}</th><th>${isTr ? 'Toplam' : 'Total'}</th><th>Passed</th><th>${isTr ? 'Yüksek Açık' : 'High Failed'}</th><th>${isTr ? 'Orta Açık' : 'Med Failed'}</th><th>${isTr ? 'Olgunluk' : 'Maturity'}</th></tr></thead>
+        <thead><tr>
+          <th>${isTr ? 'Güvenlik Sütunu' : 'Security Pillar'}</th>
+          <th>${isTr ? 'Toplam' : 'Total'}</th>
+          <th>${isTr ? 'Geçti' : 'Passed'}</th>
+          <th>${isTr ? 'Yüksek Açık' : 'High Fail'}</th>
+          <th>${isTr ? 'Orta Açık' : 'Med Fail'}</th>
+          <th>${isTr ? 'Düşük Açık' : 'Low Fail'}</th>
+          <th>${isTr ? 'İncele / Hata' : 'Inv / Err'}</th>
+          <th>${isTr ? 'Atlandı / Plan' : 'Skip / Plan'}</th>
+          <th>${isTr ? 'Olgunluk' : 'Maturity'}</th>
+        </tr></thead>
         <tbody>${matrixRows}</tbody>
       </table>
+    `;
+
+    // Engine & Standard Source Coverage Summary (click badge to filter Findings by Source)
+    const sourceOrder = ['ZeroTrust', 'CISA SCuBA', 'MDO / ORCA', 'CIS M365', 'EIDSCA', 'Maester', 'EntraFalcon'];
+    const allSources = [...new Set(F.flatMap(getSources))];
+    allSources.sort((a, b) => {
+      const ia = sourceOrder.indexOf(a), ib = sourceOrder.indexOf(b);
+      return (ia === -1 ? 99 : ia) - (ib === -1 ? 99 : ib) || a.localeCompare(b);
+    });
+    const sourceCardsHtml = allSources.map(src => {
+      const items = F.filter(x => getSources(x).includes(src));
+      const pCnt = items.filter(x => x.Status === 'Passed').length;
+      const fCnt = items.filter(x => x.Status === 'Failed').length;
+      const sCnt = items.filter(x => x.Status === 'Skipped' || x.Status === 'Planned').length;
+      return `<div class="card road-card" onclick="switchView('findings', 'ALL', document.getElementById('navAllFindings'), '${esc(src)}')" style="padding:12px;">
+        <div class="lbl" style="color:#c7d2fe;font-weight:600;">${esc(src)}</div>
+        <div class="val" style="font-size:22px;">${items.length}</div>
+        <div style="font-size:11.5px;color:var(--muted);margin-top:4px;">
+          <span style="color:var(--ok)">${pCnt} ${isTr ? 'Geçti' : 'Pass'}</span> ·
+          <span style="color:var(--fail)">${fCnt} ${isTr ? 'Açık' : 'Fail'}</span> ·
+          <span style="color:var(--skip)">${sCnt} ${isTr ? 'Atlandı' : 'Skip'}</span>
+        </div>
+      </div>`;
+    }).join('');
+    document.getElementById('sourceCoverageCard').innerHTML = `
+      <h3 style="margin-bottom:10px;">${isTr ? 'Tarama Motoru ve Standart Kaynak Dağılımı (Filtrelemek için tıklayın)' : 'Engine & Standard Source Coverage (Click card to filter)'}</h3>
+      <div class="cards" style="margin-bottom:0;">${sourceCardsHtml}</div>
     `;
 
     // SVG Donut Chart
@@ -524,18 +593,18 @@
     const byCostThenId = (a, b) => ((costOrder[a.ImplementationCost] ?? 3) - (costOrder[b.ImplementationCost] ?? 3)) || String(a.Id || '').localeCompare(String(b.Id || ''));
     const highFailed = F.filter(x => x.Status === 'Failed' && x.Risk === 'High').slice().sort(byCostThenId);
     const pillarBreak = {};
-    highFailed.forEach(x => { const p = x.PrimaryPillar || 'General'; pillarBreak[p] = (pillarBreak[p] || 0) + 1; });
+    highFailed.forEach(x => { getDomains(x).forEach(p => { pillarBreak[p] = (pillarBreak[p] || 0) + 1; }); });
     const breakText = Object.entries(pillarBreak).sort((a,b) => b[1]-a[1]).map(([k,v]) => `${k}: ${v}`).join(' · ');
     const topActions = highFailed.slice(0, 12).map(x => `
       <tr>
-        <td><strong>${esc(x.Title)}</strong><div style="font-size:11.5px;color:var(--muted);margin-top:2px;">${esc(x.Pillar)} · ${esc(x.Category)}</div></td>
-        <td>${esc(x.ImplementationCost)}</td>
+        <td><code class="tag idtag">${esc(x.Id)}</code> <strong>${esc(x.Title)}</strong><div style="font-size:11.5px;color:var(--muted);margin-top:3px;">${esc(getDomains(x).join(', '))} · ${esc(getSources(x).join(', '))} · ${esc(x.Category)}</div></td>
+        <td>${esc(costLabel(x.ImplementationCost))}</td>
         <td style="font-size:12px;">${esc(isTr ? (x.RemediationTr || '') : (x.Description || '').slice(0, 160))}</td>
       </tr>
     `).join('');
     document.getElementById('execActionDigest').innerHTML = `
       <h3 style="margin-bottom:6px;">${isTr ? 'Yönetici İyileştirme Özeti (Çevrimdışı Analiz — Sıfır Veri Paylaşımı)' : 'Executive Remediation Digest (Offline Analysis — Zero External Sharing)'}</h3>
-      <p style="font-size:12.5px;color:var(--muted);margin-bottom:12px;">${isTr ? 'Yüksek riskli açıkların sütun dağılımı:' : 'High-risk gap breakdown:'} <strong>${esc(breakText || '-')}</strong></p>
+      <p style="font-size:12.5px;color:var(--muted);margin-bottom:12px;">${isTr ? 'Yüksek riskli açıkların güvenlik sütunu dağılımı:' : 'High-risk gap breakdown:'} <strong>${esc(breakText || '-')}</strong></p>
       <table class="md-table">
         <thead><tr><th>${isTr ? 'Öncelikli Kontrol' : 'Priority Control'}</th><th>${isTr ? 'Maliyet' : 'Cost'}</th><th>${isTr ? 'Önerilen İyileştirme Adımı' : 'Recommended Action'}</th></tr></thead>
         <tbody>${topActions}</tbody>
@@ -560,7 +629,7 @@
           : F.filter(x => (x.Status === 'Failed' && x.Risk === 'Low') || x.Status === 'Investigate'))).slice().sort(byCostThenId);
       const pRows = items.map(x => `
         <tr>
-          <td><strong>${esc(x.Title)}</strong><div style="font-size:11.5px;color:var(--muted);">${esc(x.Pillar)} · ${esc(x.Category)}</div></td>
+          <td><code class="tag idtag">${esc(x.Id)}</code> <strong>${esc(x.Title)}</strong><div style="font-size:11.5px;color:var(--muted);margin-top:3px;">${esc(getDomains(x).join(', '))} · ${esc(getSources(x).join(', '))} · ${esc(x.Category)}</div></td>
           <td><span class="pill ${esc(x.Status)}">${esc(statusLabel(x.Status))}</span></td>
           <td>${esc(riskLabel(x.Risk))}</td>
           <td style="font-size:12px;">${esc(isTr ? (x.RemediationTr || '') : (x.Description || '').slice(0, 140))}</td>
@@ -578,6 +647,13 @@
     renderRoadmap();
 
     function renderFilterChips() {
+      document.getElementById('sourceChips').innerHTML = `<span style="font-size:12px;color:var(--muted);">${isTr ? 'Kaynak / Standart:' : 'Source / Standard:'}</span>` +
+        `<button class="chip ${activeSourceFilter === 'ALL' ? 'active' : ''}" onclick="setSource('ALL')">${isTr ? 'Tümü' : 'All'} (${F.length})</button>` +
+        allSources.map(src => {
+          const cnt = F.filter(x => getSources(x).includes(src)).length;
+          return `<button class="chip ${activeSourceFilter === src ? 'active' : ''}" onclick="setSource('${esc(src)}')">${esc(src)} (${cnt})</button>`;
+        }).join('');
+
       const statuses = ['ALL', 'Failed', 'Passed', 'Skipped', 'Investigate', 'Planned', 'Error'];
       document.getElementById('statusChips').innerHTML = `<span style="font-size:12px;color:var(--muted);">${isTr ? 'Durum:' : 'Status:'}</span>` +
         statuses.map(st => `<button class="chip ${activeStatusFilter === st ? 'active' : ''}" onclick="setStatus('${st}')">${st === 'ALL' ? (isTr ? 'Tümü' : 'All') : statusLabel(st)}</button>`).join('');
@@ -586,6 +662,7 @@
       document.getElementById('riskChips').innerHTML = `<span style="font-size:12px;color:var(--muted);">Risk:</span>` +
         risks.map(rk => `<button class="chip ${activeRiskFilter === rk ? 'active' : ''}" onclick="setRisk('${rk}')">${rk === 'ALL' ? (isTr ? 'Tümü' : 'All') : riskLabel(rk)}</button>`).join('');
     }
+    function setSource(src) { activeSourceFilter = src; renderFilterChips(); renderFindings(); }
     function setStatus(s) { activeStatusFilter = s; renderFilterChips(); renderFindings(); }
     function setRisk(r) { activeRiskFilter = r; renderFilterChips(); renderFindings(); }
     function toggleAllDetails(open) { document.querySelectorAll('#findingsList details').forEach(d => d.open = open); }
@@ -597,12 +674,15 @@
       const cst = document.getElementById('costFilter').value;
 
       currentFiltered = F.filter(f => {
-        const pStr = f.Pillar || '';
-        if (activePillarFilter === 'DataAI' && !pStr.includes('Data') && !pStr.includes('AI')) return false;
-        else if (activePillarFilter === 'Network' && !pStr.includes('Network') && !pStr.includes('Infrastructure')) return false;
-        else if (activePillarFilter === 'QUICKWINS' && !(f.Status === 'Failed' && f.ImplementationCost === 'Low')) return false;
-        else if (!['ALL', 'DataAI', 'Network', 'QUICKWINS'].includes(activePillarFilter) && !pStr.includes(activePillarFilter)) return false;
+        const doms = getDomains(f);
+        const srcs = getSources(f);
+        if (activePillarFilter === 'QUICKWINS') {
+          if (!(f.Status === 'Failed' && f.ImplementationCost === 'Low')) return false;
+        } else if (activePillarFilter !== 'ALL' && !doms.includes(activePillarFilter)) {
+          return false;
+        }
 
+        if (activeSourceFilter !== 'ALL' && !srcs.includes(activeSourceFilter)) return false;
         if (activeStatusFilter !== 'ALL' && f.Status !== activeStatusFilter) return false;
         if (activeRiskFilter !== 'ALL' && f.Risk !== activeRiskFilter) return false;
         if (sfi !== 'ALL' && f.SfiPillar !== sfi) return false;
@@ -610,7 +690,7 @@
         if (cst !== 'ALL' && f.ImplementationCost !== cst) return false;
 
         if (q) {
-          const hay = `${f.Id} ${f.Title} ${f.Category} ${f.SfiPillar} ${f.MinimumLicense} ${f.Pillar}`.toLowerCase();
+          const hay = `${f.Id} ${(f.CorrelatedIds || []).join(' ')} ${f.Title} ${f.Category} ${f.SfiPillar} ${f.MinimumLicense} ${doms.join(' ')} ${srcs.join(' ')} ${f.FrameworkRef} ${f.AdminPortal}`.toLowerCase();
           if (!hay.includes(q)) return false;
         }
         return true;
@@ -621,6 +701,10 @@
         : `Showing ${currentFiltered.length} of ${F.length} checks`;
 
       document.getElementById('findingsList').innerHTML = currentFiltered.map(f => {
+        const srcs = getSources(f);
+        const doms = getDomains(f);
+        const corrIds = Array.isArray(f.CorrelatedIds) && f.CorrelatedIds.length > 1 ? f.CorrelatedIds : [];
+        const srcBadges = srcs.map(src => `<span class="tag src">${esc(src)}</span>`).join('');
         const trBox = isTr
           ? `<div style="margin-bottom:10px;padding:8px 10px;background:rgba(56,189,248,.08);border-left:3px solid var(--accent);border-radius:4px;"><strong>Türkçe İyileştirme Adımları:</strong><div style="margin-top:4px;">${esc(f.RemediationTr)}</div></div>`
           : '';
@@ -633,14 +717,17 @@
           <div class="finding">
             <div class="finding-top">
               <div>
-                <strong>${esc(f.Title)}</strong>
+                <div><code class="tag idtag">${esc(f.Id)}</code> <strong>${esc(f.Title)}</strong></div>
                 <div class="f-meta">
-                  <span class="tag">${esc(f.Pillar)}</span>
+                  ${srcBadges}
+                  ${corrIds.length ? `<span class="tag">${isTr ? 'Eşleşen ID:' : 'Correlated:'} ${esc(corrIds.join(', '))}</span>` : ''}
+                  <span class="tag">${esc(doms.join(', '))}</span>
                   <span class="tag">${esc(f.Category)}</span>
-                  ${f.SfiPillar ? `<span class="tag">SFI: ${esc(f.SfiPillar)}</span>` : ''}
-                  ${f.MinimumLicense ? `<span class="tag">${isTr ? 'Lisans:' : 'License:'} ${esc(f.MinimumLicense)}</span>` : ''}
+                  ${f.FrameworkRef ? `<span class="tag">${esc(f.FrameworkRef)}</span>` : ''}
+                  ${f.AdminPortal ? `<span class="tag portal">${esc(f.AdminPortal)}</span>` : ''}
                   ${f.RequiredRole ? `<span class="tag">${isTr ? 'En Az Yetki:' : 'Least Privilege:'} ${esc(f.RequiredRole)}</span>` : ''}
-                  <span class="tag">${isTr ? 'Maliyet:' : 'Cost:'} ${esc(f.ImplementationCost)}</span>
+                  ${f.MinimumLicense ? `<span class="tag">${isTr ? 'Lisans:' : 'License:'} ${esc(f.MinimumLicense)}</span>` : ''}
+                  <span class="tag">${isTr ? 'Maliyet:' : 'Cost:'} ${esc(costLabel(f.ImplementationCost))}</span>
                 </div>
               </div>
               <div style="white-space:nowrap;">
@@ -658,9 +745,23 @@
     }
 
     function exportCsv() {
-      const rows = [['Id','Pillar','Category','SfiPillar','Status','Risk','Cost','License','Title']];
+      const rows = [['Id','CorrelatedIds','DomainPillar','Sources','Category','FrameworkRef','Status','Risk','Cost','License','RequiredRole','AdminPortal','Title']];
       (currentFiltered.length ? currentFiltered : F).forEach(f => {
-        rows.push([f.Id, f.Pillar, f.Category, f.SfiPillar, f.Status, f.Risk, f.ImplementationCost, f.MinimumLicense, f.Title].map(v => '"' + String(v || '').replace(/"/g,'""') + '"'));
+        rows.push([
+          f.Id,
+          (f.CorrelatedIds || []).join('; '),
+          getDomains(f).join(', '),
+          getSources(f).join(', '),
+          f.Category,
+          f.FrameworkRef,
+          f.Status,
+          f.Risk,
+          f.ImplementationCost,
+          f.MinimumLicense,
+          f.RequiredRole,
+          f.AdminPortal,
+          f.Title
+        ].map(v => '"' + String(v || '').replace(/"/g,'""') + '"'));
       });
       const blob = new Blob([rows.map(r => r.join(',')).join('\n')], { type: 'text/csv;charset=utf-8;' });
       const a = document.createElement('a');

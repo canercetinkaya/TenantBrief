@@ -431,6 +431,25 @@ Describe 'Multi-engine Maester & EntraFalcon JSON ingestion' {
         $script:MultiReport.Summary.Total | Should -Be 17
         ($script:MultiReport.Findings | Where-Object { $_.Pillar -match 'Maester' }).Count | Should -Be 1
         ($script:MultiReport.Findings | Where-Object { $_.Pillar -eq 'EntraFalcon' }).Count | Should -Be 1
-        ($script:MultiReport.Findings | Where-Object { $_.Id -eq 'EF-ROLE-001' }).RequiredRole | Should -Be 'Conditional Access Administrator / Security Administrator'
+        $ef = $script:MultiReport.Findings | Where-Object { $_.Id -eq 'EF-ROLE-001' }
+        $ef.RequiredRole | Should -Be 'Conditional Access Administrator / Security Administrator'
+        $ef.DomainPillar | Should -Be 'Identity'
+        $ef.Sources | Should -Contain 'EntraFalcon'
+        $ei = $script:MultiReport.Findings | Where-Object { $_.Id -eq 'EIDSCA.AP01' }
+        $ei.Sources | Should -Contain 'EIDSCA'
+        $ei.DomainPillar | Should -Be 'Identity'
+    }
+
+    It 'attaches canonical DomainPillar, Sources and CorrelatedIds on correlated controls' {
+        $merged = $script:Report.Findings | Where-Object { $_.Title -eq 'Ensure MFA is enforced for all users' }
+        $merged.DomainPillar | Should -Be 'Identity'
+        $merged.Sources | Should -Contain 'ZeroTrust'
+        $merged.Sources | Should -Contain 'CISA SCuBA'
+        $merged.CorrelatedIds | Should -Contain 'MT.1001'
+        $merged.CorrelatedIds | Should -Contain 'SCUBA-AAD-1'
+
+        $html = Get-Content -Path $script:Run.HtmlPath -Raw -Encoding UTF8
+        $html | Should -Match 'id="sourceCoverageCard"'
+        $html | Should -Match 'id="sourceChips"'
     }
 }
