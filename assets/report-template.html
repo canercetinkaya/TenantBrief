@@ -87,6 +87,8 @@
     <button class="nav-btn" onclick="switchView('findings', 'SecOps', this)" id="navSecOps"><span>SecOps</span><span class="cnt" id="cntSecOps">0</span></button>
     <button class="nav-btn" onclick="switchView('findings', 'CISA SCuBA', this)" id="navScuba"><span>CISA SCuBA</span><span class="cnt" id="cntScuba">0</span></button>
     <button class="nav-btn" onclick="switchView('findings', 'ORCA', this)" id="navOrca"><span>MDO / E-posta (ORCA)</span><span class="cnt" id="cntOrca">0</span></button>
+    <button class="nav-btn" onclick="switchView('findings', 'Maester', this)" id="navMaester"><span>Maester (EIDSCA / CIS)</span><span class="cnt" id="cntMaester">0</span></button>
+    <button class="nav-btn" onclick="switchView('findings', 'EntraFalcon', this)" id="navFalcon"><span>EntraFalcon (Yetki Yolu)</span><span class="cnt" id="cntFalcon">0</span></button>
     <button class="nav-btn" onclick="switchView('findings', 'ALL', this)" id="navAllFindings"><span>Tüm Bulgular</span><span class="cnt" id="cntAll">0</span></button>
     <div class="nav-grp" id="grpExec">Yönetici &amp; CISO</div>
     <button class="nav-btn" onclick="switchView('findings', 'QUICKWINS', this)" id="navQuickWins"><span>Hızlı Kazanımlar</span><span class="cnt" id="cntQuick">0</span></button>
@@ -193,6 +195,7 @@
       document.getElementById('navOverview').textContent = 'Overview';
       document.getElementById('grpPillars').textContent = 'Security Pillars';
       document.getElementById('navOrca').firstChild.textContent = 'Email / MDO (ORCA)';
+      document.getElementById('navFalcon').firstChild.textContent = 'EntraFalcon (Attack Paths)';
       document.getElementById('navAllFindings').firstChild.textContent = 'All Findings';
       document.getElementById('grpExec').textContent = 'Executive & CISO';
       document.getElementById('navQuickWins').firstChild.textContent = 'Quick Wins';
@@ -274,6 +277,8 @@
     document.getElementById('cntSecOps').textContent = F.filter(x => (x.Pillar || '').includes('SecOps')).length;
     document.getElementById('cntScuba').textContent = F.filter(x => (x.Pillar || '').includes('CISA SCuBA')).length;
     document.getElementById('cntOrca').textContent = F.filter(x => (x.Pillar || '').includes('ORCA')).length;
+    document.getElementById('cntMaester').textContent = F.filter(x => (x.Pillar || '').includes('Maester')).length;
+    document.getElementById('cntFalcon').textContent = F.filter(x => (x.Pillar || '').includes('EntraFalcon')).length;
     document.getElementById('cntQuick').textContent = F.filter(x => x.Status === 'Failed' && x.ImplementationCost === 'Low').length;
 
     // Populate SFI & Category Dropdowns
@@ -313,7 +318,9 @@
       { key: 'DataAI', label: 'Data & AI', nav: 'navDataAI' },
       { key: 'SecOps', label: 'SecOps', nav: 'navSecOps' },
       { key: 'CISA SCuBA', label: 'CISA SCuBA Baseline', nav: 'navScuba' },
-      { key: 'ORCA', label: isTr ? 'E-posta Güvenliği (ORCA)' : 'Email Security (ORCA)', nav: 'navOrca' }
+      { key: 'ORCA', label: isTr ? 'E-posta Güvenliği (ORCA)' : 'Email Security (ORCA)', nav: 'navOrca' },
+      { key: 'Maester', label: 'Maester (EIDSCA / CIS)', nav: 'navMaester' },
+      { key: 'EntraFalcon', label: 'EntraFalcon', nav: 'navFalcon' }
     ];
     const matrixRows = matrixPillars.map(mp => {
       const items = F.filter(x => {
@@ -513,7 +520,9 @@
     calcCopilotRoi();
 
     // Offline Deterministic Executive Remediation Digest (Zero external AI data sharing)
-    const highFailed = F.filter(x => x.Status === 'Failed' && x.Risk === 'High');
+    const costOrder = { Low: 0, Medium: 1, High: 2, Unknown: 3 };
+    const byCostThenId = (a, b) => ((costOrder[a.ImplementationCost] ?? 3) - (costOrder[b.ImplementationCost] ?? 3)) || String(a.Id || '').localeCompare(String(b.Id || ''));
+    const highFailed = F.filter(x => x.Status === 'Failed' && x.Risk === 'High').slice().sort(byCostThenId);
     const pillarBreak = {};
     highFailed.forEach(x => { const p = x.PrimaryPillar || 'General'; pillarBreak[p] = (pillarBreak[p] || 0) + 1; });
     const breakText = Object.entries(pillarBreak).sort((a,b) => b[1]-a[1]).map(([k,v]) => `${k}: ${v}`).join(' · ');
@@ -544,11 +553,11 @@
           <div style="font-size:13px;color:var(--muted);">${esc(r.Focus)}</div>
         </div>
       `).join('');
-      const items = activePhaseIdx === 0
+      const items = (activePhaseIdx === 0
         ? F.filter(x => x.Status === 'Failed' && x.Risk === 'High')
         : (activePhaseIdx === 1
           ? F.filter(x => x.Status === 'Failed' && x.Risk === 'Medium')
-          : F.filter(x => (x.Status === 'Failed' && x.Risk === 'Low') || x.Status === 'Investigate'));
+          : F.filter(x => (x.Status === 'Failed' && x.Risk === 'Low') || x.Status === 'Investigate'))).slice().sort(byCostThenId);
       const pRows = items.map(x => `
         <tr>
           <td><strong>${esc(x.Title)}</strong><div style="font-size:11.5px;color:var(--muted);">${esc(x.Pillar)} · ${esc(x.Category)}</div></td>
@@ -630,6 +639,7 @@
                   <span class="tag">${esc(f.Category)}</span>
                   ${f.SfiPillar ? `<span class="tag">SFI: ${esc(f.SfiPillar)}</span>` : ''}
                   ${f.MinimumLicense ? `<span class="tag">${isTr ? 'Lisans:' : 'License:'} ${esc(f.MinimumLicense)}</span>` : ''}
+                  ${f.RequiredRole ? `<span class="tag">${isTr ? 'En Az Yetki:' : 'Least Privilege:'} ${esc(f.RequiredRole)}</span>` : ''}
                   <span class="tag">${isTr ? 'Maliyet:' : 'Cost:'} ${esc(f.ImplementationCost)}</span>
                 </div>
               </div>

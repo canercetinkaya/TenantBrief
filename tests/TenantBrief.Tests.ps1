@@ -240,4 +240,104 @@ Describe 'TenantBrief Module' {
             }
         }
     }
+
+    It 'imports Maester EIDSCA/CIS test results into the Maester pillar' {
+        InModuleScope TenantBrief {
+            $mockMaester = [PSCustomObject]@{
+                Tests = @(
+                    [PSCustomObject]@{
+                        Id           = 'EIDSCA.AF01'
+                        Title        = 'EIDSCA.AF01: Block legacy authentication methods'
+                        Result       = 'Failed'
+                        Severity     = 'High'
+                        Block        = 'Entra ID Authentication Methods'
+                        HelpUrl      = 'https://maester.dev/docs/tests/EIDSCA.AF01'
+                        ResultDetail = [PSCustomObject]@{
+                            TestDescription = 'Verify authentication method migration posture.'
+                            TestResult      = 'Legacy SMS policy enabled'
+                            SkippedReason   = ''
+                        }
+                    },
+                    [PSCustomObject]@{
+                        Id           = 'CIS.M365.5.1'
+                        Title        = 'Ensure Security Defaults or CA is configured'
+                        Result       = 'Passed'
+                        Severity     = 'Medium'
+                        Block        = 'CIS M365'
+                        ResultDetail = [PSCustomObject]@{ TestDescription = 'CA enabled'; TestResult = 'OK' }
+                    }
+                )
+            }
+            $res = @(Import-TenantBriefMaesterResults -MaesterResult $mockMaester)
+            $res.Count | Should -Be 2
+            $res[0].TestId | Should -Be 'EIDSCA.AF01'
+            $res[0].TestTitle | Should -Be 'Block legacy authentication methods'
+            $res[0].TestStatus | Should -Be 'Failed'
+            $res[0].TestRisk | Should -Be 'High'
+            $res[0].TestPillar | Should -Be 'Maester (EIDSCA / CIS)'
+            $res[0].TestDescription | Should -Match 'https://maester.dev'
+            $res[1].TestStatus | Should -Be 'Passed'
+        }
+    }
+
+    It 'imports EntraFalcon tenant_findings_all JSON findings into the EntraFalcon pillar' {
+        $tmpEf = Join-Path ([System.IO.Path]::GetTempPath()) ("tb-ef-" + [guid]::NewGuid().ToString('N').Substring(0, 8) + '.json')
+        try {
+            @(
+                [PSCustomObject]@{
+                    FindingId       = 'USR-001'
+                    Title           = 'Privileged users without phishing-resistant MFA'
+                    Category        = 'Users'
+                    Severity        = 4
+                    Status          = 'Vulnerable'
+                    Description     = 'High privilege accounts rely on phishable factors.'
+                    Threat          = 'AiTM phishing token theft'
+                    Remediation     = 'Enforce FIDO2 Authentication Strength'
+                    AffectedObjects = @(@{ id = 'u1' }, @{ id = 'u2' })
+                },
+                [PSCustomObject]@{
+                    FindingId       = 'EF-APP-02'
+                    Title           = 'No toxic Graph AppRole assignments'
+                    Category        = 'Enterprise Apps'
+                    Severity        = 2
+                    Status          = 'NotVulnerable'
+                    Description     = 'Checked all SPs.'
+                    Threat          = ''
+                    Remediation     = ''
+                    AffectedObjects = @()
+                }
+            ) | ConvertTo-Json -Depth 5 | Set-Content -Path $tmpEf -Encoding UTF8
+
+            InModuleScope TenantBrief -Parameters @{ Json = $tmpEf } {
+                param($Json)
+                $res = @(Import-TenantBriefEntraFalconFindings -JsonPath $Json)
+                $res.Count | Should -Be 2
+                $res[0].TestId | Should -Be 'EF-USR-001'
+                $res[0].TestStatus | Should -Be 'Failed'
+                $res[0].TestRisk | Should -Be 'High'
+                $res[0].TestPillar | Should -Be 'EntraFalcon'
+                $res[0].TestResult | Should -Match 'Affected objects: 2'
+                $res[0].TestDescription | Should -Match 'Enforce FIDO2'
+                $res[1].TestId | Should -Be 'EF-APP-02'
+                $res[1].TestStatus | Should -Be 'Passed'
+            }
+        } finally {
+            Remove-Item -Path $tmpEf -Force -ErrorAction SilentlyContinue
+        }
+    }
+
+    It 'attaches least-privilege RequiredRole and AdminPortal to findings' {
+        InModuleScope TenantBrief {
+            $tests = @(
+                [PSCustomObject]@{ TestId = 'X1'; TestTitle = 'CA check'; TestStatus = 'Failed'; TestPillar = @('Maester (EIDSCA / CIS)') },
+                [PSCustomObject]@{ TestId = 'X2'; TestTitle = 'Device check'; TestStatus = 'Passed'; TestPillar = @('Devices') }
+            )
+            $f = @(New-TenantBriefFindings -Tests $tests -Language tr)
+            $f[0].RequiredRole | Should -Be 'Conditional Access Administrator / Security Administrator'
+            $f[0].AdminPortal | Should -Match 'entra\.microsoft\.com'
+            $f[0].RemediationTr | Should -Match 'Conditional Access Administrator'
+            $f[1].RequiredRole | Should -Be 'Intune Administrator'
+            $f[1].RemediationTr | Should -Be ''
+        }
+    }
 }

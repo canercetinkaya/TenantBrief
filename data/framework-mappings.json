@@ -14,7 +14,9 @@
         "SecOps": "Zero Trust — Visibility, automation & orchestration",
         "AI": "Zero Trust — AI & agent identities",
         "CISA SCuBA": "Zero Trust — Identity/Data baseline (CISA SCuBA)",
-        "Defender for Office 365 (ORCA)": "Zero Trust — Email & collaboration (ORCA)"
+        "Defender for Office 365 (ORCA)": "Zero Trust — Email & collaboration (ORCA)",
+        "Maester (EIDSCA / CIS)": "Zero Trust — Identity & M365 Baseline (Maester EIDSCA/CIS)",
+        "EntraFalcon": "Zero Trust — Identity Attack Paths & Privileges (EntraFalcon)"
       },
       "scoredPillars": [
         "Identity",
@@ -25,7 +27,9 @@
         "SecOps",
         "AI",
         "CISA SCuBA",
-        "Defender for Office 365 (ORCA)"
+        "Defender for Office 365 (ORCA)",
+        "Maester (EIDSCA / CIS)",
+        "EntraFalcon"
       ]
     },
     "ISO27001": {
@@ -42,7 +46,9 @@
         "SecOps": "A.5.24 / A.5.25 / A.8.15 / A.8.16 (Logging, Monitoring & Incident Response)",
         "AI": "A.5.12 / A.8.12 / A.8.2 (AI Data Governance & Access Boundaries)",
         "CISA SCuBA": "A.5.15 / A.8.9 / A.8.20 (Federal Cloud Baseline & Hardening)",
-        "Defender for Office 365 (ORCA)": "A.8.7 / A.8.23 (Email & Phishing Protection)"
+        "Defender for Office 365 (ORCA)": "A.8.7 / A.8.23 (Email & Phishing Protection)",
+        "Maester (EIDSCA / CIS)": "A.5.15 / A.5.17 / A.8.5 (Authentication & Config Baseline)",
+        "EntraFalcon": "A.5.15 / A.5.18 / A.8.2 (Privileged Access & Identity Attack Paths)"
       },
       "scoredPillars": [
         "Identity",
@@ -52,7 +58,9 @@
         "Infrastructure",
         "SecOps",
         "CISA SCuBA",
-        "Defender for Office 365 (ORCA)"
+        "Defender for Office 365 (ORCA)",
+        "Maester (EIDSCA / CIS)",
+        "EntraFalcon"
       ]
     },
     "NIST_CSF_2": {
@@ -69,7 +77,9 @@
         "SecOps": "DE.CM / RS.MA (Continuous Monitoring & Incident Management)",
         "AI": "GV.RM / PR.DS (AI Risk Management & Data Protection)",
         "CISA SCuBA": "PR.PS / PR.AA (Federal M365 Baseline Configuration & Hardening)",
-        "Defender for Office 365 (ORCA)": "PR.DS / DE.CM (Email & Anti-Phishing Protection)"
+        "Defender for Office 365 (ORCA)": "PR.DS / DE.CM (Email & Anti-Phishing Protection)",
+        "Maester (EIDSCA / CIS)": "PR.AA / PR.PS (Entra ID EIDSCA & CIS Safeguards)",
+        "EntraFalcon": "ID.RA / PR.AA (Identity Privilege Escalation & App Risk)"
       },
       "scoredPillars": [
         "Identity",
@@ -78,7 +88,9 @@
         "SecOps",
         "AI",
         "CISA SCuBA",
-        "Defender for Office 365 (ORCA)"
+        "Defender for Office 365 (ORCA)",
+        "Maester (EIDSCA / CIS)",
+        "EntraFalcon"
       ]
     },
     "CIS_M365": {
@@ -95,14 +107,18 @@
         "SecOps": "CIS Section 2 & 6 (Defender XDR & Auditing)",
         "AI": "CIS Section 3 & 5 (Copilot & AI Access Governance)",
         "CISA SCuBA": "CIS Section 1, 5 & 7 (Entra, EXO, Defender & Teams Hardening)",
-        "Defender for Office 365 (ORCA)": "CIS Section 2 (Microsoft Defender for Office 365 & Exchange)"
+        "Defender for Office 365 (ORCA)": "CIS Section 2 (Microsoft Defender for Office 365 & Exchange)",
+        "Maester (EIDSCA / CIS)": "CIS Microsoft 365 Foundations & EIDSCA Controls",
+        "EntraFalcon": "CIS Section 5 (Entra ID Roles, Apps & Conditional Access)"
       },
       "scoredPillars": [
         "Identity",
         "Devices",
         "Data",
         "CISA SCuBA",
-        "Defender for Office 365 (ORCA)"
+        "Defender for Office 365 (ORCA)",
+        "Maester (EIDSCA / CIS)",
+        "EntraFalcon"
       ]
     },
     "KVKK_TR": {
@@ -119,7 +135,9 @@
         "SecOps": "Sızma/Anomali İzleme, SIEM ve Olay Müdahale",
         "AI": "Kişisel Verilerin Üretken Yapay Zekâya Sızmasının Önlenmesi",
         "CISA SCuBA": "Bulut Platformu Sıkılaştırma, Yetki Sınırları ve Denetim Logları",
-        "Defender for Office 365 (ORCA)": "Zararlı Yazılım, Oltalama ve E-posta Veri Sızıntısı Önleme"
+        "Defender for Office 365 (ORCA)": "Zararlı Yazılım, Oltalama ve E-posta Veri Sızıntısı Önleme",
+        "Maester (EIDSCA / CIS)": "Kimlik Doğrulama Sertleştirme ve CIS M365 Taban Kontrolleri",
+        "EntraFalcon": "Yetki Yükseltme Yolu ve Üçüncü Taraf Uygulama Yetki Denetimi"
       },
       "scoredPillars": [
         "Identity",
@@ -127,7 +145,9 @@
         "SecOps",
         "Devices",
         "CISA SCuBA",
-        "Defender for Office 365 (ORCA)"
+        "Defender for Office 365 (ORCA)",
+        "Maester (EIDSCA / CIS)",
+        "EntraFalcon"
       ]
     }
   }

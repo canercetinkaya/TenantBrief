@@ -375,3 +375,62 @@ Describe 'Executive summary prioritisation' {
         $script:ExecContent | Should -Match 'lowest effort first'
     }
 }
+
+Describe 'Multi-engine Maester & EntraFalcon JSON ingestion' {
+    BeforeAll {
+        $script:MultiDir = Join-Path ([System.IO.Path]::GetTempPath()) ("tb-multi-" + [guid]::NewGuid().ToString('N').Substring(0, 8))
+        $null = New-Item -ItemType Directory -Path $script:MultiDir -Force
+
+        $script:MaesterSample = Join-Path $script:MultiDir 'maester.json'
+        [PSCustomObject]@{
+            Tests = @(
+                [PSCustomObject]@{
+                    Id           = 'EIDSCA.AP01'
+                    Title        = 'EIDSCA.AP01: Disable default user consent'
+                    Result       = 'Failed'
+                    Severity     = 'High'
+                    Block        = 'Consent'
+                    ResultDetail = [PSCustomObject]@{ TestDescription = 'Restrict app consent'; TestResult = 'User consent enabled' }
+                }
+            )
+        } | ConvertTo-Json -Depth 5 | Set-Content -Path $script:MaesterSample -Encoding UTF8
+
+        $script:FalconSample = Join-Path $script:MultiDir 'tenant_findings_all_sample.json'
+        @(
+            [PSCustomObject]@{
+                FindingId       = 'ROLE-001'
+                Title           = 'Permanent Global Admin assignment detected'
+                Category        = 'Entra Roles'
+                Severity        = 3
+                Status          = 'Vulnerable'
+                Description     = 'Convert permanent GA to PIM eligible.'
+                Threat          = 'Permanent privilege exposure'
+                Remediation     = 'Enable PIM eligible assignment'
+                AffectedObjects = @(@{ id = 'ga1' })
+            }
+        ) | ConvertTo-Json -Depth 5 | Set-Content -Path $script:FalconSample -Encoding UTF8
+
+        $script:MultiRun = Invoke-TenantBriefAssessment `
+            -InputReportJson $script:FixturePath `
+            -InputMaesterJsonPath $script:MaesterSample `
+            -InputEntraFalconJsonPath $script:FalconSample `
+            -OutputPath $script:MultiDir `
+            -Language tr `
+            -Framework All `
+            -Anonymize `
+            -NoBrowser
+
+        $script:MultiReport = Get-Content -Path $script:MultiRun.JsonPath -Raw -Encoding UTF8 | ConvertFrom-Json
+    }
+
+    AfterAll {
+        if ($script:MultiDir) { Remove-Item -Path $script:MultiDir -Recurse -Force -ErrorAction SilentlyContinue }
+    }
+
+    It 'merges Maester and EntraFalcon controls into findings and summary' {
+        $script:MultiReport.Summary.Total | Should -Be 17
+        ($script:MultiReport.Findings | Where-Object { $_.Pillar -match 'Maester' }).Count | Should -Be 1
+        ($script:MultiReport.Findings | Where-Object { $_.Pillar -eq 'EntraFalcon' }).Count | Should -Be 1
+        ($script:MultiReport.Findings | Where-Object { $_.Id -eq 'EF-ROLE-001' }).RequiredRole | Should -Be 'Conditional Access Administrator / Security Administrator'
+    }
+}

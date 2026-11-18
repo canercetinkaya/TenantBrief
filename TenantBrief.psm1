@@ -79,7 +79,7 @@ function Connect-TenantBrief {
         throw "Required module 'ZeroTrustAssessment' is not installed. Run: Install-Module ZeroTrustAssessment -Scope CurrentUser"
     }
 
-    foreach ($dep in @('Microsoft.Graph.Beta.Teams', 'powershell-yaml', 'ScubaGear', 'ORCA')) {
+    foreach ($dep in @('Microsoft.Graph.Beta.Teams', 'powershell-yaml', 'ScubaGear', 'ORCA', 'Maester')) {
         if (-not (Get-Module -ListAvailable -Name $dep)) {
             Write-Host "[TenantBrief] Installing missing module '$dep' from PSGallery..." -ForegroundColor Yellow
             try {
@@ -484,6 +484,149 @@ function New-TenantBriefProgressDashboard {
     return $progressJob
 }
 
+function Import-TenantBriefMaesterResults {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory = $false)][object]$MaesterResult,
+        [Parameter(Mandatory = $false)][string]$JsonPath
+    )
+
+    $testsArray = @()
+    if ($MaesterResult -and $MaesterResult.PSObject.Properties['Tests']) {
+        $testsArray = @($MaesterResult.Tests)
+    } elseif ($JsonPath -and (Test-Path $JsonPath)) {
+        $parsed = Get-Content -Path $JsonPath -Raw -Encoding UTF8 | ConvertFrom-Json
+        if ($parsed -and $parsed.PSObject.Properties['Tests']) {
+            $testsArray = @($parsed.Tests)
+        } elseif ($parsed) {
+            $testsArray = @($parsed)
+        }
+    }
+
+    $out = @()
+    foreach ($item in $testsArray) {
+        if ($null -eq $item) { continue }
+        $rawId = Get-TenantBriefPropertyValue -Object $item -Name 'Id'
+        if (-not $rawId) { $rawId = Get-TenantBriefPropertyValue -Object $item -Name 'ID' }
+        if (-not $rawId) { $rawId = Get-TenantBriefPropertyValue -Object $item -Name 'Name' }
+        $rawId = [string]$rawId
+
+        $rawTitle = [string](Get-TenantBriefPropertyValue -Object $item -Name 'Title')
+        if (-not $rawTitle) { $rawTitle = [string](Get-TenantBriefPropertyValue -Object $item -Name 'Name') }
+        $cleanTitle = ($rawTitle -replace '^[A-Za-z0-9\.\-_]+:\s*', '').Trim()
+        if (-not $cleanTitle) { $cleanTitle = $rawId }
+        if (-not $cleanTitle) { continue }
+
+        $res = [string](Get-TenantBriefPropertyValue -Object $item -Name 'Result')
+        $mappedStatus = switch -Regex ($res) {
+            '^Passed$'          { 'Passed' }
+            '^Failed$'          { 'Failed' }
+            '^(Skipped|NotRun)$' { 'Skipped' }
+            '^Error$'           { 'Error' }
+            default             { 'Investigate' }
+        }
+
+        $sev = [string](Get-TenantBriefPropertyValue -Object $item -Name 'Severity')
+        $mappedRisk = switch -Regex ($sev) {
+            '^(Critical|High)$' { 'High' }
+            '^(Low|Info)$'      { 'Low' }
+            default             { 'Medium' }
+        }
+
+        $block = [string](Get-TenantBriefPropertyValue -Object $item -Name 'Block')
+        if (-not $block) { $block = 'Entra / M365 Baseline' }
+
+        $rd = Get-TenantBriefPropertyValue -Object $item -Name 'ResultDetail'
+        $desc = [string](Get-TenantBriefPropertyValue -Object $rd -Name 'TestDescription')
+        if (-not $desc) { $desc = $cleanTitle }
+        $helpUrl = [string](Get-TenantBriefPropertyValue -Object $item -Name 'HelpUrl')
+        if ($helpUrl) { $desc = "$desc`n`n[Reference]($helpUrl)" }
+
+        $tRes = [string](Get-TenantBriefPropertyValue -Object $rd -Name 'TestResult')
+        $skipR = [string](Get-TenantBriefPropertyValue -Object $rd -Name 'SkippedReason')
+
+        $out += [PSCustomObject]@{
+            TestId                 = $rawId
+            TestTitle              = $cleanTitle
+            TestStatus             = $mappedStatus
+            TestRisk               = $mappedRisk
+            TestPillar             = 'Maester (EIDSCA / CIS)'
+            TestCategory           = $block
+            TestSfiPillar          = 'Protect identities and secrets'
+            TestImplementationCost = 'Low'
+            TestMinimumLicense     = ''
+            SkippedReason          = $skipR
+            TestResult             = $tRes
+            TestImpact             = $mappedRisk
+            TestDescription        = $desc
+        }
+    }
+    return @($out)
+}
+
+function Import-TenantBriefEntraFalconFindings {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory = $true)]
+        [string]$JsonPath
+    )
+
+    if (-not (Test-Path $JsonPath)) { return @() }
+    $rawList = @(Get-Content -Path $JsonPath -Raw -Encoding UTF8 | ConvertFrom-Json)
+    $out = @()
+
+    foreach ($f in $rawList) {
+        if ($null -eq $f) { continue }
+        $fid = [string](Get-TenantBriefPropertyValue -Object $f -Name 'FindingId')
+        if (-not $fid) { continue }
+        $tid = if ($fid -like 'EF-*') { $fid } else { "EF-$fid" }
+
+        $title = [string](Get-TenantBriefPropertyValue -Object $f -Name 'Title')
+        if (-not $title) { continue }
+
+        $cat = [string](Get-TenantBriefPropertyValue -Object $f -Name 'Category')
+        if (-not $cat) { $cat = 'Entra ID' }
+
+        $sevNum = 0
+        [void][int]::TryParse([string](Get-TenantBriefPropertyValue -Object $f -Name 'Severity'), [ref]$sevNum)
+        $risk = if ($sevNum -ge 3) { 'High' } elseif ($sevNum -eq 2) { 'Medium' } else { 'Low' }
+
+        $stRaw = [string](Get-TenantBriefPropertyValue -Object $f -Name 'Status')
+        $status = switch -Regex ($stRaw) {
+            '^Vulnerable$'    { 'Failed' }
+            '^NotVulnerable$' { 'Passed' }
+            '^Skipped$'       { 'Skipped' }
+            default           { 'Investigate' }
+        }
+
+        $desc = [string](Get-TenantBriefPropertyValue -Object $f -Name 'Description')
+        $rem = [string](Get-TenantBriefPropertyValue -Object $f -Name 'Remediation')
+        $threat = [string](Get-TenantBriefPropertyValue -Object $f -Name 'Threat')
+        $affRaw = Get-TenantBriefPropertyValue -Object $f -Name 'AffectedObjects'
+        $affCount = if ($null -eq $affRaw) { 0 } else { @($affRaw).Count }
+
+        $resTxt = if ($affCount -gt 0) { "Affected objects: $affCount`n`n$threat".Trim() } else { $threat }
+        $fullDesc = if ($rem) { "$desc`n`n**Remediation action**`n$rem".Trim() } else { $desc }
+
+        $out += [PSCustomObject]@{
+            TestId                 = $tid
+            TestTitle              = $title
+            TestStatus             = $status
+            TestRisk               = $risk
+            TestPillar             = 'EntraFalcon'
+            TestCategory           = $cat
+            TestSfiPillar          = 'Protect identities and secrets'
+            TestImplementationCost = 'Medium'
+            TestMinimumLicense     = 'Entra ID P1/P2'
+            SkippedReason          = if ($status -eq 'Skipped') { 'Skipped by EntraFalcon' } else { '' }
+            TestResult             = $resTxt
+            TestImpact             = $risk
+            TestDescription        = $fullDesc
+        }
+    }
+    return @($out)
+}
+
 function Invoke-TenantBriefBaselineCollections {
     [CmdletBinding()]
     param(
@@ -507,7 +650,10 @@ function Invoke-TenantBriefBaselineCollections {
         [object]$Manifest,
 
         [Parameter(Mandatory = $false)]
-        [string]$ManifestPath
+        [string]$ManifestPath,
+
+        [Parameter(Mandatory = $false)]
+        [switch]$SkipMaester
     )
 
     $markStage = {
@@ -731,6 +877,36 @@ function Invoke-TenantBriefBaselineCollections {
         & $markStage 3 'Microsoft ORCA' 'failed' 'ORCA produced no controls; the report continues without Defender for Office 365 checks.'
     }
 
+    if (-not $SkipMaester -and (Get-Module -ListAvailable -Name 'Maester')) {
+        $maesterOut = Join-Path $OutputPath 'raw-maester'
+        if (-not (Test-Path $maesterOut)) { New-Item -ItemType Directory -Path $maesterOut -Force | Out-Null }
+        $maesterJsonPath = Join-Path $maesterOut 'MaesterResults.json'
+        try {
+            Set-StrictMode -Off
+            try {
+                Import-Module Maester -Global -DisableNameChecking -WarningAction SilentlyContinue -ErrorAction Stop 6>$null 3>$null 2>$null | Out-Null
+                $maesterMod = Get-Module -Name 'Maester' | Select-Object -First 1
+                $maesterTestsPath = if ($maesterMod) { Join-Path $maesterMod.ModuleBase 'maester-tests' } else { $null }
+                if ($maesterTestsPath -and (Test-Path $maesterTestsPath)) {
+                    & $Log "[Stage 3b/5] Running Maester checks (EIDSCA, CIS, Maester & XSPM — reusing active Graph session)..."
+                    $mtRes = Invoke-Maester -Path $maesterTestsPath -ExcludeTag @('ORCA', 'CISA', 'AD', 'LongRunning', 'Preview') -SkipGraphConnect -NonInteractive -NoLogo -DisableTelemetry -SkipVersionCheck -Verbosity None -OutputJsonFile $maesterJsonPath -PassThru 6>$null 3>$null 2>$null
+                    $mtItems = @(Import-TenantBriefMaesterResults -MaesterResult $mtRes -JsonPath $maesterJsonPath)
+                    if ($mtItems.Count -gt 0) {
+                        $collected += $mtItems
+                        & $Log "[Stage 3b/5] Maester completed: $($mtItems.Count) controls merged."
+                    }
+                }
+            } finally {
+                Set-StrictMode -Version Latest
+            }
+        } catch {
+            $errMsg = $_.Exception.Message
+            $errMsg | Set-Content -Path (Join-Path $maesterOut 'maester-error.txt') -Encoding UTF8
+            & $Log "[Stage 3b/5] Maester skipped: $errMsg"
+            & $note 3 'Maester' "Skipped: $errMsg"
+        }
+    }
+
     return $collected
 }
 
@@ -835,11 +1011,11 @@ function Get-TenantBriefFrameworkScorecard {
     # Fallback coverage table, used only when data/framework-mappings.json does not declare
     # an explicit scoredPillars list for a framework. The data file is authoritative.
     $fallbackPillars = @{
-        'ZeroTrust'  = @('Identity', 'Devices', 'Network', 'Data', 'Infrastructure', 'SecOps', 'AI', 'CISA SCuBA', 'Defender for Office 365 (ORCA)')
-        'ISO27001'   = @('Identity', 'Devices', 'Network', 'Data', 'Infrastructure', 'SecOps')
-        'NIST_CSF_2' = @('Identity', 'Devices', 'Network', 'SecOps', 'AI')
-        'CIS_M365'   = @('Identity', 'Devices', 'Data', 'CISA SCuBA', 'Defender for Office 365 (ORCA)')
-        'KVKK_TR'    = @('Identity', 'Data', 'SecOps', 'Devices')
+        'ZeroTrust'  = @('Identity', 'Devices', 'Network', 'Data', 'Infrastructure', 'SecOps', 'AI', 'CISA SCuBA', 'Defender for Office 365 (ORCA)', 'Maester (EIDSCA / CIS)', 'EntraFalcon')
+        'ISO27001'   = @('Identity', 'Devices', 'Network', 'Data', 'Infrastructure', 'SecOps', 'CISA SCuBA', 'Defender for Office 365 (ORCA)', 'Maester (EIDSCA / CIS)', 'EntraFalcon')
+        'NIST_CSF_2' = @('Identity', 'Devices', 'Network', 'SecOps', 'AI', 'CISA SCuBA', 'Defender for Office 365 (ORCA)', 'Maester (EIDSCA / CIS)', 'EntraFalcon')
+        'CIS_M365'   = @('Identity', 'Devices', 'Data', 'CISA SCuBA', 'Defender for Office 365 (ORCA)', 'Maester (EIDSCA / CIS)', 'EntraFalcon')
+        'KVKK_TR'    = @('Identity', 'Data', 'SecOps', 'Devices', 'CISA SCuBA', 'Defender for Office 365 (ORCA)', 'Maester (EIDSCA / CIS)', 'EntraFalcon')
     }
 
     foreach ($fwId in $FrameworkIds) {
@@ -911,6 +1087,8 @@ function New-TenantBriefFindings {
         $statusRaw = Get-TenantBriefPropertyValue -Object $t -Name 'TestStatus'
         $portalName = switch ($primaryPillar) {
             'Identity'                        { 'Microsoft Entra yönetim merkezi (entra.microsoft.com)' }
+            'Maester (EIDSCA / CIS)'          { 'Microsoft Entra yönetim merkezi (entra.microsoft.com)' }
+            'EntraFalcon'                     { 'Microsoft Entra yönetim merkezi (entra.microsoft.com)' }
             'Devices'                         { 'Microsoft Intune yönetim merkezi (intune.microsoft.com)' }
             'Network'                         { 'Global Secure Access / Azure Portal (portal.azure.com)' }
             'Data'                            { 'Microsoft Purview portalı (purview.microsoft.com)' }
@@ -921,10 +1099,24 @@ function New-TenantBriefFindings {
             'Defender for Office 365 (ORCA)'  { 'Microsoft Defender E-posta ve İş Birliği (security.microsoft.com)' }
             default                           { 'Microsoft 365 Yönetim Merkezi' }
         }
+        $requiredRole = switch ($primaryPillar) {
+            'Identity'                        { 'Conditional Access Administrator / Security Administrator' }
+            'Maester (EIDSCA / CIS)'          { 'Conditional Access Administrator / Security Administrator' }
+            'EntraFalcon'                     { 'Conditional Access Administrator / Security Administrator' }
+            'Devices'                         { 'Intune Administrator' }
+            'Network'                         { 'Global Secure Access Administrator / Network Contributor' }
+            'Data'                            { 'Compliance Administrator / Information Protection Admin' }
+            'AI'                              { 'Compliance Administrator / Information Protection Admin' }
+            'Infrastructure'                  { 'Security Admin / Subscription Contributor' }
+            'SecOps'                          { 'Security Administrator / Sentinel Contributor' }
+            'CISA SCuBA'                      { 'Security Administrator' }
+            'Defender for Office 365 (ORCA)'  { 'Security Administrator / Exchange Administrator' }
+            default                           { 'Security Administrator' }
+        }
         # Only actionable rows carry remediation guidance: writing the same template sentence into
         # Passed/Skipped/Planned rows was ~8% of the whole report payload for no reader benefit.
         $remTr = if ($statusRaw -in @('Failed', 'Investigate')) {
-            "1. $portalName üzerinden '$fTitle' kontrolüne karşılık gelen ilkeyi açın. 2. Değişikliği önce Denetim (Report-only) kipinde pilot gruba uygulayıp oturum açma/olay günlüklerini doğrulayın. 3. Etki analizi sonrası kademeli olarak Zorunlu (Enforce) durumuna geçin."
+            "1. $portalName üzerinden '$fTitle' kontrolüne karşılık gelen ilkeyi açın. 2. Değişikliği önce Denetim (Report-only) kipinde pilot gruba uygulayıp oturum açma/olay günlüklerini doğrulayın. 3. Etki analizi sonrası kademeli olarak Zorunlu (Enforce) durumuna geçin. [En Az Ayrıcalıklı Rol: $requiredRole]"
         } else { '' }
         $minLicRaw = Get-TenantBriefPropertyValue -Object $t -Name 'TestMinimumLicense'
         $minLicStr = if ($minLicRaw -is [System.Array]) { ($minLicRaw -join ', ') } else { [string]$minLicRaw }
@@ -944,6 +1136,8 @@ function New-TenantBriefFindings {
             SfiPillar          = if ($sfiRaw) { [string]$sfiRaw } else { '' }
             ImplementationCost = if ($implCostRaw) { [string]$implCostRaw } else { 'Unknown' }
             MinimumLicense     = $minLicStr
+            RequiredRole       = $requiredRole
+            AdminPortal        = $portalName
             Status             = [string]$statusRaw
             Risk               = if ($riskRaw) { [string]$riskRaw } else { 'Low' }
             Title              = $fTitle
@@ -1011,6 +1205,15 @@ function Invoke-TenantBriefAssessment {
 
         [Parameter()]
         [string]$InputFastTrackJsonPath,
+
+        [Parameter()]
+        [string]$InputMaesterJsonPath,
+
+        [Parameter()]
+        [string]$InputEntraFalconJsonPath,
+
+        [Parameter()]
+        [switch]$SkipMaester,
 
         [Parameter()]
         [switch]$Resume
@@ -1180,10 +1383,35 @@ function Invoke-TenantBriefAssessment {
     $collectedTests = @()
     if (-not $InputReportJson) {
         $accountName = if ($mgCheck -and $mgCheck.Account) { [string]$mgCheck.Account } else { '' }
-        $collectedTests = @(Invoke-TenantBriefBaselineCollections -OutputPath $OutputPath -Account $accountName -Log $addLog -State $progressState -Diagnostics $diagnostics -Manifest $manifest -ManifestPath $manifestPath)
+        $collectedTests = @(Invoke-TenantBriefBaselineCollections -OutputPath $OutputPath -Account $accountName -Log $addLog -State $progressState -Diagnostics $diagnostics -Manifest $manifest -ManifestPath $manifestPath -SkipMaester:$SkipMaester)
     } else {
         & $markStage 2 'CISA ScubaGear' 'skipped' 'Offline mode: -InputReportJson supplied, ScubaGear was not executed.'
         & $markStage 3 'Microsoft ORCA' 'skipped' 'Offline mode: -InputReportJson supplied, ORCA was not executed.'
+    }
+    if ($InputMaesterJsonPath) {
+        if (Test-Path $InputMaesterJsonPath) {
+            $collectedTests += @(Import-TenantBriefMaesterResults -JsonPath $InputMaesterJsonPath)
+        } else {
+            Add-TenantBriefDiagnostic -Diagnostics $diagnostics -Stage 3 -Component 'Maester' -Message "Belirtilen Maester JSON bulunamadi: $InputMaesterJsonPath"
+        }
+    } elseif ($InputReportJson) {
+        $resumeMaester = Join-Path $OutputPath 'raw-maester\MaesterResults.json'
+        if (Test-Path $resumeMaester) {
+            $collectedTests += @(Import-TenantBriefMaesterResults -JsonPath $resumeMaester)
+        }
+    }
+    if ($InputEntraFalconJsonPath) {
+        if (Test-Path $InputEntraFalconJsonPath) {
+            $collectedTests += @(Import-TenantBriefEntraFalconFindings -JsonPath $InputEntraFalconJsonPath)
+        } else {
+            Add-TenantBriefDiagnostic -Diagnostics $diagnostics -Stage 3 -Component 'EntraFalcon' -Message "Belirtilen EntraFalcon JSON bulunamadi: $InputEntraFalconJsonPath"
+        }
+    } else {
+        $efAuto = Get-ChildItem -Path $OutputPath -Filter 'tenant_findings_all_*.json' -File -ErrorAction SilentlyContinue |
+            Sort-Object LastWriteTime -Descending | Select-Object -First 1
+        if ($efAuto) {
+            $collectedTests += @(Import-TenantBriefEntraFalconFindings -JsonPath $efAuto.FullName)
+        }
     }
     $tests = New-TenantBriefCorrelatedTests -Tests (@($ztTests) + @($collectedTests))
     $progressState.Stage = 4
