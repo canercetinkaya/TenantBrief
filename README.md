@@ -74,8 +74,6 @@ flowchart TB
 | `Compare-TenantBriefReports` | Compares two `TenantBriefReport-*.json` snapshots to detect `Improved` and `Regressed` controls |
 | `Export-TenantBriefExecutiveSummary` | Generates a compact, offline Print-to-PDF executive brief ordered by lowest-effort high-risk remediations first |
 
-> Backward-compatible `*-ZtLens*` aliases (`Connect-ZtLens`, `Invoke-ZtLensAssessment`, etc.) remain exported.
-
 ---
 
 ## Prerequisites

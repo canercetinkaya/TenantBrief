@@ -2978,15 +2978,5 @@ function Get-TenantBriefCopilotReadiness {
     }
 }
 
-Set-Alias -Name Connect-ZtLens -Value Connect-TenantBrief -Force
-Set-Alias -Name Invoke-ZtLensAssessment -Value Invoke-TenantBriefAssessment -Force
-Set-Alias -Name Get-ZtLensFrameworks -Value Get-TenantBriefFrameworks -Force
-Set-Alias -Name Get-ZtLensLicenseRoi -Value Get-TenantBriefLicenseRoi -Force
-Set-Alias -Name Get-ZtLensLicenseWaste -Value Get-TenantBriefLicenseWaste -Force
-Set-Alias -Name Get-ZtLensCopilotReadiness -Value Get-TenantBriefCopilotReadiness -Force
-Set-Alias -Name Compare-ZtLensReports -Value Compare-TenantBriefReports -Force
-Set-Alias -Name Export-ZtLensExecutiveSummary -Value Export-TenantBriefExecutiveSummary -Force
-
 Export-ModuleMember `
-    -Function Connect-TenantBrief, Invoke-TenantBriefAssessment, Get-TenantBriefFrameworks, Get-TenantBriefLicenseRoi, Get-TenantBriefLicenseWaste, Get-TenantBriefCopilotReadiness, Compare-TenantBriefReports, Export-TenantBriefExecutiveSummary `
-    -Alias Connect-ZtLens, Invoke-ZtLensAssessment, Get-ZtLensFrameworks, Get-ZtLensLicenseRoi, Get-ZtLensLicenseWaste, Get-ZtLensCopilotReadiness, Compare-ZtLensReports, Export-ZtLensExecutiveSummary
+    -Function Connect-TenantBrief, Invoke-TenantBriefAssessment, Get-TenantBriefFrameworks, Get-TenantBriefLicenseRoi, Get-TenantBriefLicenseWaste, Get-TenantBriefCopilotReadiness, Compare-TenantBriefReports, Export-TenantBriefExecutiveSummary

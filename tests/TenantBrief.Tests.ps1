@@ -15,18 +15,6 @@ Describe 'TenantBrief Module' {
         $cmds | Should -Contain 'Export-TenantBriefExecutiveSummary'
     }
 
-    It 'Preserves backward-compatible *-ZtLens* aliases' {
-        $aliases = (Get-Module TenantBrief).ExportedAliases
-        $aliases['Connect-ZtLens'].Definition | Should -Be 'Connect-TenantBrief'
-        $aliases['Invoke-ZtLensAssessment'].Definition | Should -Be 'Invoke-TenantBriefAssessment'
-        $aliases['Get-ZtLensFrameworks'].Definition | Should -Be 'Get-TenantBriefFrameworks'
-        $aliases['Get-ZtLensLicenseRoi'].Definition | Should -Be 'Get-TenantBriefLicenseRoi'
-        $aliases['Get-ZtLensLicenseWaste'].Definition | Should -Be 'Get-TenantBriefLicenseWaste'
-        $aliases['Get-ZtLensCopilotReadiness'].Definition | Should -Be 'Get-TenantBriefCopilotReadiness'
-        $aliases['Compare-ZtLensReports'].Definition | Should -Be 'Compare-TenantBriefReports'
-        $aliases['Export-ZtLensExecutiveSummary'].Definition | Should -Be 'Export-TenantBriefExecutiveSummary'
-    }
-
     It 'Lists 7 verified benchmark and engine definitions' {
         $fws = Get-TenantBriefFrameworks
         $fws.Count | Should -Be 7

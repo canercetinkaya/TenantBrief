@@ -19,16 +19,7 @@
     )
     CmdletsToExport   = @()
     VariablesToExport = @()
-    AliasesToExport   = @(
-        'Connect-ZtLens',
-        'Invoke-ZtLensAssessment',
-        'Get-ZtLensFrameworks',
-        'Get-ZtLensLicenseRoi',
-        'Get-ZtLensLicenseWaste',
-        'Get-ZtLensCopilotReadiness',
-        'Compare-ZtLensReports',
-        'Export-ZtLensExecutiveSummary'
-    )
+    AliasesToExport   = @()
     PrivateData       = @{
         PSData = @{
             Tags         = @('TenantBrief', 'ZeroTrust', 'Security', 'Microsoft365', 'Azure', 'EntraID', 'ScubaGear', 'Maester', 'EIDSCA', 'ORCA', 'CIS-M365', 'EntraFalcon', 'LicenseROI', 'Copilot')
