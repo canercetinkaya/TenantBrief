@@ -144,4 +144,48 @@ Describe 'ZeroTrustLens Module' {
             $f[0].PrimaryPillar | Should -Be 'Identity'
         }
     }
+
+    It 'keeps the SKU catalog internally consistent' {
+        $cat = Get-Content -Path (Join-Path $PSScriptRoot '..\data\sku-catalog.json') -Raw -Encoding UTF8 | ConvertFrom-Json
+        $parts = @($cat.skus | ForEach-Object { $_.skuPartNumber })
+        ($parts | Sort-Object -Unique).Count | Should -Be $parts.Count
+        foreach ($s in $cat.skus) {
+            $s.name | Should -Not -BeNullOrEmpty
+            $s.category | Should -Not -BeNullOrEmpty
+            [double]$s.usdPerUserMonth | Should -BeGreaterOrEqual 0
+        }
+        foreach ($o in $cat.overlaps) {
+            $parts | Should -Contain $o.skuA
+            $parts | Should -Contain $o.skuB
+            $parts | Should -Contain $o.redundant
+        }
+    }
+
+    It 'labels free and developer tiers instead of falling back to Other' {
+        $mock = @(
+            [PSCustomObject]@{ skuPartNumber = 'FLOW_FREE'; prepaidUnits = @{ enabled = 10000 }; consumedUnits = 1 },
+            [PSCustomObject]@{ skuPartNumber = 'DEVELOPERPACK_E5'; prepaidUnits = @{ enabled = 25 }; consumedUnits = 1 }
+        )
+        $roi = Get-ZtLensLicenseRoi -SubscribedSkus $mock
+        $flow = $roi | Where-Object { $_.SkuPartNumber -eq 'FLOW_FREE' }
+        $dev = $roi | Where-Object { $_.SkuPartNumber -eq 'DEVELOPERPACK_E5' }
+        $flow.Category | Should -Be 'Included/Free'
+        $flow.EstimatedIdleUsdMo | Should -Be 0
+        $flow.Billable | Should -BeFalse
+        $dev.Category | Should -Be 'Developer'
+        $dev.EstimatedIdleUsdMo | Should -Be 0
+        $dev.Billable | Should -BeFalse
+    }
+
+    It 'excludes non-billable seats from the R3 unassigned counter' {
+        $skus = @(
+            [PSCustomObject]@{ skuPartNumber = 'SPE_E5'; prepaidUnits = @{ enabled = 10 }; consumedUnits = 8 },
+            [PSCustomObject]@{ skuPartNumber = 'FLOW_FREE'; prepaidUnits = @{ enabled = 10000 }; consumedUnits = 1 }
+        )
+        $users = @([PSCustomObject]@{ id = 'u1'; accountEnabled = $true; userType = 'Member'; assignedLicenses = @() })
+        $w = Get-ZtLensLicenseWaste -SubscribedSkus $skus -Users $users -Language en
+        # Only the paid suite contributes: 10 - 8 = 2, not 2 + 9,999 free seats.
+        $w.UnassignedSeats | Should -Be 2
+        $w.UnassignedUsdMo | Should -Be 114
+    }
 }

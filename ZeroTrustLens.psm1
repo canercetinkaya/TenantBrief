@@ -1535,6 +1535,8 @@ function Get-ZtLensLicenseRoi {
         $meta = $skuIndex[$part]
         $unitUsd = if ($meta) { [double]$meta.usdPerUserMonth } else { 0.0 }
         $idleUsdMonth = [Math]::Round($unassigned * $unitUsd, 2)
+        $billableProp = if ($meta) { $meta.PSObject.Properties['countsAsWaste'] } else { $null }
+        $billable = if ($billableProp) { [bool]$billableProp.Value } else { $unitUsd -gt 0 }
 
         [PSCustomObject]@{
             SkuPartNumber       = $part
@@ -1544,6 +1546,7 @@ function Get-ZtLensLicenseRoi {
             Assigned            = $consumed
             Unassigned          = $unassigned
             UtilizationPercent  = $utilPct
+            Billable            = $billable
             EstimatedIdleUsdMo  = $idleUsdMonth
         }
     }
@@ -1800,9 +1803,15 @@ function Get-ZtLensLicenseWaste {
     $skuPriceMap = @{}
     $skuNameMap = @{}
     $skuGuidToPart = @{}
+    # SKUs explicitly marked as non-billable (free tiers, developer sandboxes) must not be reported
+    # as recoverable waste; 10,000 free seats would otherwise dominate the R3 counter.
+    $skuBillableMap = @{}
     foreach ($c in @($catalogJson.skus)) {
-        $skuPriceMap[[string]$c.skuPartNumber] = [double]$c.usdPerUserMonth
-        $skuNameMap[[string]$c.skuPartNumber]  = [string]$c.name
+        $skuPartKey = [string]$c.skuPartNumber
+        $skuPriceMap[$skuPartKey] = [double]$c.usdPerUserMonth
+        $skuNameMap[$skuPartKey]  = [string]$c.name
+        $wasteProp = $c.PSObject.Properties['countsAsWaste']
+        $skuBillableMap[$skuPartKey] = if ($wasteProp) { [bool]$wasteProp.Value } else { $true }
     }
 
     if (-not $SubscribedSkus -and (Get-MgContext -ErrorAction SilentlyContinue)) {
@@ -1907,7 +1916,8 @@ function Get-ZtLensLicenseWaste {
         $part = [string]$s.skuPartNumber
         $en = [int]$s.prepaidUnits.enabled
         $con = [int]$s.consumedUnits
-        if ($en -gt $con) {
+        $isBillable = if ($skuBillableMap.ContainsKey($part)) { [bool]$skuBillableMap[$part] } else { $true }
+        if ($isBillable -and $en -gt $con) {
             $diff = $en - $con
             $unassignedSeats += $diff
             if ($skuPriceMap.ContainsKey($part)) { $unassignedUsdMo += ($diff * $skuPriceMap[$part]) }

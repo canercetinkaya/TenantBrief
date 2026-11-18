@@ -211,6 +211,9 @@ Invoke-ZtLensAssessment -Resume -OutputPath "$HOME\ZeroTrustLensReport" -Languag
   risk and a union of its pillars.
 - `ImplementationCost` is `Unknown` when the source engine does not supply a cost estimate. It is
   never defaulted to `Medium`, and unknown-cost findings are not counted as quick wins.
+- Free and developer SKUs (`FLOW_FREE`, `DEVELOPERPACK_E5`) are catalogued with
+  `countsAsWaste: false`: they appear in the ROI table with a real name and category, but their
+  seats never inflate the R3 unassigned counter.
 - `Status: Error` means the control should have been evaluated but the engine failed. Errors stay
   visible in the summary, the filters and the framework denominator — an unmeasured control is
   never counted as a pass.
