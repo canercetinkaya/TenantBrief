@@ -206,6 +206,11 @@ Invoke-ZtLensAssessment -Resume -OutputPath "$HOME\ZeroTrustLensReport" -Languag
 ### Scoring contract
 
 - Framework coverage is read from `data/framework-mappings.json` (`scoredPillars`), not from code.
+- Correlation runs once, after every engine has reported: a control surfaced by both
+  ZeroTrustAssessment and ScubaGear/ORCA becomes one finding with the worst status, the highest
+  risk and a union of its pillars.
+- `ImplementationCost` is `Unknown` when the source engine does not supply a cost estimate. It is
+  never defaulted to `Medium`, and unknown-cost findings are not counted as quick wins.
 - `Status: Error` means the control should have been evaluated but the engine failed. Errors stay
   visible in the summary, the filters and the framework denominator — an unmeasured control is
   never counted as a pass.

@@ -52,8 +52,7 @@ Describe 'ZeroTrustLens Module' {
         $w.Inactive90dUsers | Should -Be 1
     }
 
-    It 'Documents every exported cmdlet with comment-based help' {
-        foreach ($cmd in (Get-Module ZeroTrustLens).ExportedFunctions.Keys) {
+    It 'Documents every exported cmdlet with comment-based help' {        foreach ($cmd in (Get-Module ZeroTrustLens).ExportedFunctions.Keys) {
             $help = Get-Help $cmd -ErrorAction SilentlyContinue
             $help.Synopsis | Should -Not -BeNullOrEmpty -Because "$cmd needs a synopsis"
         }
@@ -91,5 +90,58 @@ Describe 'ZeroTrustLens Module' {
         $cr.CopilotSeats | Should -Be 5
         $cr.Checks.Count | Should -BeGreaterThan 1
         $cr.Warnings.Count | Should -BeGreaterThan 0
+    }
+
+    It 'correlates the same control reported by two engines and keeps both pillars' {
+        InModuleScope ZeroTrustLens {
+            $incoming = @(
+                [PSCustomObject]@{
+                    TestId = 'ZT.1'; TestTitle = 'Ensure MFA is enforced for all users'; TestStatus = 'Passed'
+                    TestRisk = 'Medium'; TestPillar = 'Identity'; TestCategory = 'Authentication'; TestSfiPillar = 'Identity'
+                    TestImplementationCost = 'Low'; TestMinimumLicense = 'ENTRA_PREMIUM_P1'; SkippedReason = ''
+                    TestResult = 'Conditional Access policy requires MFA.'; TestImpact = 'Medium'; TestDescription = 'ZeroTrustAssessment text'
+                },
+                [PSCustomObject]@{
+                    TestId = 'SCUBA-AAD-1'; TestTitle = 'Ensure  MFA is enforced for all users!'; TestStatus = 'Failed'
+                    TestRisk = 'High'; TestPillar = 'CISA SCuBA'; TestCategory = 'AAD'; TestSfiPillar = 'CISA SCuBA'
+                    TestImplementationCost = ''; TestMinimumLicense = ''; SkippedReason = ''
+                    TestResult = 'Guests excluded from policy.'; TestImpact = 'High'; TestDescription = 'ScubaGear requirement text'
+                }
+            )
+            $r = @(New-ZtLensCorrelatedTests -Tests $incoming)
+            $r.Count | Should -Be 1
+            $r[0].TestStatus | Should -Be 'Failed'
+            $r[0].TestRisk | Should -Be 'High'
+            (@($r[0].TestPillar) -join ',') | Should -Be 'Identity,CISA SCuBA'
+            # The first engine with a value wins; empty fields are enriched from the other engine.
+            $r[0].TestImplementationCost | Should -Be 'Low'
+            $r[0].TestDescription | Should -Be 'ZeroTrustAssessment text'
+        }
+    }
+
+    It 'tolerates engine objects that lack optional properties' {
+        InModuleScope ZeroTrustLens {
+            $legacy = [PSCustomObject]@{ TestId = 'X'; TestTitle = 'Only the basics'; TestStatus = 'Failed' }
+            { New-ZtLensCorrelatedTests -Tests @($legacy) } | Should -Not -Throw
+            $r = @(New-ZtLensCorrelatedTests -Tests @($legacy))
+            $r.Count | Should -Be 1
+            $r[0].TestImplementationCost | Should -BeNullOrEmpty
+        }
+    }
+
+    It 'marks a missing implementation cost as Unknown instead of guessing Medium' {
+        InModuleScope ZeroTrustLens {
+            $f = @(New-ZtLensFindings -Tests @([PSCustomObject]@{ TestId = 'X'; TestTitle = 't'; TestStatus = 'Failed'; TestPillar = @('Identity') }) -Language en)
+            $f[0].ImplementationCost | Should -Be 'Unknown'
+            $f[0].Pillar | Should -Be 'Identity'
+        }
+    }
+
+    It 'normalizes a grouped pillar into Pillar/PrimaryPillar' {
+        InModuleScope ZeroTrustLens {
+            $f = @(New-ZtLensFindings -Tests @([PSCustomObject]@{ TestId = 'X'; TestTitle = 't'; TestStatus = 'Failed'; TestPillar = @('Identity', 'CISA SCuBA') }) -Language en)
+            $f[0].Pillar | Should -Be 'Identity, CISA SCuBA'
+            $f[0].PrimaryPillar | Should -Be 'Identity'
+        }
     }
 }

@@ -532,15 +532,15 @@ function Invoke-ZtLensBaselineCollections {
                         TestTitle     = $req
                         TestStatus    = $mappedStatus
                         TestRisk      = if ($crit -match 'Shall') { 'High' } else { 'Medium' }
-                        TestPillar    = 'CISA SCuBA'
-                        TestCategory  = $cat
-                        TestSfiPillar = 'CISA SCuBA'
-                        TestImplCost  = ''
-                        TestMinLic    = ''
-                        SkippedReason = ''
-                        TestResult    = $det
-                        TestImpact    = if ($crit -match 'Shall') { 'High' } else { 'Medium' }
-                        TestDesc      = $req
+                        TestPillar             = 'CISA SCuBA'
+                        TestCategory           = $cat
+                        TestSfiPillar          = 'CISA SCuBA'
+                        TestImplementationCost = ''
+                        TestMinimumLicense     = ''
+                        SkippedReason          = ''
+                        TestResult             = $det
+                        TestImpact             = if ($crit -match 'Shall') { 'High' } else { 'Medium' }
+                        TestDescription        = $req
                     }
                 }
                 & $Log "[Stage 2/5] ScubaGear completed: $scCount controls merged."
@@ -625,15 +625,15 @@ function Invoke-ZtLensBaselineCollections {
                             TestTitle     = $cName
                             TestStatus    = $mappedOrStatus
                             TestRisk      = 'Medium'
-                            TestPillar    = 'Defender for Office 365 (ORCA)'
-                            TestCategory  = $area
-                            TestSfiPillar = 'Defender for Office 365'
-                            TestImplCost  = ''
-                            TestMinLic    = ''
-                            SkippedReason = ''
-                            TestResult    = if ($mappedOrStatus -eq 'Passed' -and $passTxt) { $passTxt } else { $rec }
-                            TestImpact    = 'Medium'
-                            TestDesc      = $imp
+                            TestPillar             = 'Defender for Office 365 (ORCA)'
+                            TestCategory           = $area
+                            TestSfiPillar          = 'Defender for Office 365'
+                            TestImplementationCost = ''
+                            TestMinimumLicense     = ''
+                            SkippedReason          = ''
+                            TestResult             = if ($mappedOrStatus -eq 'Passed' -and $passTxt) { $passTxt } else { $rec }
+                            TestImpact             = 'Medium'
+                            TestDescription        = if ($imp) { $imp } else { $cName }
                         }
                     }
                     & $Log "[Stage 3/5] ORCA completed: $ocCount controls merged."
@@ -663,6 +663,24 @@ function Invoke-ZtLensBaselineCollections {
     return $collected
 }
 
+function Get-ZtLensPropertyValue {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory = $false)]
+        [object]$Object,
+
+        [Parameter(Mandatory = $true)]
+        [string]$Name
+    )
+
+    # StrictMode-safe accessor: engines export slightly different shapes and a missing
+    # property must read as $null instead of throwing.
+    if ($null -eq $Object) { return $null }
+    $prop = $Object.PSObject.Properties[$Name]
+    if ($prop) { return $prop.Value }
+    return $null
+}
+
 function New-ZtLensCorrelatedTests {
     [CmdletBinding()]
     param(
@@ -673,47 +691,56 @@ function New-ZtLensCorrelatedTests {
 
     $statusRank = @{ 'Passed' = 0; 'Planned' = 1; 'Skipped' = 1; 'Investigate' = 2; 'Failed' = 3 }
     $riskRank = @{ 'Low' = 0; 'Medium' = 1; 'High' = 2 }
+    $enrichable = @('TestCategory', 'TestSfiPillar', 'TestImplementationCost', 'TestMinimumLicense', 'SkippedReason', 'TestResult', 'TestImpact', 'TestDescription')
 
     # Ordered dictionary keeps report output deterministic between runs.
     $correlated = [ordered]@{}
     foreach ($t in @($Tests)) {
         if ($null -eq $t) { continue }
 
-        $title = [string]$t.TestTitle
-        $normTitle = $title.ToLowerInvariant().Trim() -replace '[^a-z0-9]+', ' '
-        if (-not $normTitle) { $normTitle = [string]$t.TestId }
+        $title = [string](Get-ZtLensPropertyValue -Object $t -Name 'TestTitle')
+        # Trim after collapsing separators: a title ending in punctuation would otherwise keep a
+        # trailing space and never match its counterpart from another engine.
+        $normTitle = ($title.ToLowerInvariant().Trim() -replace '[^a-z0-9]+', ' ').Trim()
+        if (-not $normTitle) { $normTitle = [string](Get-ZtLensPropertyValue -Object $t -Name 'TestId') }
 
-        $pillarProp = $t.PSObject.Properties['TestPillar']
-        $pillar = if ($pillarProp -and $pillarProp.Value) { [string]$pillarProp.Value } else { '' }
+        $pillar = [string](Get-ZtLensPropertyValue -Object $t -Name 'TestPillar')
 
         if ($correlated.Contains($normTitle)) {
             $existing = $correlated[$normTitle]
             if ($pillar -and ($existing.TestPillar -notcontains $pillar)) {
                 $existing.TestPillar = @($existing.TestPillar) + $pillar
             }
-            $newStatus = [string]$t.TestStatus
+            $newStatus = [string](Get-ZtLensPropertyValue -Object $t -Name 'TestStatus')
             if (($statusRank[$newStatus] ?? 0) -gt ($statusRank[[string]$existing.TestStatus] ?? 0)) {
                 $existing.TestStatus = $newStatus
             }
-            $newRisk = [string]$t.TestRisk
+            $newRisk = [string](Get-ZtLensPropertyValue -Object $t -Name 'TestRisk')
             if (($riskRank[$newRisk] ?? 0) -gt ($riskRank[[string]$existing.TestRisk] ?? 0)) {
                 $existing.TestRisk = $newRisk
             }
+            # Keep the richest metadata available from any engine reporting the same control.
+            foreach ($field in $enrichable) {
+                $incoming = Get-ZtLensPropertyValue -Object $t -Name $field
+                if ($incoming -and -not (Get-ZtLensPropertyValue -Object $existing -Name $field)) {
+                    $existing.$field = $incoming
+                }
+            }
         } else {
             $correlated[$normTitle] = [PSCustomObject]@{
-                TestId        = $t.TestId
-                TestTitle     = $t.TestTitle
-                TestStatus    = $t.TestStatus
-                TestRisk      = $t.TestRisk
-                TestPillar    = @($pillar)
-                TestCategory  = $t.PSObject.Properties['TestCategory'].Value
-                TestSfiPillar = $t.PSObject.Properties['TestSfiPillar'].Value
-                TestImplCost  = $t.PSObject.Properties['TestImplementationCost'].Value
-                TestMinLic    = $t.PSObject.Properties['TestMinimumLicense'].Value
-                SkippedReason = $t.PSObject.Properties['SkippedReason'].Value
-                TestResult    = $t.PSObject.Properties['TestResult'].Value
-                TestImpact    = $t.PSObject.Properties['TestImpact'].Value
-                TestDesc      = $t.PSObject.Properties['TestDescription'].Value
+                TestId                 = Get-ZtLensPropertyValue -Object $t -Name 'TestId'
+                TestTitle              = Get-ZtLensPropertyValue -Object $t -Name 'TestTitle'
+                TestStatus             = Get-ZtLensPropertyValue -Object $t -Name 'TestStatus'
+                TestRisk               = Get-ZtLensPropertyValue -Object $t -Name 'TestRisk'
+                TestPillar             = @($pillar)
+                TestCategory           = Get-ZtLensPropertyValue -Object $t -Name 'TestCategory'
+                TestSfiPillar          = Get-ZtLensPropertyValue -Object $t -Name 'TestSfiPillar'
+                TestImplementationCost = Get-ZtLensPropertyValue -Object $t -Name 'TestImplementationCost'
+                TestMinimumLicense     = Get-ZtLensPropertyValue -Object $t -Name 'TestMinimumLicense'
+                SkippedReason          = Get-ZtLensPropertyValue -Object $t -Name 'SkippedReason'
+                TestResult             = Get-ZtLensPropertyValue -Object $t -Name 'TestResult'
+                TestImpact             = Get-ZtLensPropertyValue -Object $t -Name 'TestImpact'
+                TestDescription        = Get-ZtLensPropertyValue -Object $t -Name 'TestDescription'
             }
         }
     }
@@ -787,17 +814,18 @@ function New-ZtLensFindings {
     )
 
     foreach ($t in @($Tests)) {
-        $pillarStr = if ($t.TestPillar -is [System.Array]) { ($t.TestPillar -join ', ') } else { [string]$t.TestPillar }
-        $primaryPillar = if ($t.TestPillar -is [System.Array]) { [string]$t.TestPillar[0] } else { [string]$t.TestPillar }
+        $pillarRaw = Get-ZtLensPropertyValue -Object $t -Name 'TestPillar'
+        $pillarStr = if ($pillarRaw -is [System.Array]) { ($pillarRaw -join ', ') } else { [string]$pillarRaw }
+        $primaryPillar = if ($pillarRaw -is [System.Array]) { [string]$pillarRaw[0] } else { [string]$pillarRaw }
         $fwRef = if ($PillarMap -and $primaryPillar -and $PillarMap.PSObject.Properties[$primaryPillar]) {
             [string]$PillarMap.$primaryPillar
         } else {
             'General Control'
         }
-        $fTitle = [string]$t.TestTitle
-        $fDesc  = [string]$t.TestDesc
-        $fImp   = [string]$t.TestImpact
-        $tid    = [string]$t.TestId
+        $fTitle = [string](Get-ZtLensPropertyValue -Object $t -Name 'TestTitle')
+        $fDesc  = [string](Get-ZtLensPropertyValue -Object $t -Name 'TestDescription')
+        $fImp   = [string](Get-ZtLensPropertyValue -Object $t -Name 'TestImpact')
+        $tid    = [string](Get-ZtLensPropertyValue -Object $t -Name 'TestId')
         if ($Language -eq 'tr' -and $TranslationCache.ContainsKey($tid)) {
             if ($TranslationCache[$tid].Title) { $fTitle = [string]$TranslationCache[$tid].Title }
             if ($TranslationCache[$tid].Desc)  { $fDesc  = [string]$TranslationCache[$tid].Desc }
@@ -818,24 +846,33 @@ function New-ZtLensFindings {
             default                           { 'Microsoft 365 Yönetim Merkezi' }
         }
         $remTr = "1. $portalName üzerinden '$fTitle' kontrolüne karşılık gelen ilkeyi açın. 2. Değişikliği önce Denetim (Report-only) kipinde pilot gruba uygulayıp oturum açma/olay günlüklerini doğrulayın. 3. Etki analizi sonrası kademeli olarak Zorunlu (Enforce) durumuna geçin."
-        $minLicStr = if ($t.TestMinLic -is [System.Array]) { ($t.TestMinLic -join ', ') } else { [string]$t.TestMinLic }
+        $minLicRaw = Get-ZtLensPropertyValue -Object $t -Name 'TestMinimumLicense'
+        $minLicStr = if ($minLicRaw -is [System.Array]) { ($minLicRaw -join ', ') } else { [string]$minLicRaw }
+        $implCostRaw = Get-ZtLensPropertyValue -Object $t -Name 'TestImplementationCost'
+        $categoryRaw = Get-ZtLensPropertyValue -Object $t -Name 'TestCategory'
+        $sfiRaw      = Get-ZtLensPropertyValue -Object $t -Name 'TestSfiPillar'
+        $statusRaw   = Get-ZtLensPropertyValue -Object $t -Name 'TestStatus'
+        $riskRaw     = Get-ZtLensPropertyValue -Object $t -Name 'TestRisk'
+        $resultRaw   = Get-ZtLensPropertyValue -Object $t -Name 'TestResult'
+        $skippedRaw  = Get-ZtLensPropertyValue -Object $t -Name 'SkippedReason'
+        $idRaw       = Get-ZtLensPropertyValue -Object $t -Name 'TestId'
 
         [PSCustomObject]@{
-            Id                 = $t.TestId
+            Id                 = $idRaw
             Pillar             = if ($pillarStr) { $pillarStr } else { 'General' }
             PrimaryPillar      = if ($primaryPillar) { $primaryPillar } else { 'General' }
-            Category           = if ($t.TestCategory) { [string]$t.TestCategory } else { 'General' }
-            SfiPillar          = if ($t.TestSfiPillar) { [string]$t.TestSfiPillar } else { '' }
-            ImplementationCost = if ($t.TestImplCost) { [string]$t.TestImplCost } else { 'Medium' }
+            Category           = if ($categoryRaw) { [string]$categoryRaw } else { 'General' }
+            SfiPillar          = if ($sfiRaw) { [string]$sfiRaw } else { '' }
+            ImplementationCost = if ($implCostRaw) { [string]$implCostRaw } else { 'Unknown' }
             MinimumLicense     = $minLicStr
-            Status             = [string]$t.TestStatus
-            Risk               = if ($t.TestRisk) { [string]$t.TestRisk } else { 'Low' }
+            Status             = [string]$statusRaw
+            Risk               = if ($riskRaw) { [string]$riskRaw } else { 'Low' }
             Title              = $fTitle
             FrameworkRef       = $fwRef
-            Result             = [string]$t.TestResult
+            Result             = [string]$resultRaw
             Impact             = $fImp
             Description        = $fDesc
-            SkippedReason      = [string]$t.SkippedReason
+            SkippedReason      = [string]$skippedRaw
             RemediationTr      = $remTr
         }
     }
@@ -1047,15 +1084,19 @@ function Invoke-ZtLensAssessment {
         throw "Assessment JSON could not be parsed ('$sourceJsonPath'): $($_.Exception.Message)"
     }
     $fwConfig = (Get-Content -Path $script:FrameworkMapPath -Raw -Encoding UTF8 | ConvertFrom-Json).frameworks
-    $tests = New-ZtLensCorrelatedTests -Tests @($raw.Tests)
 
+    # Collect every engine first, then correlate once: ScubaGear and ORCA controls must be
+    # de-duplicated against the ZeroTrustAssessment findings as well.
+    $ztTests = @($raw.Tests)
+    $collectedTests = @()
     if (-not $InputReportJson) {
         $accountName = if ($mgCheck -and $mgCheck.Account) { [string]$mgCheck.Account } else { '' }
-        $tests += @(Invoke-ZtLensBaselineCollections -OutputPath $OutputPath -Account $accountName -Log $addLog -State $progressState -Diagnostics $diagnostics -Manifest $manifest -ManifestPath $manifestPath)
+        $collectedTests = @(Invoke-ZtLensBaselineCollections -OutputPath $OutputPath -Account $accountName -Log $addLog -State $progressState -Diagnostics $diagnostics -Manifest $manifest -ManifestPath $manifestPath)
     } else {
         & $markStage 2 'CISA ScubaGear' 'skipped' 'Offline mode: -InputReportJson supplied, ScubaGear was not executed.'
         & $markStage 3 'Microsoft ORCA' 'skipped' 'Offline mode: -InputReportJson supplied, ORCA was not executed.'
     }
+    $tests = New-ZtLensCorrelatedTests -Tests (@($ztTests) + @($collectedTests))
     $progressState.Stage = 4
     & $markStage 4 'Correlation & scoring' 'started' ''
     & $addLog "[Stage 4/5] Computing License ROI, Secure Score & Multi-Framework Scores..."
@@ -1148,7 +1189,7 @@ function Invoke-ZtLensAssessment {
                 $chunk = $toTranslate[$i..([Math]::Min($i + 14, $toTranslate.Count - 1))]
                 $payload = @()
                 foreach ($item in $chunk) {
-                    $dText = [string]$item.TestDesc
+                    $dText = [string]$item.TestDescription
                     if ($dText.Length -gt 1000) { $dText = $dText.Substring(0, 1000) }
                     $payload += @{ Text = [string]$item.TestTitle }
                     $payload += @{ Text = $dText }
