@@ -1,154 +1,60 @@
 {
   "frameworks": {
     "ZeroTrust": {
-      "nameEn": "Microsoft Zero Trust",
-      "nameTr": "Microsoft Zero Trust",
-      "descriptionEn": "Microsoft 7-pillar Zero Trust posture model (Identity, Devices, Network, Data, Infrastructure, SecOps, AI).",
-      "descriptionTr": "Microsoft 7 sütunlu Sıfır Güven duruş modeli (Kimlik, Cihazlar, Ağ, Veri, Altyapı, SecOps, Yapay Zekâ).",
-      "pillarMap": {
-        "Identity": "Zero Trust — Identity (Verify explicitly)",
-        "Devices": "Zero Trust — Devices (Assume breach)",
-        "Network": "Zero Trust — Network (Assume breach)",
-        "Data": "Zero Trust — Data (Use least privilege)",
-        "Infrastructure": "Zero Trust — Infrastructure (Assume breach)",
-        "SecOps": "Zero Trust — Visibility, automation & orchestration",
-        "AI": "Zero Trust — AI & agent identities",
-        "CISA SCuBA": "Zero Trust — Identity/Data baseline (CISA SCuBA)",
-        "Defender for Office 365 (ORCA)": "Zero Trust — Email & collaboration (ORCA)",
-        "Maester (EIDSCA / CIS)": "Zero Trust — Identity & M365 Baseline (Maester EIDSCA/CIS)",
-        "EntraFalcon": "Zero Trust — Identity Attack Paths & Privileges (EntraFalcon)"
-      },
-      "scoredPillars": [
-        "Identity",
-        "Devices",
-        "Network",
-        "Data",
-        "Infrastructure",
-        "SecOps",
-        "AI",
-        "CISA SCuBA",
-        "Defender for Office 365 (ORCA)",
-        "Maester (EIDSCA / CIS)",
-        "EntraFalcon"
-      ]
-    },
-    "ISO27001": {
-      "nameEn": "ISO/IEC 27001:2022",
-      "nameTr": "ISO/IEC 27001:2022",
-      "descriptionEn": "Annex A controls mapped to Microsoft 365 and Azure security configurations.",
-      "descriptionTr": "Microsoft 365 ve Azure güvenlik yapılandırmalarına eşlenmiş Ek-A kontrolleri.",
-      "pillarMap": {
-        "Identity": "A.5.15 / A.5.16 / A.5.17 / A.8.5 (Access Control & Authentication)",
-        "Devices": "A.8.1 / A.8.7 / A.8.8 / A.8.24 (Endpoint & Malware Protection)",
-        "Network": "A.8.20 / A.8.21 / A.8.22 (Network Security & Segregation)",
-        "Data": "A.5.12 / A.5.13 / A.8.12 / A.8.24 (Classification, DLP & Cryptography)",
-        "Infrastructure": "A.8.9 / A.8.20 (Configuration Management & Cloud Infra)",
-        "SecOps": "A.5.24 / A.5.25 / A.8.15 / A.8.16 (Logging, Monitoring & Incident Response)",
-        "AI": "A.5.12 / A.8.12 / A.8.2 (AI Data Governance & Access Boundaries)",
-        "CISA SCuBA": "A.5.15 / A.8.9 / A.8.20 (Federal Cloud Baseline & Hardening)",
-        "Defender for Office 365 (ORCA)": "A.8.7 / A.8.23 (Email & Phishing Protection)",
-        "Maester (EIDSCA / CIS)": "A.5.15 / A.5.17 / A.8.5 (Authentication & Config Baseline)",
-        "EntraFalcon": "A.5.15 / A.5.18 / A.8.2 (Privileged Access & Identity Attack Paths)"
-      },
-      "scoredPillars": [
-        "Identity",
-        "Devices",
-        "Network",
-        "Data",
-        "Infrastructure",
-        "SecOps",
-        "CISA SCuBA",
-        "Defender for Office 365 (ORCA)",
-        "Maester (EIDSCA / CIS)",
-        "EntraFalcon"
-      ]
-    },
-    "NIST_CSF_2": {
-      "nameEn": "NIST CSF 2.0",
-      "nameTr": "NIST CSF 2.0",
-      "descriptionEn": "Govern, Identify, Protect, Detect, Respond functions mapped to tenant findings.",
-      "descriptionTr": "Kiracı bulgularına eşlenmiş Yönetişim, Tanımlama, Koruma, Tespit ve Müdahale fonksiyonları.",
-      "pillarMap": {
-        "Identity": "PR.AA (Identity Management, Authentication & Access Control)",
-        "Devices": "PR.PS / ID.AM (Platform Security & Asset Management)",
-        "Network": "PR.IR (Technology Infrastructure Resilience & Network Protection)",
-        "Data": "PR.DS (Data Security & Leakage Prevention)",
-        "Infrastructure": "PR.PS (Secure Cloud Configuration)",
-        "SecOps": "DE.CM / RS.MA (Continuous Monitoring & Incident Management)",
-        "AI": "GV.RM / PR.DS (AI Risk Management & Data Protection)",
-        "CISA SCuBA": "PR.PS / PR.AA (Federal M365 Baseline Configuration & Hardening)",
-        "Defender for Office 365 (ORCA)": "PR.DS / DE.CM (Email & Anti-Phishing Protection)",
-        "Maester (EIDSCA / CIS)": "PR.AA / PR.PS (Entra ID EIDSCA & CIS Safeguards)",
-        "EntraFalcon": "ID.RA / PR.AA (Identity Privilege Escalation & App Risk)"
-      },
-      "scoredPillars": [
-        "Identity",
-        "Devices",
-        "Network",
-        "SecOps",
-        "AI",
-        "CISA SCuBA",
-        "Defender for Office 365 (ORCA)",
-        "Maester (EIDSCA / CIS)",
-        "EntraFalcon"
-      ]
+      "nameEn": "Microsoft Zero Trust Assessment",
+      "nameTr": "Microsoft Zero Trust Assessment",
+      "sourceTag": "ZeroTrust",
+      "upstreamUrl": "https://github.com/microsoft/zerotrustassessment",
+      "descriptionEn": "Official Microsoft Zero Trust Assessment checks across Identity, Devices, Network, Data, Infrastructure, SecOps, and AI.",
+      "descriptionTr": "Identity, Devices, Network, Data, Infrastructure, SecOps ve AI alanlarında Microsoft resmi ZeroTrustAssessment denetimleri."
     },
     "CIS_M365": {
-      "nameEn": "CIS Microsoft 365 Foundations",
-      "nameTr": "CIS Microsoft 365 Temelleri",
-      "descriptionEn": "CIS Benchmark alignment across Entra ID, Exchange, SharePoint, Teams, Intune, and Purview.",
-      "descriptionTr": "Entra ID, Exchange, SharePoint, Teams, Intune ve Purview genelinde CIS Benchmark uyumu.",
-      "pillarMap": {
-        "Identity": "CIS Section 5 (Microsoft Entra ID)",
-        "Devices": "CIS Section 4 (Microsoft Intune)",
-        "Network": "CIS Section 5 / Azure Network Foundations",
-        "Data": "CIS Section 3 (Microsoft Purview & Data Governance)",
-        "Infrastructure": "CIS Azure Foundations",
-        "SecOps": "CIS Section 2 & 6 (Defender XDR & Auditing)",
-        "AI": "CIS Section 3 & 5 (Copilot & AI Access Governance)",
-        "CISA SCuBA": "CIS Section 1, 5 & 7 (Entra, EXO, Defender & Teams Hardening)",
-        "Defender for Office 365 (ORCA)": "CIS Section 2 (Microsoft Defender for Office 365 & Exchange)",
-        "Maester (EIDSCA / CIS)": "CIS Microsoft 365 Foundations & EIDSCA Controls",
-        "EntraFalcon": "CIS Section 5 (Entra ID Roles, Apps & Conditional Access)"
-      },
-      "scoredPillars": [
-        "Identity",
-        "Devices",
-        "Data",
-        "CISA SCuBA",
-        "Defender for Office 365 (ORCA)",
-        "Maester (EIDSCA / CIS)",
-        "EntraFalcon"
-      ]
+      "nameEn": "CIS Microsoft 365 Foundations v7.0.0",
+      "nameTr": "CIS Microsoft 365 Temelleri v7.0.0",
+      "sourceTag": "CIS M365",
+      "upstreamUrl": "https://github.com/maester365/maester",
+      "descriptionEn": "Verified CIS Microsoft 365 Foundations Benchmark v7.0.0 automated controls executed via Maester.",
+      "descriptionTr": "Maester üzerinden koşturulan doğrulanmış CIS Microsoft 365 Foundations Benchmark v7.0.0 kontrolleri."
     },
-    "KVKK_TR": {
-      "nameEn": "KVKK Technical Measures (TR)",
-      "nameTr": "KVKK Teknik Tedbirler Rehberi",
-      "descriptionEn": "Turkish Personal Data Protection Authority (KVKK) technical controls alignment.",
-      "descriptionTr": "Kişisel Verileri Koruma Kurumu (KVKK) Teknik Tedbirler rehberi uyumu.",
-      "pillarMap": {
-        "Identity": "Yetki Matrisi, Erişim Logları ve Çok Faktörlü Doğrulama",
-        "Devices": "Uç Nokta Güvenliği, Güncel Yazılım ve Disk Şifreleme",
-        "Network": "Ağ Güvenliği, Güvenlik Duvarı ve Güvenli İletişim",
-        "Data": "Veri Sınıflandırma, DLP, Şifreleme ve Veri Maskeleme",
-        "Infrastructure": "Bulut Altyapısı ve Anahtar Yönetimi",
-        "SecOps": "Sızma/Anomali İzleme, SIEM ve Olay Müdahale",
-        "AI": "Kişisel Verilerin Üretken Yapay Zekâya Sızmasının Önlenmesi",
-        "CISA SCuBA": "Bulut Platformu Sıkılaştırma, Yetki Sınırları ve Denetim Logları",
-        "Defender for Office 365 (ORCA)": "Zararlı Yazılım, Oltalama ve E-posta Veri Sızıntısı Önleme",
-        "Maester (EIDSCA / CIS)": "Kimlik Doğrulama Sertleştirme ve CIS M365 Taban Kontrolleri",
-        "EntraFalcon": "Yetki Yükseltme Yolu ve Üçüncü Taraf Uygulama Yetki Denetimi"
-      },
-      "scoredPillars": [
-        "Identity",
-        "Data",
-        "SecOps",
-        "Devices",
-        "CISA SCuBA",
-        "Defender for Office 365 (ORCA)",
-        "Maester (EIDSCA / CIS)",
-        "EntraFalcon"
-      ]
+    "CISA_SCuBA": {
+      "nameEn": "CISA SCuBA M365 Security Baseline",
+      "nameTr": "CISA SCuBA M365 Güvenlik Taban Hattı",
+      "sourceTag": "CISA SCuBA",
+      "upstreamUrl": "https://github.com/cisagov/ScubaGear",
+      "descriptionEn": "CISA Secure Cloud Business Applications (SCuBA) Microsoft 365 security configuration baseline executed via ScubaGear.",
+      "descriptionTr": "ScubaGear motoruyla ölçülen ABD CISA SCuBA Microsoft 365 güvenlik yapılandırma taban hattı."
+    },
+    "MDO_ORCA": {
+      "nameEn": "Microsoft Defender for Office 365 (ORCA)",
+      "nameTr": "Microsoft Defender for Office 365 (ORCA)",
+      "sourceTag": "MDO / ORCA",
+      "upstreamUrl": "https://github.com/martin9700/ORCA",
+      "descriptionEn": "Office 365 Recommended Configuration Analyzer (ORCA) controls for anti-phishing, Safe Links, Safe Attachments, and DKIM/DMARC.",
+      "descriptionTr": "Kimlik avı koruması, Güvenli Bağlantılar, Güvenli Ekler ve DKIM/DMARC için Exchange Online / ORCA kontrolleri."
+    },
+    "EIDSCA": {
+      "nameEn": "Entra ID Security Config Analyzer (EIDSCA)",
+      "nameTr": "Entra ID Güvenlik Yapılandırma Analizi (EIDSCA)",
+      "sourceTag": "EIDSCA",
+      "upstreamUrl": "https://github.com/maester365/maester",
+      "descriptionEn": "Entra ID Security Config Analyzer checks evaluating authentication methods, app consent, and directory hardening.",
+      "descriptionTr": "Kimlik doğrulama yöntemleri, uygulama onayları ve dizin sıkılaştırma ayarlarını denetleyen EIDSCA kontrolleri."
+    },
+    "Maester": {
+      "nameEn": "Maester M365 & XSPM Baseline",
+      "nameTr": "Maester M365 & XSPM Kontrolleri",
+      "sourceTag": "Maester",
+      "upstreamUrl": "https://github.com/maester365/maester",
+      "descriptionEn": "Native Maester security tests across Entra ID, Intune, Defender XDR, Exposure Management, Purview, Exchange, Teams, and Copilot Studio.",
+      "descriptionTr": "Entra ID, Intune, Defender XDR, Exposure Management, Purview, Exchange, Teams ve Copilot Studio yerel Maester testleri."
+    },
+    "EntraFalcon": {
+      "nameEn": "EntraFalcon Privilege & Attack-Path Audit",
+      "nameTr": "EntraFalcon Yetki ve Saldırı Yolu Denetimi",
+      "sourceTag": "EntraFalcon",
+      "upstreamUrl": "https://github.com/CompassSecurity/EntraFalcon",
+      "descriptionEn": "Compass Security EntraFalcon attack-path, tiered administration, and privileged Entra role findings.",
+      "descriptionTr": "Compass Security EntraFalcon yetki yükseltme yolları, katmanlı yönetim ve ayrıcalıklı Entra rol bulguları."
     }
   }
 }

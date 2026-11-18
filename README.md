@@ -1,65 +1,63 @@
 # TenantBrief
 
-**TenantBrief** is a strictly **read-only**, bilingual (**Turkish / English**) Microsoft 365 & Azure security posture, **License ROI**, and **multi-framework compliance** assessment platform unifying Microsoft's `ZeroTrustAssessment`, `CISA ScubaGear`, `Microsoft ORCA`, `Maester` (`EIDSCA` / `CIS` / `XSPM`), and optional `EntraFalcon` attack-path JSON ingestion.
+**TenantBrief** is an open-source, strictly **read-only**, bilingual (**Turkish / English**) Microsoft 365 & Azure security posture, **License ROI**, and **verified benchmark scoring** platform. It orchestrates `ZeroTrustAssessment`, `CISA ScubaGear`, `Microsoft ORCA`, `Maester` (`EIDSCA` / `CIS M365` / `XSPM`), and optional `EntraFalcon` exports, unifies every finding into **6 canonical security pillars** with **multi-source tags**, and removes synthetic framework guesses in favor of **verifiable benchmark scores**.
 
 > **Why TenantBrief?**
-> Raw technical assessment exports list hundreds of `Passed / Failed` checks, leaving CISOs, security architects, and IT directors with three unanswered questions:
-> 1. **Real License ROI & Blind Spots:** How much of our purchased Microsoft 365 E3/E5, Defender, Purview, and Copilot licensing is actually assigned vs. sitting idle (`USD/month` and `USD/year`), and which features are `Skipped` due to missing configuration?
-> 2. **Multi-Framework Alignment:** How do M365, Entra ID, CISA SCuBA baselines, and Defender for Office 365 controls map simultaneously to **Microsoft Zero Trust**, **ISO/IEC 27001:2022**, **NIST CSF 2.0**, **CIS Microsoft 365 Foundations**, and **KVKK Technical Measures (TR)**?
-> 3. **Zero-Telemetry Executive Action Plan:** Which high-risk findings fit into an interactive **0–30 / 31–60 / 61–90 day** roadmap, and can leadership export a Print-to-PDF brief without sending any tenant data to external AI services?
+> Raw security scanner exports dump hundreds of engine-specific tabs, duplicate controls, and unverified checklists. TenantBrief answers three CISO-level questions clearly without sending tenant data to external AI:
+> 1. **Unified 6 Security Pillars + Multi-Source Provenance:** Instead of splitting the UI by scanner tool names, all controls are organized under **Identity**, **Devices**, **Network & Infra**, **Data**, **AI & Agents**, and **SecOps & Email** — while preserving multi-source badges (`ZeroTrust`, `CISA SCuBA`, `MDO / ORCA`, `CIS M365`, `EIDSCA`, `Maester`, `EntraFalcon`) and filter chips.
+> 2. **Verifiable Benchmark Scores (Zero Synthetic Averages):** TenantBrief does **not** fabricate ISO/NIST/KVKK compliance percentages from coarse pillar averages. Every score bar strictly reflects controls actually tested by that benchmark/engine (`Microsoft ZeroTrustAssessment`, `CIS Microsoft 365 Foundations v7.0.0`, `CISA SCuBA Baseline`, `Microsoft Defender for Office 365 (ORCA)`, `EIDSCA`, `Maester M365 & XSPM`, and optional `EntraFalcon`).
+> 3. **Real License ROI, Waste Audit (R1–R7) & Copilot Readiness:** Combines live Graph `/v1.0/subscribedSkus` and `/v1.0/users` telemetry across **32 SKUs** and **10 overlap rules** with L1–L4 Copilot readiness checks and a local Print-to-PDF executive brief.
 
 ---
 
 ## Architecture & 5-Stage Execution Pipeline
 
-`Invoke-TenantBriefAssessment` runs `ZeroTrustAssessment` in the **main PowerShell runspace** (inheriting your authenticated MSAL/Graph, Azure, Exchange Online, and Security & Compliance tokens without re-prompting) while serving a local, real-time step-by-step dashboard on `http://localhost:8925–8945/`:
+`Invoke-TenantBriefAssessment` executes `ZeroTrustAssessment` in the **main PowerShell runspace** (reusing active MSAL, Microsoft Graph, Azure, Exchange Online, and SharePoint sessions) while streaming live progress to a local dashboard on `http://localhost:8925–8945/`:
 
 ```mermaid
 flowchart TB
-    Start["Connect-TenantBrief (Clean Previous Sessions + Auto-Install Dependencies + Graph Check)"]
-    Pre["Preflight Guards (Active Graph Context Check + System32 Redirect + Write Probe)"]
-    UI["Live Local Dashboard (HttpListener :8925-8945 reading ZT ConcurrentDictionary workers & error state)"]
+    Start["Connect-TenantBrief (Session Cleanup + Graph 2.40.0 Pin + SPO Pin + Read-Only Auth)"]
+    Pre["Preflight Guards (Get-MgContext Validation + System32 Redirect + Write Probe)"]
+    UI["Live Local Dashboard (HttpListener :8925-8945 reading ZT ConcurrentDictionary workers)"]
 
     subgraph Engines["Read-Only Collection Engines (Stages 1-3b)"]
-        S1["Stage 1: ZeroTrustAssessment (Main Runspace MSAL Reuse + SharePoint WinPS5)"]
+        S1["Stage 1: ZeroTrustAssessment (Main Runspace MSAL Reuse + TenantInsights)"]
         S2["Stage 2: CISA ScubaGear (aad baseline reusing active Graph session)"]
-        S3["Stage 3: Microsoft ORCA (Defender for Office 365 & Exchange Online)"]
-        S3B["Stage 3b: Maester (EIDSCA, CIS & Maester suites via Get-MgContext) + Optional EntraFalcon JSON"]
+        S3["Stage 3a: Microsoft ORCA (Defender for Office 365 & Exchange Online)"]
+        S3B["Stage 3b: Maester (EIDSCA, CIS M365 v7.0.0, XSPM) + Optional EntraFalcon JSON"]
     end
 
-    subgraph Stage4["Correlation, License Waste & Copilot Readiness (Stage 4)"]
-        Corr["Cross-Engine Deduplication, Least-Privilege Role Mapping & Pillar Matrix"]
-        ROI["Live License ROI & Waste Audit (Graph /v1.0/subscribedSkus + Users R1-R7 across 32 SKUs & 10 Overlaps)"]
-        Cop["Copilot & Agent 365 Readiness (Entra Guests, Purview Labels, App Consent, SPO RAC / FastTrack JSON) + Copilot ROI Calc"]
-        FW["5 Compliance Frameworks + Interactive What-If Score Simulator"]
+    subgraph Stage4["Unification, ROI & Verified Scoring (Stage 4)"]
+        Corr["Deduplication + Out-of-Scope/NotRun Filtering + Multi-Source Correlation & CorrelatedIds"]
+        Dom["6 Canonical Security Pillars (Identity, Devices, Network, Data, AI, SecOps) + Role/Portal Mapping"]
+        ROI["Live License ROI & Waste Audit R1-R7 (Graph /subscribedSkus + /users across 32 SKUs & 10 Overlaps)"]
+        Cop["Copilot & Agent 365 Readiness (Eligible Suites incl. DEVELOPERPACK_E5, Guests, Purview, SPO) + Local ROI Calc"]
+        Bench["Verified Benchmark & Engine Scorecard + Per-Benchmark What-If Simulator"]
     end
 
     subgraph Outputs["Offline-First Deliverables (Stage 5)"]
-        HTML["TenantBriefReport-TR/EN.html (Copilot Readiness & ROI Tab + Waste R1-R7 + Clickable 30-60-90 Day Drill-Down)"]
-        JSON["TenantBriefReport-TR/EN.json (Drift Baseline Input)"]
+        HTML["TenantBriefReport-TR/EN.html (6 Pillars + Source Chips + Risk Matrix + Copilot/ROI)"]
+        JSON["TenantBriefReport-TR/EN.json (Drift Baseline + Diagnostics + Run Manifest)"]
         PDF["TenantBrief-ExecutiveSummary-TR/EN.html (Zero-AI Local Print-to-PDF Brief)"]
     end
 
     Start --> Pre --> UI
     Pre --> S1 --> S2 --> S3 --> S3B
-    S3B --> Corr --> ROI --> Cop --> FW --> Out1
-    FW --> Out2
-    FW --> Out3
+    S3B --> Corr --> Dom --> ROI --> Cop --> Bench --> HTML
+    Bench --> JSON
+    Bench --> PDF
 ```
 
 ---
 
 ## Key Capabilities
 
-- **Strictly Read-Only & Fail-Fast Auth Guard:** Never modifies tenant policies, Conditional Access rules, or Entra ID objects (nor calls `Disconnect-MgGraph` mid-session). Both `Connect-TenantBrief` and `Invoke-TenantBriefAssessment` validate `Get-MgContext` up front and abort cleanly if authentication is canceled.
-- **Diagnosable Runs (no silent gaps):** Every stage transition is written to `run-manifest.json` next to the report, so an interrupted scan leaves an explicit trace instead of an empty folder. Failed sub-analyses (license waste, Copilot readiness, ScubaGear, ORCA) are recorded in the report's `Diagnostics` array and surfaced as a banner in the HTML and the executive brief — a missing section can no longer be mistaken for "no findings".
-- **Resumable (`-Resume`):** If a run dies after Stage 1, `Invoke-TenantBriefAssessment -Resume -OutputPath <folder>` reuses the existing `ZeroTrustAssessmentReport.json` and finishes the report without rescanning the tenant.
-- **Live Step-by-Step Browser Dashboard (`localhost:8925–8945`):** Directly reads `ZeroTrustAssessment`'s thread-safe `ProgressState` concurrent worker dictionary (`Running`, `Failed`, `Done`, phase counts, elapsed time) and surfaces PowerShell errors or disconnects immediately.
-- **Cross-Engine Correlation (`ZeroTrustAssessment` + `CISA ScubaGear` + `ORCA` + `Maester` + `EntraFalcon`):** Automatically ensures pinned `Microsoft.Online.SharePoint.PowerShell v16.0.27612.12000`, `powershell-yaml`, `OPA`, `ScubaGear`, `ORCA`, and `Maester`, runs `Maester` (`EIDSCA`, `CIS`, `Maester`, `XSPM`) reusing the active Graph session, supports ingesting external `-InputMaesterJsonPath` and `EntraFalcon` `-InputEntraFalconJsonPath` (`tenant_findings_all_*.json`) exports, and maps least-privilege `RequiredRole` & `AdminPortal` metadata to every actionable finding.
-- **Copilot & Agent 365 Readiness (`Get-TenantBriefCopilotReadiness`):** Integrates live Graph API readiness signals modeled on Microsoft FastTrack `Get-M365CopilotReadiness` & Microsoft `m365-copilot-automated-readiness-assessment` — checking eligible base suites, active Copilot seats, Entra guest invitation/role boundaries, Purview sensitivity labels, user OAuth app/plugin consent, and optional FastTrack `-InputFastTrackJsonPath` or live SharePoint RAC/Restricted Search checks with explicit L1–L4 maturity scoring and security warnings.
-- **Live License ROI & Waste Hygiene (`Get-TenantBriefLicenseRoi` + `Get-TenantBriefLicenseWaste`):** Queries Graph `/v1.0/subscribedSkus` and `/v1.0/users` (inspired by `m365-license-review`) across **32 Microsoft SKUs** and **10 overlap rules** to detect unassigned seats, disabled licensed accounts (R1), 90+ day inactive licensed users (R2 when `AuditLog.Read.All` is granted), duplicate/overlapping SKUs such as `E5 + E3` / `E3 + EXO Plan 1` (R4), and licensed guests (R7).
-- **Offline Interactive Copilot & Agent Studio ROI Calculator:** Inspired by `copilot-roi-calculator`, runs 100% locally inside the HTML report (`$30/user/mo` Copilot + `$200/tenant/mo` Studio + `$0.008/msg` PAYG, department presets, breakeven days, net annual ROI %, and **self-funded share from reclaimed M365 license waste**).
-- **5 Selectable Compliance Frameworks & Zero-AI Print-to-PDF Brief:** Maps controls across `ZeroTrust`, `ISO27001`, `NIST_CSF_2`, `CIS_M365`, and `KVKK_TR`, generates an interactive 30-60-90 day drill-down + What-If simulator, and exports an offline executive PDF brief (`Compare-TenantBriefReports` + `Export-TenantBriefExecutiveSummary`).
+- **6 Canonical Security Pillars & Multi-Source Provenance:** Maps controls from all integrated tools into **Identity**, **Devices**, **Network**, **Data**, **AI**, and **SecOps** (`DomainPillars`), attaches multi-engine provenance badges (`Sources` and `CorrelatedIds`), and enriches actionable rows with control-specific least-privilege `RequiredRole` and `AdminPortal` metadata.
+- **Strictly Verifiable Benchmark Scoring:** Evaluates each integrated benchmark (`ZeroTrust`, `CIS_M365`, `CISA_SCuBA`, `MDO_ORCA`, `EIDSCA`, `Maester`, `EntraFalcon`) strictly against controls carrying its own `SourceTag` in `data/framework-mappings.json`. Only benchmarks present in the run are scored in `-Framework All`, and `Status: Error` stays in the denominator so unmeasured controls never inflate scores.
+- **Clean Signal Filtering (Zero Inflation):** Automatically excludes unexecuted Pester `-ExcludeTag` entries (`Result: NotRun`), out-of-scope suites (`AD.*`, `AZDO.*`, `CIS.GH.*`), duplicate `CISA`/`ORCA` wrappers inside Maester, and normalizes Pester 6 `PesterTestSkipped` records from false `Error` states back into explicit `Skipped` entries with readable permission reasons.
+- **Multi-Pillar Control Preservation:** Splits combined pillars such as `Data AI`, `AI SecOps`, and `Network AI` into array tags so every AI/Data/Network finding contributes accurately to all relevant domain views and benchmark refs.
+- **Strictly Read-Only & Diagnosable (`run-manifest.json` + `-Resume`):** Never writes to tenant policies or calls `Disconnect-MgGraph` mid-session. Writes every stage transition and sub-analysis failure to `run-manifest.json` and `Diagnostics`, caches Stage 4 live telemetry for offline `-Resume` runs, and completes interrupted scans cleanly with `Invoke-TenantBriefAssessment -Resume`.
+- **Live License ROI, Waste Audit (`R1–R7`) & Copilot Readiness (`Get-TenantBriefCopilotReadiness`):** Evaluates `/v1.0/subscribedSkus` and paginated `/v1.0/users` across **32 SKUs** and **10 overlap rules**, checks eligible Copilot base suites (`E3/E5/F1/F3/Business/DEVELOPERPACK_E5/EDU`), Entra guest boundaries, Purview sensitivity labels, OAuth user consent (`COP-APP-01`), and SharePoint `Get-SPOTenant` / Graph `/admin/sharepoint/settings` oversharing controls—plus a browser-local Copilot & Agent Studio ROI calculator.
 
 ---
 
@@ -67,25 +65,25 @@ flowchart TB
 
 | Cmdlet | Purpose |
 | --- | --- |
-| `Connect-TenantBrief` | Clears prior sessions, ensures dependencies, connects read-only to Graph/Azure/EXO/SCC, and verifies active context |
-| `Invoke-TenantBriefAssessment` | Orchestrates Stages 1–5 live or offline (`-InputReportJson`, `-InputFastTrackJsonPath`, `-InputMaesterJsonPath`, `-InputEntraFalconJsonPath`, `-SkipMaester`) and outputs HTML, JSON, and Executive Summary |
-| `Get-TenantBriefFrameworks` | Lists the 5 supported compliance frameworks and their TR/EN descriptions |
-| `Get-TenantBriefLicenseRoi` | Computes seat utilization and monthly idle USD estimate across 32 SKUs from `/v1.0/subscribedSkus` |
-| `Get-TenantBriefLicenseWaste` | Evaluates disabled users (R1), 90d inactive users (R2), unassigned seats (R3), overlapping SKUs (R4), and licensed guests (R7) |
-| `Get-TenantBriefCopilotReadiness` | Evaluates M365 Copilot & Agent 365 readiness, security warnings, and L1–L4 maturity score live or via FastTrack JSON |
-| `Compare-TenantBriefReports` | Compares a baseline and current `TenantBriefReport-*.json` to list `Improved` and `Regressed` controls |
-| `Export-TenantBriefExecutiveSummary` | Generates a compact, offline Print-to-PDF executive brief from any `TenantBriefReport-*.json` |
+| `Connect-TenantBrief` | Clears stale sessions, ensures pinned dependencies (`Graph v2.40.0`, `SPO v16.0.27612.12000`, `ScubaGear`, `ORCA`, `Maester`), and connects read-only to Graph/Azure/EXO/SCC |
+| `Invoke-TenantBriefAssessment` | Orchestrates Stages 1–5 live or offline (`-InputReportJson`, `-Resume`, `-InputFastTrackJsonPath`, `-InputMaesterJsonPath`, `-InputEntraFalconJsonPath`, `-SkipMaester`) and outputs HTML, JSON, Executive Summary, and `run-manifest.json` |
+| `Get-TenantBriefFrameworks` | Lists the 7 verified benchmarks & engines defined in `data/framework-mappings.json` (`SourceTag` + upstream repo URL) |
+| `Get-TenantBriefLicenseRoi` | Computes purchased, assigned, and idle USD/month estimates across 32 Microsoft SKUs from `/v1.0/subscribedSkus` |
+| `Get-TenantBriefLicenseWaste` | Audits disabled licensed users (`R1`), 90+ day inactive users (`R2`), unassigned billable seats (`R3`), overlapping SKUs (`R4`), and licensed guests (`R7`) |
+| `Get-TenantBriefCopilotReadiness` | Evaluates M365 Copilot & Agent 365 readiness, security warnings, and L1–L4 maturity live or via FastTrack JSON |
+| `Compare-TenantBriefReports` | Compares two `TenantBriefReport-*.json` snapshots to detect `Improved` and `Regressed` controls |
+| `Export-TenantBriefExecutiveSummary` | Generates a compact, offline Print-to-PDF executive brief ordered by lowest-effort high-risk remediations first |
 
-> Legacy `*-ZtLens*` cmdlet names (`Connect-ZtLens`, `Invoke-ZtLensAssessment`, etc.) remain exported as aliases for backward compatibility.
+> Backward-compatible `*-ZtLens*` aliases (`Connect-ZtLens`, `Invoke-ZtLensAssessment`, etc.) remain exported.
 
 ---
 
 ## Prerequisites
 
 - **Live Tenant Assessment:** **PowerShell 7.6+** (`ZeroTrustAssessment v3.1.0` requires PowerShell 7.6+; tested on PowerShell 7.7)
-- **Offline JSON Analysis (`-InputReportJson`):** **PowerShell 7.0+** (`pwsh`)
-- **Required Module:** `ZeroTrustAssessment` (`Install-Module ZeroTrustAssessment -Scope CurrentUser`); `ScubaGear`, `OPA`, `powershell-yaml`, and `ORCA` are checked/installed automatically by `Connect-TenantBrief` / `Invoke-TenantBriefAssessment`
-- **Minimum Read-Only Roles:** `Global Reader` (recommended for full M365 + Defender + Compliance coverage) or `Security Reader` + `Reports Reader`
+- **Offline JSON Analysis / `-Resume`:** **PowerShell 7.0+** (`pwsh`)
+- **Modules:** `ZeroTrustAssessment` (`Install-Module ZeroTrustAssessment -Scope CurrentUser`); `ScubaGear`, `OPA`, `powershell-yaml`, `ORCA`, and `Maester` are validated/installed as needed
+- **Minimum Read-Only Roles:** `Global Reader` (recommended for complete Entra, Defender, EXO, Purview, and SharePoint coverage) or `Security Reader` + `Reports Reader`
 
 ---
 
@@ -99,57 +97,52 @@ cd TenantBrief
 Import-Module .\TenantBrief.psd1 -Force
 ```
 
-### 2. List Supported Frameworks
+### 2. List Verified Benchmarks & Engines
 
 ```powershell
-Get-TenantBriefFrameworks
+Get-TenantBriefFrameworks | Format-Table Id, NameTr, SourceTag
 ```
 
 ### 3. Run Live Tenant Assessment (Read-Only)
 
 ```powershell
-# Authenticate cleanly (auto-installs missing ScubaGear/OPA/ORCA dependencies)
+# Authenticate cleanly in read-only mode
 Connect-TenantBrief
 
-# Run live assessment with real-time step dashboard & TR HTML/JSON/PDF Executive outputs
+# Execute Stages 1-5 with live dashboard (:8925-8945) and TR/EN deliverables
 Invoke-TenantBriefAssessment -OutputPath "$HOME\TenantBriefReport" -Language tr -Framework All
 ```
 
-### 4. Inspect License ROI, License Waste (R1–R7), Copilot Readiness & Historical Drift
+### 4. Resume an Interrupted Run or Score a Single Benchmark Offline
 
 ```powershell
-# Standalone License ROI query across 32 Microsoft SKUs
-Get-TenantBriefLicenseRoi | Format-Table ProductName, Purchased, Assigned, Unassigned, UtilizationPercent, EstimatedIdleUsdMo
+# Finish an existing run folder using cached Stage 1-3 outputs without re-scanning the tenant
+Invoke-TenantBriefAssessment -Resume -OutputPath "$HOME\TenantBriefReport" -Language tr -NoBrowser
 
-# Audit disabled licensed users, 90d inactive accounts, licensed guests, and redundant SKU overlaps
-Get-TenantBriefLicenseWaste | Format-List
-
-# Standalone M365 Copilot & Agent 365 readiness + security warnings (or ingest FastTrack JSON)
-Get-TenantBriefCopilotReadiness -Language tr
-# Optional: Merge an existing FastTrack Get-M365CopilotReadiness export into TenantBrief
-Invoke-TenantBriefAssessment -OutputPath "$HOME\TenantBriefReport" -InputFastTrackJsonPath .\copilot-readiness.json -Language tr -Framework All
-
-# Compare two historical JSON exports
-Compare-TenantBriefReports -BaselineJsonPath .\prev\TenantBriefReport-TR.json -CurrentJsonPath .\curr\TenantBriefReport-TR.json
-```
-
-### 5. Analyze an Existing `ZeroTrustAssessmentReport.json` Offline
-
-```powershell
-# Generate an anonymized English report from an existing export without tenant connectivity
+# Score only CISA SCuBA from an offline export (anonymized)
 Invoke-TenantBriefAssessment `
   -InputReportJson .\ZeroTrustAssessmentReport.json `
   -OutputPath .\demo `
   -Language en `
+  -Framework CISA_SCuBA `
   -Anonymize `
   -NoBrowser
+```
+
+### 5. Standalone License ROI, Waste (`R1–R7`), Copilot Readiness & Drift Checks
+
+```powershell
+Get-TenantBriefLicenseRoi | Format-Table ProductName, Purchased, Assigned, Unassigned, UtilizationPercent, EstimatedIdleUsdMo
+Get-TenantBriefLicenseWaste | Format-List
+Get-TenantBriefCopilotReadiness -Language tr
+Compare-TenantBriefReports -BaselineJsonPath .\prev\TenantBriefReport-TR.json -CurrentJsonPath .\curr\TenantBriefReport-TR.json
 ```
 
 ---
 
 ## Demo Reports
 
-Anonymized sample reports generated from an actual tenant export (showing the interactive dashboard, 5 frameworks, 30-60-90 day roadmap drill-down, What-If simulator, and offline Executive Summary) are included in `demo/`:
+Anonymized bilingual sample reports (reflecting the 6-pillar architecture, multi-source filters, verified benchmark scores, License ROI & R1–R7 waste audit, and Copilot readiness) are included in `demo/`:
 
 - [demo/TenantBriefReport-TR.html](demo/TenantBriefReport-TR.html) (Turkish Interactive Report)
 - [demo/TenantBriefReport-EN.html](demo/TenantBriefReport-EN.html) (English Interactive Report)
@@ -158,12 +151,29 @@ Anonymized sample reports generated from an actual tenant export (showing the in
 
 ---
 
-## Security, Privacy & Open-Source Attribution
+## Upstream Open-Source Ecosystem & Acknowledgements
 
-- **Zero Telemetry & Zero External AI Exposure:** `TenantBrief` sends no telemetry and never forwards tenant findings, user UPNs, or SKU counts to any external LLM/AI service.
-- **Strict Read-Only Surface:** Relies solely on read-only assessment APIs (`GET /v1.0/subscribedSkus`, `GET /v1.0/users`, `GET /v1.0/policies/authorizationPolicy`, `GET /v1.0/admin/sharepoint/settings`, `ZeroTrustAssessment`, `ScubaGear`, `ORCA`, `Maester`, optional `EntraFalcon` JSON).
-- **Anonymization (`-Anonymize`):** Masks tenant domain identifiers before sharing reports externally.
-- **Built With Respect to Community & Microsoft Open-Source Projects:** Copilot readiness signals and FastTrack JSON ingestion are modeled on [Microsoft FastTrack `Get-M365CopilotReadiness`](https://microsoft.github.io/FastTrack/#get-m365copilotreadiness) and [Microsoft `m365-copilot-automated-readiness-assessment`](https://github.com/microsoft/m365-copilot-automated-readiness-assessment) (without calling `Disconnect-MgGraph` mid-session); license waste and SKU overlap rules (`R1–R7`) draw from [`samuelgtetteh/m365-license-review`](https://github.com/samuelgtetteh/m365-license-review); the offline Copilot & Agent Studio ROI calculator draws from [`amitlals/copilot-roi-calculator`](https://github.com/amitlals/copilot-roi-calculator); and L1–L4 readiness maturity levels adapt the reporting UX of [`acreadiness-assess`](https://awesome-copilot.github.com/skill/acreadiness-assess/) (noting `acreadiness-assess` itself is a developer repository linter, not an M365 tenant scanner).
+TenantBrief stands on top of trusted Microsoft and community open-source security projects. Full attribution details live in [NOTICE.md](NOTICE.md):
+
+| Project | Repository | Integration Mode in TenantBrief |
+| --- | --- | --- |
+| **Microsoft ZeroTrustAssessment** | [microsoft/zerotrustassessment](https://github.com/microsoft/zerotrustassessment) | Stage 1 core assessment (`Invoke-ZtAssessment`) & live worker telemetry |
+| **CISA ScubaGear** | [cisagov/ScubaGear](https://github.com/cisagov/ScubaGear) | Stage 2 SCuBA `aad` security baseline (`Invoke-SCuBA`) |
+| **Microsoft ORCA** | [martin9700/ORCA](https://github.com/martin9700/ORCA) | Stage 3a Defender for Office 365 & EXO checks (`Invoke-ORCA`) |
+| **Maester (EIDSCA & CIS M365)** | [maester365/maester](https://github.com/maester365/maester) | Stage 3b automated `EIDSCA`, `CIS M365 v7.0.0`, and `XSPM` checks (`Invoke-Maester` / `-InputMaesterJsonPath`) |
+| **EntraFalcon** | [CompassSecurity/EntraFalcon](https://github.com/CompassSecurity/EntraFalcon) | Optional offline Entra privilege & attack-path JSON ingestion (`-InputEntraFalconJsonPath`) |
+| **Microsoft FastTrack** | [microsoft/FastTrack](https://microsoft.github.io/FastTrack/#get-m365copilotreadiness) | Copilot eligibility, SharePoint RAC/RCD model & `-InputFastTrackJsonPath` schema |
+| **M365 Copilot Automated Readiness** | [microsoft/m365-copilot-automated-readiness-assessment](https://github.com/microsoft/m365-copilot-automated-readiness-assessment) | Graph readiness signal checks adapted without mid-session disconnects |
+| **M365 License Review** | [samuelgtetteh/m365-license-review](https://github.com/samuelgtetteh/m365-license-review) | R1–R7 license waste and duplicate SKU overlap audit methodology |
+| **Copilot ROI Calculator** | [amitlals/copilot-roi-calculator](https://github.com/amitlals/copilot-roi-calculator) | Browser-local Copilot & Agent Studio ROI calculation model |
+
+---
+
+## Security & Privacy Guarantees
+
+- **Zero Telemetry & Zero External AI Exposure:** `TenantBrief` sends no telemetry and never forwards tenant findings, user UPNs, or SKU inventories to any external LLM/AI endpoint.
+- **Strict Read-Only Surface:** Executes only read-only Graph GET endpoints and read-only PowerShell assessment cmdlets.
+- **Anonymization (`-Anonymize`):** Masks primary tenant domains before generating shareable reports.
 
 ---
 
@@ -176,66 +186,14 @@ Invoke-Pester ./tests -Output Detailed
 
 | Path | Scope |
 | --- | --- |
-| `tests/TenantBrief.Tests.ps1` | Unit tests: exports, frameworks, license ROI/waste, pagination, Copilot readiness |
-| `tests/TenantBrief.Pipeline.Tests.ps1` | End-to-end `Invoke-TenantBriefAssessment` run in offline mode, resume, diagnostics capture, report comparison and executive summary |
-| `tests/fixtures/ZeroTrustAssessmentReport.sample.json` | Anonymized raw export used by the pipeline tests; no tenant access required |
-
-The pipeline tests exercise the full five-stage report path (`-InputReportJson`), so the
-HTML/JSON contract can be changed without a live tenant. The same suite runs in CI
-(`.github/workflows/ci.yml`) on every push and pull request to `master`.
-
-### Run diagnostics and resuming
-
-Each run writes `run-manifest.json` into its output folder:
-
-```json
-{
-  "Status": "partial",
-  "Stages": [{ "Stage": 1, "Status": "completed" }, { "Stage": 2, "Status": "failed", "Message": "ScubaGear produced no controls…" }],
-  "Diagnostics": [{ "Stage": 4, "Component": "CopilotReadiness", "Message": "…" }]
-}
-```
-
-`Status` is `completed`, `partial` (the report was produced but at least one stage failed)
-or `failed`. The same `Diagnostics` array is embedded in `TenantBriefReport-*.json` and
-rendered as a banner in the HTML and the executive summary.
-
-To finish an interrupted scan without another tenant sign-in:
-
-```powershell
-Invoke-TenantBriefAssessment -Resume -OutputPath "$HOME\TenantBriefReport" -Language tr -Anonymize
-```
-
-### Scoring contract
-
-- Framework coverage is read from `data/framework-mappings.json` (`scoredPillars`), not from code.
-- Correlation runs once, after every engine has reported: a control surfaced by both
-  ZeroTrustAssessment and ScubaGear/ORCA becomes one finding with the worst status, the highest
-  risk and a union of its pillars.
-- `ImplementationCost` is `Unknown` when the source engine does not supply a cost estimate. It is
-  never defaulted to `Medium`, and unknown-cost findings are not counted as quick wins.
-- Free and developer SKUs (`FLOW_FREE`, `DEVELOPERPACK_E5`) are catalogued with
-  `countsAsWaste: false`: they appear in the ROI table with a real name and category, but their
-  seats never inflate the R3 unassigned counter.
-- `Status: Error` means the control should have been evaluated but the engine failed. Errors stay
-  visible in the summary, the filters and the framework denominator — an unmeasured control is
-  never counted as a pass.
-- `Risk` and `Status` values stay in English in JSON (`High`/`Failed`) so drift comparison and the
-  HTML filters keep working; the Turkish labels are applied at render time.
-- `RemediationTr` is only populated for `Failed`/`Investigate` findings. Empty means "nothing to fix";
-  the printable executive brief lists high-risk fixes ordered by effort, cheapest first.
-
-### Module layout
-
-`TenantBrief.psm1` is split into two regions: **internal pipeline helpers** (progress
-dashboards, ScubaGear/ORCA collectors, correlation, framework scoring, finding mapping)
-and the **exported cmdlets**. Only the eight cmdlets listed in `FunctionsToExport` are
-public; helpers stay private to the module.
+| `tests/TenantBrief.Tests.ps1` | Unit tests: exports, 7 verified benchmarks, License ROI/waste, Graph paging, Copilot readiness (`DEVELOPERPACK_E5` & `COP-APP-01`), Maester filtering (`NotRun`/`AD`/`AZDO`/`PesterTestSkipped`), multi-pillar split, role/portal mapping |
+| `tests/TenantBrief.Pipeline.Tests.ps1` | End-to-end offline pipeline, `-Resume`, `Diagnostics`, `DomainPillar`/`Sources`/`CorrelatedIds`, verified `SourceTag` scoring, report comparison, executive brief prioritization |
+| `tests/fixtures/ZeroTrustAssessmentReport.sample.json` | Anonymized offline fixture used by automated CI (`.github/workflows/ci.yml`) |
 
 ---
 
 ## Technical Article & License
 
-- **Technical Deep-Dive (TR):** [TenantBrief: Microsoft 365 Lisans ROI ve Çoklu Çerçeve Analizi](https://canercetinkaya.com/tr/blog/tenantbrief-m365-lisans-roi-uyumluluk-analizi)
-- **Technical Deep-Dive (EN):** [TenantBrief: Read-Only M365 License ROI & Multi-Framework Analysis](https://canercetinkaya.com/en/blog/tenantbrief-m365-lisans-roi-uyumluluk-analizi)
-- **License:** MIT License — see [LICENSE](LICENSE).
+- **Technical Deep-Dive (TR):** [TenantBrief: Salt Okunur M365 Lisans İsrafı, Copilot Hazırlığı ve Doğrulanmış Standart Skorlama Mimarisi](https://canercetinkaya.com/tr/blog/tenantbrief-m365-lisans-roi-uyumluluk-analizi)
+- **Technical Deep-Dive (EN):** [TenantBrief: Read-Only M365 License Waste, Copilot Readiness, and Verified Benchmark Scoring](https://canercetinkaya.com/en/blog/tenantbrief-m365-lisans-roi-uyumluluk-analizi)
+- **License & Notices:** MIT License ([LICENSE](LICENSE)) · Third-party attributions ([NOTICE.md](NOTICE.md))

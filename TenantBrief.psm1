@@ -7,17 +7,18 @@ $script:ReportTemplatePath = Join-Path $script:ModuleRoot 'assets\report-templat
 function Get-TenantBriefFrameworks {
     <#
     .SYNOPSIS
-    Lists the compliance frameworks supported by TenantBrief.
+    Lists the verified security benchmarks and engines scored by TenantBrief.
 
     .DESCRIPTION
-    Returns the five shipped frameworks (ZeroTrust, ISO27001, NIST_CSF_2, CIS_M365, KVKK_TR)
-    with their Turkish and English display names.
-    
-    The list is read from data/framework-mappings.json, so adding a framework to that file
-    is enough to surface it here.
+    Returns the shipped verified sources (ZeroTrust, CIS_M365, CISA_SCuBA, MDO_ORCA,
+    EIDSCA, Maester, EntraFalcon) with their Turkish/English display names, source tag,
+    and upstream repository reference.
+
+    The list is read from data/framework-mappings.json, so adding a verified source to
+    that file is enough to surface it here.
 
     .EXAMPLE
-    Get-TenantBriefFrameworks | Format-Table Id, NameTr
+    Get-TenantBriefFrameworks | Format-Table Id, NameTr, SourceTag
     #>
     [CmdletBinding()]
     [OutputType([PSCustomObject])]
@@ -29,12 +30,17 @@ function Get-TenantBriefFrameworks {
 
     $json = Get-Content -Path $script:FrameworkMapPath -Raw -Encoding UTF8 | ConvertFrom-Json
     $json.frameworks.PSObject.Properties | ForEach-Object {
+        $v = $_.Value
+        $srcProp = $v.PSObject.Properties['sourceTag']
+        $urlProp = $v.PSObject.Properties['upstreamUrl']
         [PSCustomObject]@{
             Id            = $_.Name
-            NameEn        = $_.Value.nameEn
-            NameTr        = $_.Value.nameTr
-            DescriptionEn = $_.Value.descriptionEn
-            DescriptionTr = $_.Value.descriptionTr
+            NameEn        = $v.nameEn
+            NameTr        = $v.nameTr
+            SourceTag     = if ($srcProp) { [string]$srcProp.Value } else { $_.Name }
+            UpstreamUrl   = if ($urlProp) { [string]$urlProp.Value } else { '' }
+            DescriptionEn = $v.descriptionEn
+            DescriptionTr = $v.descriptionTr
         }
     }
 }
@@ -408,9 +414,9 @@ function New-TenantBriefProgressDashboard {
         $pHtml = Get-Content -Path $progressHtmlPath -Raw -Encoding UTF8
         $isTrUi = ($Language -eq 'tr')
         $labelsJson = if ($isTrUi) {
-            '["1. ZeroTrustAssessment (Kiracı Veri Toplama & Testler)","2. CISA ScubaGear (Güvenlik Taban Hattı)","3. Microsoft ORCA & Maester (MDO, EIDSCA & CIS)","4. Korelasyon, Lisans ROI/İsraf, Copilot & 5 Çerçeve","5. TenantBrief Rapor Üretimi"]'
+            '["1. ZeroTrustAssessment (Kiracı Veri Toplama & Testler)","2. CISA ScubaGear (Güvenlik Taban Hattı)","3. Microsoft ORCA & Maester (MDO, EIDSCA & CIS)","4. Korelasyon, Lisans ROI/İsraf, Copilot & Doğrulanmış Skorlar","5. TenantBrief Rapor Üretimi"]'
         } else {
-            '["1. ZeroTrustAssessment (Tenant Data & Checks)","2. CISA ScubaGear (Security Baselines)","3. Microsoft ORCA & Maester (MDO, EIDSCA & CIS)","4. Correlation, License ROI/Waste, Copilot & 5 Frameworks","5. Generating TenantBrief Reports"]'
+            '["1. ZeroTrustAssessment (Tenant Data & Checks)","2. CISA ScubaGear (Security Baselines)","3. Microsoft ORCA & Maester (MDO, EIDSCA & CIS)","4. Correlation, License ROI/Waste, Copilot & Verified Scores","5. Generating TenantBrief Reports"]'
         }
         $noticeTxt = if ($isTrUi) {
             'Bilgi: Kiracı büyüklüğüne bağlı olarak tarama birkaç dakikadan 30+ dakikaya kadar sürebilir. Hata mesajı görmediğiniz sürece PowerShell penceresini kapatmayın.'
@@ -590,14 +596,18 @@ function Resolve-TenantBriefSourceTag {
     if ($explicit) { & $addTag $explicit }
 
     $id = [string](Get-TenantBriefPropertyValue -Object $Test -Name 'TestId')
+    $corr = @(Get-TenantBriefPropertyValue -Object $Test -Name 'CorrelatedIds')
+    $allIds = @($id) + @($corr | ForEach-Object { [string]$_ })
     $pillars = @(ConvertTo-TenantBriefPillarList -PillarValue (Get-TenantBriefPropertyValue -Object $Test -Name 'TestPillar'))
 
-    if ($id -like 'SCUBA-*' -or ($pillars -contains 'CISA SCuBA')) { & $addTag 'CISA SCuBA' }
-    if ($id -like 'ORCA-*' -or ($pillars -contains 'Defender for Office 365 (ORCA)')) { & $addTag 'MDO / ORCA' }
-    if ($id -like 'EF-*' -or ($pillars -contains 'EntraFalcon')) { & $addTag 'EntraFalcon' }
-    if ($id -like 'CIS.M365.*') { & $addTag 'CIS M365' }
-    elseif ($id -like 'EIDSCA.*') { & $addTag 'EIDSCA' }
-    elseif (($pillars -contains 'Maester (EIDSCA / CIS)') -and -not $explicit) { & $addTag 'Maester' }
+    if ((@($allIds | Where-Object { $_ -like 'SCUBA-*' }).Count -gt 0) -or ($pillars -contains 'CISA SCuBA')) { & $addTag 'CISA SCuBA' }
+    if ((@($allIds | Where-Object { $_ -like 'ORCA-*' }).Count -gt 0) -or ($pillars -contains 'Defender for Office 365 (ORCA)')) { & $addTag 'MDO / ORCA' }
+    if ((@($allIds | Where-Object { $_ -like 'EF-*' }).Count -gt 0) -or ($pillars -contains 'EntraFalcon')) { & $addTag 'EntraFalcon' }
+    if (@($allIds | Where-Object { $_ -like 'CIS.M365.*' }).Count -gt 0) { & $addTag 'CIS M365' }
+    if (@($allIds | Where-Object { $_ -like 'EIDSCA.*' }).Count -gt 0) { & $addTag 'EIDSCA' }
+    if (($pillars -contains 'Maester (EIDSCA / CIS)') -and -not $explicit -and -not ($seen.Contains('CIS M365') -or $seen.Contains('EIDSCA'))) {
+        & $addTag 'Maester'
+    }
 
     $ztPillars = @('Identity', 'Devices', 'Network', 'Data', 'Infrastructure', 'SecOps', 'AI')
     if (@($pillars | Where-Object { $ztPillars -contains $_ }).Count -gt 0 -or ($id -match '^\d+$')) {
@@ -1296,49 +1306,55 @@ function Get-TenantBriefFrameworkScorecard {
         [Parameter(Mandatory = $false)][ValidateSet('tr', 'en')][string]$Language = 'tr'
     )
 
-    # Fallback coverage table, used only when data/framework-mappings.json does not declare
-    # an explicit scoredPillars list for a framework. The data file is authoritative.
-    $fallbackPillars = @{
-        'ZeroTrust'  = @('Identity', 'Devices', 'Network', 'Data', 'Infrastructure', 'SecOps', 'AI', 'CISA SCuBA', 'Defender for Office 365 (ORCA)', 'Maester (EIDSCA / CIS)', 'EntraFalcon')
-        'ISO27001'   = @('Identity', 'Devices', 'Network', 'Data', 'Infrastructure', 'SecOps', 'CISA SCuBA', 'Defender for Office 365 (ORCA)', 'Maester (EIDSCA / CIS)', 'EntraFalcon')
-        'NIST_CSF_2' = @('Identity', 'Devices', 'Network', 'SecOps', 'AI', 'CISA SCuBA', 'Defender for Office 365 (ORCA)', 'Maester (EIDSCA / CIS)', 'EntraFalcon')
-        'CIS_M365'   = @('Identity', 'Devices', 'Data', 'CISA SCuBA', 'Defender for Office 365 (ORCA)', 'Maester (EIDSCA / CIS)', 'EntraFalcon')
-        'KVKK_TR'    = @('Identity', 'Data', 'SecOps', 'Devices', 'CISA SCuBA', 'Defender for Office 365 (ORCA)', 'Maester (EIDSCA / CIS)', 'EntraFalcon')
+    # Map each verified benchmark/engine directly to its actual SourceTag so every percentage
+    # reflects controls actually measured by that benchmark/engine—never synthetic pillar averages.
+    $fallbackSourceMap = @{
+        'ZeroTrust'   = 'ZeroTrust'
+        'CIS_M365'    = 'CIS M365'
+        'CISA_SCuBA'  = 'CISA SCuBA'
+        'MDO_ORCA'    = 'MDO / ORCA'
+        'EIDSCA'      = 'EIDSCA'
+        'Maester'     = 'Maester'
+        'EntraFalcon' = 'EntraFalcon'
     }
 
     foreach ($fwId in $FrameworkIds) {
-        $fwMeta = $FrameworkConfig.$fwId
-        $fwName = if ($Language -eq 'tr') { $fwMeta.nameTr } else { $fwMeta.nameEn }
+        $fwMeta = if ($FrameworkConfig -and $FrameworkConfig.PSObject.Properties[$fwId]) { $FrameworkConfig.$fwId } else { $null }
+        $fwName = if ($fwMeta) { if ($Language -eq 'tr') { [string]$fwMeta.nameTr } else { [string]$fwMeta.nameEn } } else { $fwId }
 
-        $scoredProp = $fwMeta.PSObject.Properties['scoredPillars']
-        $allowed = if ($scoredProp -and $scoredProp.Value) { @($scoredProp.Value) } else { $fallbackPillars[$fwId] }
+        $srcProp = if ($fwMeta) { $fwMeta.PSObject.Properties['sourceTag'] } else { $null }
+        $sourceTag = if ($srcProp -and $srcProp.Value) { [string]$srcProp.Value } elseif ($fallbackSourceMap.ContainsKey($fwId)) { $fallbackSourceMap[$fwId] } else { $fwId }
+        $urlProp = if ($fwMeta) { $fwMeta.PSObject.Properties['upstreamUrl'] } else { $null }
+        $upstreamUrl = if ($urlProp -and $urlProp.Value) { [string]$urlProp.Value } else { '' }
 
-        # A control can legitimately belong to several pillars (e.g. ZeroTrust + CISA SCuBA);
-        # count it when ANY of its pillars belongs to the framework, but only once per framework.
-        $fwTests = if ($allowed) {
-            @($Tests | Where-Object {
-                $testPillars = @($_.TestPillar)
-                @($allowed | Where-Object { $testPillars -contains $_ }).Count -gt 0
-            })
-        } else { @($Tests) }
+        $fwTests = @($Tests | Where-Object {
+            $tSources = @(Resolve-TenantBriefSourceTag -Test $_)
+            $tSources -contains $sourceTag
+        })
 
-        $fwPass = @($fwTests | Where-Object { $_.TestStatus -eq 'Passed' }).Count
-        $fwFail = @($fwTests | Where-Object { $_.TestStatus -eq 'Failed' }).Count
-        $fwInv  = @($fwTests | Where-Object { $_.TestStatus -eq 'Investigate' }).Count
+        $fwPass  = @($fwTests | Where-Object { $_.TestStatus -eq 'Passed' }).Count
+        $fwFail  = @($fwTests | Where-Object { $_.TestStatus -eq 'Failed' }).Count
+        $fwInv   = @($fwTests | Where-Object { $_.TestStatus -eq 'Investigate' }).Count
+        $fwSkip  = @($fwTests | Where-Object { $_.TestStatus -in @('Skipped', 'Planned') }).Count
         # 'Error' means the control should have been evaluated but the engine failed: it is a
         # non-pass that must stay visible in the denominator (unmeasured is not compliant).
-        $fwErr  = @($fwTests | Where-Object { $_.TestStatus -eq 'Error' }).Count
-        $fwEval = $fwPass + $fwFail + $fwInv + $fwErr
+        $fwErr   = @($fwTests | Where-Object { $_.TestStatus -eq 'Error' }).Count
+        $fwEval  = $fwPass + $fwFail + $fwInv + $fwErr
         $fwScore = if ($fwEval -gt 0) { [Math]::Round(($fwPass / $fwEval) * 100, 1) } else { 0 }
 
         [PSCustomObject]@{
-            Id        = $fwId
-            Name      = $fwName
-            Score     = $fwScore
-            Passed    = $fwPass
-            Failed    = $fwFail
-            Errors    = $fwErr
-            Evaluated = $fwEval
+            Id          = $fwId
+            Name        = $fwName
+            SourceTag   = $sourceTag
+            UpstreamUrl = $upstreamUrl
+            Score       = $fwScore
+            Passed      = $fwPass
+            Failed      = $fwFail
+            Investigate = $fwInv
+            Skipped     = $fwSkip
+            Errors      = $fwErr
+            Evaluated   = $fwEval
+            Total       = $fwTests.Count
         }
     }
 }
@@ -1365,15 +1381,26 @@ function New-TenantBriefFindings {
         $tid = [string](Get-TenantBriefPropertyValue -Object $t -Name 'TestId')
         $corrList = if ($corrRaw.Count -gt 0) { @($corrRaw | Where-Object { $_ }) } elseif ($tid) { @($tid) } else { @() }
 
-        $fwRef = 'General Control'
-        if ($PillarMap) {
-            foreach ($pCand in $pillarList) {
-                if ($PillarMap.PSObject.Properties[$pCand]) {
-                    $fwRef = [string]$PillarMap.$pCand
-                    break
-                }
+        $catRaw = [string](Get-TenantBriefPropertyValue -Object $t -Name 'TestCategory')
+        $pickId = {
+            param([string]$Pattern)
+            $m = @($corrList | Where-Object { $_ -match $Pattern } | Select-Object -First 1)
+            if ($m.Count -gt 0 -and $m[0]) { [string]$m[0] } else { $tid }
+        }
+        $refParts = @()
+        foreach ($src in $sourceList) {
+            $refParts += switch ($src) {
+                'CIS M365'    { "CIS Microsoft 365 Foundations v7.0.0 ($(& $pickId '^CIS\.M365\.'))" }
+                'CISA SCuBA'  { "CISA SCuBA M365 Baseline ($(& $pickId '^SCUBA-'))" }
+                'MDO / ORCA'  { "Microsoft Defender for Office 365 / ORCA ($(& $pickId '^ORCA-'))" }
+                'EIDSCA'      { "Entra ID Security Config Analyzer ($(& $pickId '^EIDSCA\.'))" }
+                'Maester'     { $mId = & $pickId '^MT\.'; if ($catRaw) { "Maester · $catRaw ($mId)" } else { "Maester Security Baseline ($mId)" } }
+                'EntraFalcon' { $eId = & $pickId '^EF-'; if ($catRaw) { "EntraFalcon · $catRaw ($eId)" } else { "EntraFalcon Privilege Audit ($eId)" } }
+                'ZeroTrust'   { "Microsoft Zero Trust ($domainStr · $(& $pickId '^\d+$'))" }
+                default       { "$src ($tid)" }
             }
         }
+        $fwRef = if ($refParts.Count -gt 0) { $refParts -join ' + ' } else { "Microsoft Zero Trust ($tid)" }
 
         $fTitle = [string](Get-TenantBriefPropertyValue -Object $t -Name 'TestTitle')
         $fDesc  = [string](Get-TenantBriefPropertyValue -Object $t -Name 'TestDescription')
@@ -1526,7 +1553,7 @@ function Invoke-TenantBriefAssessment {
         [string]$Language = 'tr',
 
         [Parameter()]
-        [ValidateSet('All', 'ZeroTrust', 'ISO27001', 'NIST_CSF_2', 'CIS_M365', 'KVKK_TR')]
+        [ValidateSet('All', 'ZeroTrust', 'CIS_M365', 'CISA_SCuBA', 'MDO_ORCA', 'EIDSCA', 'Maester', 'EntraFalcon')]
         [string]$Framework = 'All',
 
         [Parameter()]
@@ -1793,8 +1820,12 @@ function Invoke-TenantBriefAssessment {
     $evaluatedTotal = $passedCount + $failedCount + $errorCount
     $baseScore = if ($evaluatedTotal -gt 0) { [math]::Round(($passedCount / $evaluatedTotal) * 100, 1) } else { 0 }
 
-    $selectedFwIds = if ($Framework -eq 'All') { @('ZeroTrust', 'ISO27001', 'NIST_CSF_2', 'CIS_M365', 'KVKK_TR') } else { @($Framework) }
-    $frameworkCards = Get-TenantBriefFrameworkScorecard -Tests $tests -FrameworkConfig $fwConfig -FrameworkIds $selectedFwIds -Language $Language
+    $allFwIds = @($fwConfig.PSObject.Properties | ForEach-Object { $_.Name })
+    $selectedFwIds = if ($Framework -eq 'All') { $allFwIds } else { @($Framework) }
+    $frameworkCards = @(Get-TenantBriefFrameworkScorecard -Tests $tests -FrameworkConfig $fwConfig -FrameworkIds $selectedFwIds -Language $Language)
+    if ($Framework -eq 'All') {
+        $frameworkCards = @($frameworkCards | Where-Object { $_.Total -gt 0 })
+    }
 
     # License ROI & Blind Spot Analysis from SkippedReason
     $licenseGaps = @{}
@@ -1841,8 +1872,7 @@ function Invoke-TenantBriefAssessment {
         )
     }
 
-    $activeFwForTable = if ($Framework -eq 'All') { 'ISO27001' } else { $Framework }
-    $pillarMap = $fwConfig.$activeFwForTable.pillarMap
+    $pillarMap = $null
 
     # Batch-translate titles & descriptions in chunks of 40 when TranslatorKey is set
     $trCachePath = Join-Path $PSScriptRoot 'data\tr-translation-cache.json'
@@ -2102,7 +2132,7 @@ function Invoke-TenantBriefAssessment {
         '{{SUBTITLE}}'           = if ($isTr) { "Kiracı: $tenantDisplay · Çerçeve: $Framework" } else { "Tenant: $tenantDisplay · Framework: $Framework" }
         '{{READONLY_BADGE}}'     = if ($isTr) { 'Salt Okunur (Read-Only)' } else { 'Read-Only Mode' }
         '{{GENERATED_AT}}'       = (Get-Date -Format 'yyyy-MM-dd HH:mm')
-        '{{FW_TITLE}}'           = if ($isTr) { 'Uyumluluk Çerçevesi Puanlaması' } else { 'Compliance Framework Scoring' }
+        '{{FW_TITLE}}'           = if ($isTr) { 'Standart ve Motor Bazlı Uyumluluk Skorları' } else { 'Verified Benchmark & Engine Scores' }
         '{{ROI_TITLE}}'          = if ($isTr) { 'M365 Lisans ROI ve Kör Nokta Analizi' } else { 'M365 License ROI & Blind Spot Analysis' }
         '{{ROADMAP_TITLE}}'      = if ($isTr) { '30-60-90 Günlük CISO İyileştirme Yol Haritası' } else { '30-60-90 Day CISO Remediation Roadmap' }
         '{{FINDINGS_TITLE}}'     = if ($isTr) { 'Ayrıntılı Kontrol Bulguları' } else { 'Detailed Control Findings' }
@@ -2385,7 +2415,7 @@ function Export-TenantBriefExecutiveSummary {
     $lblPass   = if ($isTr) { 'Başarılı' } else { 'Passed' }
     $lblFail   = if ($isTr) { 'Başarısız (Yüksek)' } else { 'Failed (High)' }
     $lblIdle   = if ($isTr) { 'Atıl Lisans (Yıllık USD)' } else { 'Idle License (Annual USD)' }
-    $thFw      = if ($isTr) { 'Uyumluluk Çerçevesi (Framework)' } else { 'Framework' }
+    $thFw      = if ($isTr) { 'Standart / Motor (Framework)' } else { 'Benchmark / Engine (Framework)' }
     $thRatio   = if ($isTr) { 'Geçen / Ölçülen' } else { 'Passed / Total' }
     $thScore   = if ($isTr) { 'Puan' } else { 'Score' }
 

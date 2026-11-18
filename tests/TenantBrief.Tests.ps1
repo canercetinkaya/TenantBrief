@@ -27,9 +27,11 @@ Describe 'TenantBrief Module' {
         $aliases['Export-ZtLensExecutiveSummary'].Definition | Should -Be 'Export-TenantBriefExecutiveSummary'
     }
 
-    It 'Lists 5 compliance frameworks' {
+    It 'Lists 7 verified benchmark and engine definitions' {
         $fws = Get-TenantBriefFrameworks
-        $fws.Count | Should -Be 5
+        $fws.Count | Should -Be 7
+        ($fws | ForEach-Object { $_.Id }) | Should -Contain 'CISA_SCuBA'
+        ($fws | ForEach-Object { $_.Id }) | Should -Contain 'EIDSCA'
     }
 
     It 'Calculates License ROI from SKU payload' {
@@ -375,7 +377,6 @@ Describe 'TenantBrief Module' {
 
     It 'splits space-joined multi-pillars and attaches canonical DomainPillar, Sources and CorrelatedIds' {
         InModuleScope TenantBrief {
-            $fwMap = (Get-Content (Join-Path (Split-Path $PSScriptRoot) 'data\framework-mappings.json') -Raw -Encoding UTF8 | ConvertFrom-Json).frameworks
             $rawTests = @(
                 [PSCustomObject]@{ TestId = '21781'; TestTitle = 'Sensitivity labels cover AI data'; TestStatus = 'Failed'; TestRisk = 'High'; TestPillar = 'Data AI'; TestCategory = 'Information Protection' },
                 [PSCustomObject]@{ TestId = 'EIDSCA.AF01'; TestTitle = 'Sensitivity labels cover AI data'; TestStatus = 'Passed'; TestRisk = 'Low'; TestPillar = 'Maester (EIDSCA / CIS)'; TestSource = 'EIDSCA' }
@@ -384,8 +385,10 @@ Describe 'TenantBrief Module' {
             $corr.Count | Should -Be 1
             $corr[0].TestPillar | Should -Contain 'Data'
             $corr[0].TestPillar | Should -Contain 'AI'
-            $f = @(New-TenantBriefFindings -Tests $corr -PillarMap $fwMap.ISO27001.pillarMap -Language tr)
+            $f = @(New-TenantBriefFindings -Tests $corr -Language tr)
             $f[0].FrameworkRef | Should -Not -Be 'General Control'
+            $f[0].FrameworkRef | Should -Match 'Microsoft Zero Trust'
+            $f[0].FrameworkRef | Should -Match 'EIDSCA\.AF01'
             $f[0].Sources | Should -Contain 'ZeroTrust'
             $f[0].Sources | Should -Contain 'EIDSCA'
             $f[0].CorrelatedIds | Should -Contain '21781'

@@ -61,12 +61,12 @@ Describe 'Invoke-TenantBriefAssessment (offline pipeline)' {
         $errors[0].Id | Should -Be 'MT.9001'
         $zt = $script:Report.Frameworks | Where-Object { $_.Id -eq 'ZeroTrust' }
         $zt.Errors | Should -Be 1
-        # An unmeasured control must not be counted as a pass.
-        $zt.Score | Should -Be 25
+        # An unmeasured control must not be counted as a pass: 2 passed / 9 evaluated = 22.2%.
+        $zt.Score | Should -Be 22.2
     }
 
-    It 'scores every selected compliance framework once' {
-        @($script:Report.Frameworks).Count | Should -Be 5
+    It 'scores only benchmarks/engines present in the run with real source denominators' {
+        @($script:Report.Frameworks).Count | Should -Be 3
         foreach ($fw in $script:Report.Frameworks) {
             $fw.Evaluated | Should -BeGreaterThan 0
             $fw.Score | Should -BeGreaterOrEqual 0
@@ -74,19 +74,16 @@ Describe 'Invoke-TenantBriefAssessment (offline pipeline)' {
         }
     }
 
-    It 'scores correlated controls inside every framework they belong to' {
-        # Coverage is read from data/framework-mappings.json (scoredPillars), not hardcoded.
+    It 'maps each benchmark scorecard strictly to its SourceTag without synthetic pillar inflation' {
         $byId = @{}
         foreach ($fw in $script:Report.Frameworks) { $byId[$fw.Id] = $fw }
-        $byId['ZeroTrust'].Evaluated | Should -Be 12
-        $byId['ZeroTrust'].Score | Should -Be 25
-        $byId['ISO27001'].Evaluated | Should -Be 12
-        $byId['NIST_CSF_2'].Evaluated | Should -Be 10
-        $byId['NIST_CSF_2'].Score | Should -Be 20
-        $byId['CIS_M365'].Evaluated | Should -Be 9
-        $byId['CIS_M365'].Score | Should -Be 11.1
-        $byId['KVKK_TR'].Evaluated | Should -Be 10
-        $byId['KVKK_TR'].Score | Should -Be 10
+        $byId['ZeroTrust'].Evaluated | Should -Be 9
+        $byId['ZeroTrust'].Total | Should -Be 12
+        $byId['ZeroTrust'].Score | Should -Be 22.2
+        $byId['CISA_SCuBA'].Evaluated | Should -Be 2
+        $byId['CISA_SCuBA'].Score | Should -Be 0
+        $byId['MDO_ORCA'].Evaluated | Should -Be 2
+        $byId['MDO_ORCA'].Score | Should -Be 50
     }
 
     It 'writes a run manifest with every stage accounted for' {
@@ -153,7 +150,7 @@ Describe 'Invoke-TenantBriefAssessment (offline pipeline)' {
 Describe 'Invoke-TenantBriefAssessment framework selection' {
     BeforeAll {
         $script:FwOutDir = Join-Path ([System.IO.Path]::GetTempPath()) ("tb-fw-" + [guid]::NewGuid().ToString('N').Substring(0, 8))
-        $script:FwRun = Invoke-TenantBriefAssessment -InputReportJson $script:FixturePath -OutputPath $script:FwOutDir -Language en -Framework ISO27001 -NoBrowser
+        $script:FwRun = Invoke-TenantBriefAssessment -InputReportJson $script:FixturePath -OutputPath $script:FwOutDir -Language en -Framework CISA_SCuBA -NoBrowser
         $script:FwReport = Get-Content -Path $script:FwRun.JsonPath -Raw -Encoding UTF8 | ConvertFrom-Json
     }
 
@@ -163,10 +160,10 @@ Describe 'Invoke-TenantBriefAssessment framework selection' {
         }
     }
 
-    It 'scores only the requested framework' {
+    It 'scores only the requested benchmark' {
         @($script:FwReport.Frameworks).Count | Should -Be 1
-        $script:FwReport.Frameworks[0].Id | Should -Be 'ISO27001'
-        $script:FwReport.Framework | Should -Be 'ISO27001'
+        $script:FwReport.Frameworks[0].Id | Should -Be 'CISA_SCuBA'
+        $script:FwReport.Framework | Should -Be 'CISA_SCuBA'
     }
 
     It 'reports the un-anonymized tenant name when -Anonymize is omitted' {
@@ -438,6 +435,8 @@ Describe 'Multi-engine Maester & EntraFalcon JSON ingestion' {
         $ei = $script:MultiReport.Findings | Where-Object { $_.Id -eq 'EIDSCA.AP01' }
         $ei.Sources | Should -Contain 'EIDSCA'
         $ei.DomainPillar | Should -Be 'Identity'
+        ($script:MultiReport.Frameworks | ForEach-Object { $_.Id }) | Should -Contain 'EIDSCA'
+        ($script:MultiReport.Frameworks | ForEach-Object { $_.Id }) | Should -Contain 'EntraFalcon'
     }
 
     It 'attaches canonical DomainPillar, Sources and CorrelatedIds on correlated controls' {
