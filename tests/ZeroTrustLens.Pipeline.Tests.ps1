@@ -310,3 +310,68 @@ Describe '-Resume' {
         }
     }
 }
+
+Describe 'Remediation payload' {
+    It 'writes remediation text only for actionable findings' {
+        $actionable = @($script:Report.Findings | Where-Object { $_.Status -in @('Failed', 'Investigate') })
+        $others = @($script:Report.Findings | Where-Object { $_.Status -notin @('Failed', 'Investigate') })
+
+        $actionable.Count | Should -BeGreaterThan 0
+        foreach ($f in $actionable) { $f.RemediationTr | Should -Not -BeNullOrEmpty }
+        foreach ($f in $others) { $f.RemediationTr | Should -Be '' }
+    }
+
+    It 'keeps the report payload free of repeated guidance' {
+        $remTotal = ($script:Report.Findings | ForEach-Object { ($_.RemediationTr + '').Length } | Measure-Object -Sum).Sum
+        # The dead weight was ~75k characters for 360 findings; per finding it must stay well below 1k.
+        ($remTotal / $script:Report.Findings.Count) | Should -BeLessThan 700
+    }
+}
+
+Describe 'Executive summary prioritisation' {
+    BeforeAll {
+        $script:ExecDir = Join-Path ([System.IO.Path]::GetTempPath()) ("ztl-exec2-" + [guid]::NewGuid().ToString('N').Substring(0, 8))
+        $null = New-Item -ItemType Directory -Path $script:ExecDir -Force
+
+        $findings = @(
+            [PSCustomObject]@{ Id = 'ZZZ-EXPENSIVE'; Status = 'Failed'; Risk = 'High'; ImplementationCost = 'High'; Title = 'Expensive high-risk fix'; Pillar = 'Identity'; Category = 'Auth'; Description = 'x'; RemediationTr = 'r' }
+            [PSCustomObject]@{ Id = 'AAA-CHEAP'; Status = 'Failed'; Risk = 'High'; ImplementationCost = 'Low'; Title = 'Cheap high-risk fix'; Pillar = 'Identity'; Category = 'Auth'; Description = 'x'; RemediationTr = 'r' }
+            [PSCustomObject]@{ Id = 'MMM-MEDIUM'; Status = 'Failed'; Risk = 'High'; ImplementationCost = 'Medium'; Title = 'Medium high-risk fix'; Pillar = 'Identity'; Category = 'Auth'; Description = 'x'; RemediationTr = 'r' }
+            [PSCustomObject]@{ Id = 'NNN-UNKNOWN'; Status = 'Failed'; Risk = 'High'; ImplementationCost = 'Unknown'; Title = 'Unknown cost fix'; Pillar = 'Identity'; Category = 'Auth'; Description = 'x'; RemediationTr = 'r' }
+        )
+        $lens = [PSCustomObject]@{
+            Tenant    = 'contoso.onmicrosoft.com'
+            Summary   = [PSCustomObject]@{ Total = 4; Passed = 0; Failed = 4; Investigate = 0; Skipped = 0; Planned = 0; Error = 0; HighRiskFailed = 4 }
+            Frameworks = @([PSCustomObject]@{ Name = 'ZeroTrust'; Passed = 0; Evaluated = 4; Score = 0 })
+            LicenseROI = [PSCustomObject]@{ TotalIdleUsdYr = 0 }
+            Findings  = $findings
+        }
+        $script:LensJson = Join-Path $script:ExecDir 'lens.json'
+        $lens | ConvertTo-Json -Depth 6 | Set-Content -Path $script:LensJson -Encoding UTF8
+
+        $script:ExecHtml = Join-Path $script:ExecDir 'exec.html'
+        $null = Export-ZtLensExecutiveSummary -InputLensJsonPath $script:LensJson -OutputHtmlPath $script:ExecHtml -Language en
+        $script:ExecContent = Get-Content -Path $script:ExecHtml -Raw -Encoding UTF8
+    }
+
+    AfterAll {
+        if ($script:ExecDir) { Remove-Item -Path $script:ExecDir -Recurse -Force -ErrorAction SilentlyContinue }
+    }
+
+    It 'orders high-risk remediations by effort, cheapest first' {
+        $cheap = $script:ExecContent.IndexOf('Cheap high-risk fix')
+        $medium = $script:ExecContent.IndexOf('Medium high-risk fix')
+        $unknown = $script:ExecContent.IndexOf('Unknown cost fix')
+        $expensive = $script:ExecContent.IndexOf('Expensive high-risk fix')
+
+        $cheap | Should -BeGreaterThan 0
+        $cheap | Should -BeLessThan $medium
+        $medium | Should -BeLessThan $expensive
+        # Unknown effort is listed last: an unknown cost is not a "quick win" promise.
+        $expensive | Should -BeLessThan $unknown
+    }
+
+    It 'says so in the heading' {
+        $script:ExecContent | Should -Match 'lowest effort first'
+    }
+}

@@ -833,6 +833,7 @@ function New-ZtLensFindings {
         if ($Language -eq 'tr' -and $fImp) {
             $fImp = $fImp -replace '^High$', 'Yüksek' -replace '^Medium$', 'Orta' -replace '^Low$', 'Düşük'
         }
+        $statusRaw = Get-ZtLensPropertyValue -Object $t -Name 'TestStatus'
         $portalName = switch ($primaryPillar) {
             'Identity'                        { 'Microsoft Entra yönetim merkezi (entra.microsoft.com)' }
             'Devices'                         { 'Microsoft Intune yönetim merkezi (intune.microsoft.com)' }
@@ -845,13 +846,16 @@ function New-ZtLensFindings {
             'Defender for Office 365 (ORCA)'  { 'Microsoft Defender E-posta ve İş Birliği (security.microsoft.com)' }
             default                           { 'Microsoft 365 Yönetim Merkezi' }
         }
-        $remTr = "1. $portalName üzerinden '$fTitle' kontrolüne karşılık gelen ilkeyi açın. 2. Değişikliği önce Denetim (Report-only) kipinde pilot gruba uygulayıp oturum açma/olay günlüklerini doğrulayın. 3. Etki analizi sonrası kademeli olarak Zorunlu (Enforce) durumuna geçin."
+        # Only actionable rows carry remediation guidance: writing the same template sentence into
+        # Passed/Skipped/Planned rows was ~8% of the whole report payload for no reader benefit.
+        $remTr = if ($statusRaw -in @('Failed', 'Investigate')) {
+            "1. $portalName üzerinden '$fTitle' kontrolüne karşılık gelen ilkeyi açın. 2. Değişikliği önce Denetim (Report-only) kipinde pilot gruba uygulayıp oturum açma/olay günlüklerini doğrulayın. 3. Etki analizi sonrası kademeli olarak Zorunlu (Enforce) durumuna geçin."
+        } else { '' }
         $minLicRaw = Get-ZtLensPropertyValue -Object $t -Name 'TestMinimumLicense'
         $minLicStr = if ($minLicRaw -is [System.Array]) { ($minLicRaw -join ', ') } else { [string]$minLicRaw }
         $implCostRaw = Get-ZtLensPropertyValue -Object $t -Name 'TestImplementationCost'
         $categoryRaw = Get-ZtLensPropertyValue -Object $t -Name 'TestCategory'
         $sfiRaw      = Get-ZtLensPropertyValue -Object $t -Name 'TestSfiPillar'
-        $statusRaw   = Get-ZtLensPropertyValue -Object $t -Name 'TestStatus'
         $riskRaw     = Get-ZtLensPropertyValue -Object $t -Name 'TestRisk'
         $resultRaw   = Get-ZtLensPropertyValue -Object $t -Name 'TestResult'
         $skippedRaw  = Get-ZtLensPropertyValue -Object $t -Name 'SkippedReason'
@@ -1652,7 +1656,15 @@ function Export-ZtLensExecutiveSummary {
         "<tr><td>$($_.Name)</td><td>$($_.Passed) / $($_.Evaluated)</td><td><strong>$($_.Score)%</strong></td></tr>"
     }) -join "`n"
 
-    $topHigh = @($data.Findings | Where-Object { $_.Status -eq 'Failed' -and $_.Risk -eq 'High' } | Select-Object -First 15)
+    # Priority order for the printable brief: cheapest high-risk fixes first, then by control id so
+    # the output is stable between runs.
+    $costRank = @{ 'Low' = 0; 'Medium' = 1; 'High' = 2; 'Unknown' = 3 }
+    $topHigh = @($data.Findings |
+        Where-Object { $_.Status -eq 'Failed' -and $_.Risk -eq 'High' } |
+        Sort-Object `
+            @{ Expression = { $cost = [string]$_.ImplementationCost; if ($costRank.ContainsKey($cost)) { $costRank[$cost] } else { 3 } } },
+            @{ Expression = { [string]$_.Id } } |
+        Select-Object -First 15)
     $actionRows = ($topHigh | ForEach-Object {
         $remText = if ($Language -eq 'tr') { $_.RemediationTr } else { [string]$_.Description }
         if ($remText.Length -gt 220) { $remText = $remText.Substring(0, 220) + '...' }
@@ -1692,7 +1704,7 @@ function Export-ZtLensExecutiveSummary {
     <thead><tr><th>Framework</th><th>Passed / Total</th><th>Score</th></tr></thead>
     <tbody>$fwRows</tbody>
   </table>
-  <h2 style="font-size:17px;margin-top:24px;">$(if ($Language -eq 'tr') { 'Öncelikli İlk 15 İyileştirme Adımı (Çevrimdışı Analiz)' } else { 'Top 15 Priority Remediations (Offline Analysis)' })</h2>
+  <h2 style="font-size:17px;margin-top:24px;">$(if ($Language -eq 'tr') { 'Öncelikli İlk 15 İyileştirme Adımı — düşük efor önce (Çevrimdışı Analiz)' } else { 'Top 15 Priority Remediations — lowest effort first (Offline Analysis)' })</h2>
   <table>
     <thead><tr><th>$(if ($Language -eq 'tr') { 'Kontrol' } else { 'Control' })</th><th>$(if ($Language -eq 'tr') { 'Maliyet' } else { 'Cost' })</th><th>$(if ($Language -eq 'tr') { 'Önerilen Aksiyon' } else { 'Recommended Action' })</th></tr></thead>
     <tbody>$actionRows</tbody>

@@ -216,6 +216,8 @@ Invoke-ZtLensAssessment -Resume -OutputPath "$HOME\ZeroTrustLensReport" -Languag
   never counted as a pass.
 - `Risk` and `Status` values stay in English in JSON (`High`/`Failed`) so drift comparison and the
   HTML filters keep working; the Turkish labels are applied at render time.
+- `RemediationTr` is only populated for `Failed`/`Investigate` findings. Empty means "nothing to fix";
+  the printable executive brief lists high-risk fixes ordered by effort, cheapest first.
 
 ### Module layout
 
