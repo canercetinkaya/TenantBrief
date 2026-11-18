@@ -41,12 +41,28 @@ Describe 'Invoke-ZtLensAssessment (offline pipeline)' {
     }
 
     It 'summarizes the fixture without dropping findings' {
-        $script:Report.Summary.Total | Should -Be 14
+        $script:Report.Summary.Total | Should -Be 15
         $script:Report.Summary.Passed | Should -Be 3
         $script:Report.Summary.Failed | Should -Be 6
         $script:Report.Summary.Investigate | Should -Be 2
         $script:Report.Summary.Skipped | Should -Be 3
+        $script:Report.Summary.Error | Should -Be 1
         $script:Report.Summary.HighRiskFailed | Should -Be 2
+    }
+
+    It 'keeps the summary consistent with the finding statuses' {
+        $s = $script:Report.Summary
+        ($s.Passed + $s.Failed + $s.Investigate + $s.Skipped + $s.Planned + $s.Error) | Should -Be $s.Total
+    }
+
+    It 'keeps engine errors visible instead of dropping them' {
+        $errors = @($script:Report.Findings | Where-Object { $_.Status -eq 'Error' })
+        $errors.Count | Should -Be 1
+        $errors[0].Id | Should -Be 'MT.9001'
+        $zt = $script:Report.Frameworks | Where-Object { $_.Id -eq 'ZeroTrust' }
+        $zt.Errors | Should -Be 1
+        # An unmeasured control must not be counted as a pass.
+        $zt.Score | Should -Be 25
     }
 
     It 'scores every selected compliance framework once' {
@@ -59,13 +75,34 @@ Describe 'Invoke-ZtLensAssessment (offline pipeline)' {
     }
 
     It 'scores correlated controls inside every framework they belong to' {
-        # MT.1001 is reported by both Identity (ZeroTrustAssessment) and CISA SCuBA
-        $zt = $script:Report.Frameworks | Where-Object { $_.Id -eq 'ZeroTrust' }
-        $cis = $script:Report.Frameworks | Where-Object { $_.Id -eq 'CIS_M365' }
-        $zt.Evaluated | Should -Be 11
-        $zt.Score | Should -Be 27.3
-        $cis.Evaluated | Should -Be 8
-        $cis.Score | Should -Be 12.5
+        # Coverage is read from data/framework-mappings.json (scoredPillars), not hardcoded.
+        $byId = @{}
+        foreach ($fw in $script:Report.Frameworks) { $byId[$fw.Id] = $fw }
+        $byId['ZeroTrust'].Evaluated | Should -Be 12
+        $byId['ZeroTrust'].Score | Should -Be 25
+        $byId['ISO27001'].Evaluated | Should -Be 12
+        $byId['NIST_CSF_2'].Evaluated | Should -Be 10
+        $byId['NIST_CSF_2'].Score | Should -Be 20
+        $byId['CIS_M365'].Evaluated | Should -Be 9
+        $byId['CIS_M365'].Score | Should -Be 11.1
+        $byId['KVKK_TR'].Evaluated | Should -Be 10
+        $byId['KVKK_TR'].Score | Should -Be 10
+    }
+
+    It 'writes a run manifest with every stage accounted for' {
+        $manifestPath = Join-Path $script:OutDir 'run-manifest.json'
+        $manifestPath | Should -Exist
+        $m = Get-Content -Path $manifestPath -Raw -Encoding UTF8 | ConvertFrom-Json
+        $m.Status | Should -Be 'completed'
+        @($m.Stages).Count | Should -Be 5
+        ($m.Stages | Where-Object { $_.Stage -eq 1 }).Status | Should -Be 'skipped'
+        ($m.Stages | Where-Object { $_.Stage -eq 2 }).Status | Should -Be 'skipped'
+        ($m.Stages | Where-Object { $_.Stage -eq 5 }).Status | Should -Be 'completed'
+    }
+
+    It 'renders no diagnostics banner on a clean run' {
+        @($script:Report.Diagnostics).Count | Should -Be 0
+        (Get-Content -Path $script:Run.HtmlPath -Raw -Encoding UTF8) | Should -Not -Match 'kismi veriyle' 
     }
 
     It 'anonymizes the tenant identifier' {
@@ -94,7 +131,7 @@ Describe 'Invoke-ZtLensAssessment (offline pipeline)' {
     It 'keeps the machine-readable contract in English' {
         # Risk/Status stay English so Compare-ZtLensReports and the HTML filters keep working.
         ($script:Report.Findings | Where-Object { $_.Risk -notin @('High', 'Medium', 'Low') }).Count | Should -Be 0
-        ($script:Report.Findings | Where-Object { $_.Status -notin @('Passed', 'Failed', 'Skipped', 'Investigate', 'Planned') }).Count | Should -Be 0
+        ($script:Report.Findings | Where-Object { $_.Status -notin @('Passed', 'Failed', 'Skipped', 'Investigate', 'Planned', 'Error') }).Count | Should -Be 0
     }
 
     It 'embeds the report payload inside the standalone HTML file' {
@@ -194,6 +231,82 @@ Describe 'Export-ZtLensExecutiveSummary' {
             $content | Should -Match '<table'
         } finally {
             Remove-Item -Path $target -Force -ErrorAction SilentlyContinue
+        }
+    }
+}
+
+Describe 'Stage failure handling' {
+    It 'records a diagnostic instead of swallowing the error' {        $out = Join-Path ([System.IO.Path]::GetTempPath()) ("ztl-diag-" + [guid]::NewGuid().ToString('N').Substring(0, 8))
+        try {
+            $result = InModuleScope ZeroTrustLens -Parameters @{ Fixture = $script:FixturePath; Out = $out } {
+                param($Fixture, $Out)
+                Mock Get-ZtLensCopilotReadiness { throw 'simulated copilot outage' }
+                Invoke-ZtLensAssessment -InputReportJson $Fixture -OutputPath $Out -Language tr -NoBrowser
+            }
+
+            $rep = Get-Content -Path $result.JsonPath -Raw -Encoding UTF8 | ConvertFrom-Json
+            @($rep.Diagnostics).Count | Should -BeGreaterThan 0
+            ($rep.Diagnostics | ForEach-Object { $_.Message }) -join '|' | Should -Match 'simulated copilot outage'
+            $rep.Run.Status | Should -Be 'partial'
+
+            $html = Get-Content -Path $result.HtmlPath -Raw -Encoding UTF8
+            $html | Should -Match 'kismi veriyle'
+            $html | Should -Match 'simulated copilot outage'
+
+            $m = Get-Content -Path (Join-Path $out 'run-manifest.json') -Raw -Encoding UTF8 | ConvertFrom-Json
+            $m.Status | Should -Be 'partial'
+            @($m.Diagnostics).Count | Should -BeGreaterThan 0
+
+            # The report is still produced from the data that did work.
+            $rep.Summary.Total | Should -Be 15
+        } finally {
+            Remove-Item -Path $out -Recurse -Force -ErrorAction SilentlyContinue
+        }
+    }
+}
+
+Describe '-Resume' {
+    BeforeAll {
+        $script:ResumeRoot = Join-Path ([System.IO.Path]::GetTempPath()) ("ztl-resume-" + [guid]::NewGuid().ToString('N').Substring(0, 8))
+        $script:ResumeRunDir = Join-Path $script:ResumeRoot 'tenant_20260101_0000'
+        $exportDir = Join-Path $script:ResumeRunDir 'raw-zt\zt-export'
+        $null = New-Item -ItemType Directory -Path $exportDir -Force
+        Copy-Item -Path $script:FixturePath -Destination (Join-Path $exportDir 'ZeroTrustAssessmentReport.json')
+
+        $script:ResumeRun = Invoke-ZtLensAssessment -Resume -OutputPath $script:ResumeRoot -Language en -NoBrowser
+        $script:ResumeReport = Get-Content -Path $script:ResumeRun.JsonPath -Raw -Encoding UTF8 | ConvertFrom-Json
+    }
+
+    AfterAll {
+        if ($script:ResumeRoot) { Remove-Item -Path $script:ResumeRoot -Recurse -Force -ErrorAction SilentlyContinue }
+    }
+
+    It 'reuses stage 1 output from the interrupted run folder' {
+        $script:ResumeRun.JsonPath | Should -Match 'tenant_20260101_0000'
+        $script:ResumeReport.Run.Resumed | Should -BeTrue
+        ($script:ResumeReport.Run.Stages | Where-Object { $_.Stage -eq 1 }).Status | Should -Be 'skipped'
+        @($script:ResumeReport.Diagnostics | Where-Object { $_.Component -eq 'Resume' }).Count | Should -Be 1
+    }
+
+    It 'still produces the complete report set' {
+        $script:ResumeRun.HtmlPath | Should -Exist
+        $script:ResumeRun.ExecutiveSummaryPath | Should -Exist
+        $script:ResumeReport.Summary.Total | Should -Be 15
+    }
+
+    It 'does not treat a resumed stage as a degraded run' {
+        $script:ResumeReport.Run.Status | Should -Be 'completed'
+        (Get-Content -Path $script:ResumeRun.HtmlPath -Raw -Encoding UTF8) | Should -Not -Match 'kismi veriyle'
+        (Get-Content -Path $script:ResumeRun.HtmlPath -Raw -Encoding UTF8) | Should -Match 'was not rescanned'
+    }
+
+    It 'fails fast when there is nothing to resume' {
+        $empty = Join-Path ([System.IO.Path]::GetTempPath()) ("ztl-empty-" + [guid]::NewGuid().ToString('N').Substring(0, 8))
+        $null = New-Item -ItemType Directory -Path $empty -Force
+        try {
+            { Invoke-ZtLensAssessment -Resume -OutputPath $empty -NoBrowser } | Should -Throw '*ZeroTrustAssessmentReport.json*'
+        } finally {
+            Remove-Item -Path $empty -Recurse -Force -ErrorAction SilentlyContinue
         }
     }
 }

@@ -51,6 +51,8 @@ flowchart TB
 ## Key Capabilities
 
 - **Strictly Read-Only & Fail-Fast Auth Guard:** Never modifies tenant policies, Conditional Access rules, or Entra ID objects (nor calls `Disconnect-MgGraph` mid-session). Both `Connect-ZtLens` and `Invoke-ZtLensAssessment` validate `Get-MgContext` up front and abort cleanly if authentication is canceled.
+- **Diagnosable Runs (no silent gaps):** Every stage transition is written to `run-manifest.json` next to the report, so an interrupted scan leaves an explicit trace instead of an empty folder. Failed sub-analyses (license waste, Copilot readiness, ScubaGear, ORCA) are recorded in the report's `Diagnostics` array and surfaced as a banner in the HTML and the executive brief — a missing section can no longer be mistaken for "no findings".
+- **Resumable (`-Resume`):** If a run dies after Stage 1, `Invoke-ZtLensAssessment -Resume -OutputPath <folder>` reuses the existing `ZeroTrustAssessmentReport.json` and finishes the report without rescanning the tenant.
 - **Live Step-by-Step Browser Dashboard (`localhost:8925–8945`):** Directly reads `ZeroTrustAssessment`'s thread-safe `ProgressState` concurrent worker dictionary (`Running`, `Failed`, `Done`, phase counts, elapsed time) and surfaces PowerShell errors or disconnects immediately.
 - **Cross-Engine Correlation (`ZeroTrustAssessment` + `CISA ScubaGear` + `ORCA`):** Automatically installs missing dependencies (`powershell-yaml`, `OPA`, `ScubaGear`, `ORCA`), handles ScubaGear 2.0.0's `'aad'` Graph reuse & `Control ID` schema, silently refreshes Exchange Online for ORCA if needed, and surfaces dedicated `CISA SCuBA` and `MDO / ORCA` views.
 - **Copilot & Agent 365 Readiness (`Get-ZtLensCopilotReadiness`):** Integrates live Graph API readiness signals modeled on Microsoft FastTrack `Get-M365CopilotReadiness` & Microsoft `m365-copilot-automated-readiness-assessment` — checking eligible base suites, active Copilot seats, Entra guest invitation/role boundaries, Purview sensitivity labels, user OAuth app/plugin consent, and optional FastTrack `-InputFastTrackJsonPath` or live SharePoint RAC/Restricted Search checks with explicit L1–L4 maturity scoring and security warnings.
@@ -172,12 +174,43 @@ Invoke-Pester ./tests -Output Detailed
 | Path | Scope |
 | --- | --- |
 | `tests/ZeroTrustLens.Tests.ps1` | Unit tests: exports, frameworks, license ROI/waste, pagination, Copilot readiness |
-| `tests/ZeroTrustLens.Pipeline.Tests.ps1` | End-to-end `Invoke-ZtLensAssessment` run in offline mode, plus report comparison and executive summary |
+| `tests/ZeroTrustLens.Pipeline.Tests.ps1` | End-to-end `Invoke-ZtLensAssessment` run in offline mode, resume, diagnostics capture, report comparison and executive summary |
 | `tests/fixtures/ZeroTrustAssessmentReport.sample.json` | Anonymized raw export used by the pipeline tests; no tenant access required |
 
 The pipeline tests exercise the full five-stage report path (`-InputReportJson`), so the
 HTML/JSON contract can be changed without a live tenant. The same suite runs in CI
 (`.github/workflows/ci.yml`) on every push and pull request to `master`.
+
+### Run diagnostics and resuming
+
+Each run writes `run-manifest.json` into its output folder:
+
+```json
+{
+  "Status": "partial",
+  "Stages": [{ "Stage": 1, "Status": "completed" }, { "Stage": 2, "Status": "failed", "Message": "ScubaGear produced no controls…" }],
+  "Diagnostics": [{ "Stage": 4, "Component": "CopilotReadiness", "Message": "…" }]
+}
+```
+
+`Status` is `completed`, `partial` (the report was produced but at least one stage failed)
+or `failed`. The same `Diagnostics` array is embedded in `ZeroTrustLensReport-*.json` and
+rendered as a banner in the HTML and the executive summary.
+
+To finish an interrupted scan without another tenant sign-in:
+
+```powershell
+Invoke-ZtLensAssessment -Resume -OutputPath "$HOME\ZeroTrustLensReport" -Language tr -Anonymize
+```
+
+### Scoring contract
+
+- Framework coverage is read from `data/framework-mappings.json` (`scoredPillars`), not from code.
+- `Status: Error` means the control should have been evaluated but the engine failed. Errors stay
+  visible in the summary, the filters and the framework denominator — an unmeasured control is
+  never counted as a pass.
+- `Risk` and `Status` values stay in English in JSON (`High`/`Failed`) so drift comparison and the
+  HTML filters keep working; the Turkish labels are applied at render time.
 
 ### Module layout
 

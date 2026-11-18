@@ -25,9 +25,21 @@
     },
     "OverviewAuthMethodsPrivilegedUsers": {
       "nodes": [
-        { "source": "Users", "target": "Single factor", "value": 2 },
-        { "source": "Users", "target": "Phishable", "value": 5 },
-        { "source": "Users", "target": "Phish resistant", "value": 11 }
+        {
+          "source": "Users",
+          "target": "Single factor",
+          "value": 2
+        },
+        {
+          "source": "Users",
+          "target": "Phishable",
+          "value": 5
+        },
+        {
+          "source": "Users",
+          "target": "Phish resistant",
+          "value": 11
+        }
       ]
     }
   },
@@ -256,6 +268,21 @@
       "TestResult": "",
       "TestImpact": "Medium",
       "TestDescription": "Open external sharing widens the data exfiltration surface."
+    },
+    {
+      "TestId": "MT.9001",
+      "TestTitle": "Ensure risk detections are reviewed weekly",
+      "TestStatus": "Error",
+      "TestRisk": "High",
+      "TestPillar": "Identity",
+      "TestCategory": "Monitoring",
+      "TestSfiPillar": "Identity",
+      "TestImplementationCost": "Low",
+      "TestMinimumLicense": "",
+      "SkippedReason": "",
+      "TestResult": "Collector returned HTTP 500 while reading riskDetections.",
+      "TestImpact": "High",
+      "TestDescription": "Unreviewed detections stall the incident response loop."
     }
   ]
 }

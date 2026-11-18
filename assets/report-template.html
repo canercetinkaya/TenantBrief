@@ -108,6 +108,8 @@
       </div>
     </div>
 
+    {{DIAGNOSTICS_BANNER}}
+
     <section id="tab-overview" class="tab-panel active">
       <div class="cards" id="summaryCards"></div>
       <div class="cards" id="tenantInsightCards"></div>
@@ -179,7 +181,7 @@
   <script>
     const DATA = {{REPORT_JSON}};
     const isTr = DATA.Language === 'tr';
-    const statusLabel = s => !isTr ? (s || '') : ({ Passed: 'Geçti', Failed: 'Başarısız', Skipped: 'Atlandı', Investigate: 'İncele', Planned: 'Planlandı', Pass: 'Geçti', Fail: 'Başarısız' }[s] || s || '');
+    const statusLabel = s => !isTr ? (s || '') : ({ Passed: 'Geçti', Failed: 'Başarısız', Skipped: 'Atlandı', Investigate: 'İncele', Planned: 'Planlandı', Error: 'Hata', Pass: 'Geçti', Fail: 'Başarısız' }[s] || s || '');
     const riskLabel = r => !isTr ? (r || '') : ({ High: 'Yüksek', Medium: 'Orta', Low: 'Düşük' }[r] || r || '');
     let activePillarFilter = 'ALL';
     let activeStatusFilter = 'ALL';
@@ -566,7 +568,7 @@
     renderRoadmap();
 
     function renderFilterChips() {
-      const statuses = ['ALL', 'Failed', 'Passed', 'Skipped', 'Investigate', 'Planned'];
+      const statuses = ['ALL', 'Failed', 'Passed', 'Skipped', 'Investigate', 'Planned', 'Error'];
       document.getElementById('statusChips').innerHTML = `<span style="font-size:12px;color:var(--muted);">${isTr ? 'Durum:' : 'Status:'}</span>` +
         statuses.map(st => `<button class="chip ${activeStatusFilter === st ? 'active' : ''}" onclick="setStatus('${st}')">${st === 'ALL' ? (isTr ? 'Tümü' : 'All') : statusLabel(st)}</button>`).join('');
 

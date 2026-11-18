@@ -158,6 +158,104 @@ function ConvertTo-ZtLensTurkish {
 
 #region Internal pipeline helpers (analysis / presentation)
 
+function Add-ZtLensDiagnostic {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory = $true)]
+        [AllowEmptyCollection()]
+        [System.Collections.Generic.List[object]]$Diagnostics,
+
+        [Parameter(Mandatory = $true)]
+        [int]$Stage,
+
+        [Parameter(Mandatory = $true)]
+        [string]$Component,
+
+        [Parameter(Mandatory = $true)]
+        [string]$Message
+    )
+
+    if ($null -eq $Diagnostics) { return }
+    $Diagnostics.Add([PSCustomObject]@{
+        Stage     = $Stage
+        Component = $Component
+        Severity  = 'Warning'
+        Message   = $Message
+        Timestamp = (Get-Date).ToString('o')
+    })
+    Write-Verbose "[ZeroTrustLens] Stage $Stage / ${Component}: $Message"
+}
+
+function Set-ZtLensStage {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory = $true)]
+        [object]$Manifest,
+
+        [Parameter(Mandatory = $true)]
+        [int]$Stage,
+
+        [Parameter(Mandatory = $true)]
+        [string]$Name,
+
+        [Parameter(Mandatory = $true)]
+        [ValidateSet('started', 'completed', 'failed', 'skipped')]
+        [string]$Status,
+
+        [Parameter(Mandatory = $false)]
+        [string]$Message
+    )
+
+    $now = (Get-Date).ToString('o')
+    $entry = $null
+    foreach ($s in @($Manifest.Stages)) {
+        if ($s.Stage -eq $Stage) { $entry = $s; break }
+    }
+    if (-not $entry) {
+        $entry = [PSCustomObject]@{
+            Stage     = $Stage
+            Name      = $Name
+            Status    = $Status
+            StartedAt = $now
+            EndedAt   = $null
+            Message   = ''
+        }
+        $Manifest.Stages = @($Manifest.Stages) + $entry
+    }
+    if (-not $entry.StartedAt) { $entry.StartedAt = $now }
+    $entry.Status = $Status
+    if ($Status -eq 'started') { $entry.EndedAt = $null } else { $entry.EndedAt = $now }
+    if ($Message) { $entry.Message = $Message }
+}
+
+function Save-ZtLensRunManifest {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory = $true)]
+        [object]$Manifest,
+
+        [Parameter(Mandatory = $true)]
+        [string]$Path,
+
+        [Parameter(Mandatory = $false)]
+        [string]$Status,
+
+        [Parameter(Mandatory = $false)]
+        [AllowEmptyCollection()]
+        [System.Collections.Generic.List[object]]$Diagnostics
+    )
+
+    if ($Status) { $Manifest.Status = $Status }
+    $Manifest.UpdatedAt = (Get-Date).ToString('o')
+    if ($null -ne $Diagnostics) { $Manifest.Diagnostics = @($Diagnostics) }
+    try {
+        # Written after every stage transition so an interrupted run still leaves a trace on disk.
+        $Manifest | ConvertTo-Json -Depth 6 | Set-Content -Path $Path -Encoding UTF8 -ErrorAction Stop
+    } catch {
+        Write-Verbose "[ZeroTrustLens] run manifest could not be written: $($_.Exception.Message)"
+    }
+}
+
 function New-ZtLensProgressDashboard {
     [CmdletBinding()]
     param(
@@ -333,13 +431,42 @@ function Invoke-ZtLensBaselineCollections {
         [scriptblock]$Log,
 
         [Parameter(Mandatory = $true)]
-        [hashtable]$State
+        [hashtable]$State,
+
+        [Parameter(Mandatory = $false)]
+        [AllowEmptyCollection()]
+        [System.Collections.Generic.List[object]]$Diagnostics,
+
+        [Parameter(Mandatory = $false)]
+        [object]$Manifest,
+
+        [Parameter(Mandatory = $false)]
+        [string]$ManifestPath
     )
 
+    $markStage = {
+        param([int]$StageNumber, [string]$StageName, [string]$StageStatus, [string]$StageMessage)
+        if (-not $Manifest -or -not $ManifestPath) { return }
+        Set-ZtLensStage -Manifest $Manifest -Stage $StageNumber -Name $StageName -Status $StageStatus -Message $StageMessage
+        Save-ZtLensRunManifest -Manifest $Manifest -Path $ManifestPath -Diagnostics $Diagnostics
+    }
+    $note = {
+        param([int]$StageNumber, [string]$Component, [string]$Note)
+        if ($null -eq $Diagnostics) { return }
+        Add-ZtLensDiagnostic -Diagnostics $Diagnostics -Stage $StageNumber -Component $Component -Message $Note
+    }
+
     $collected = @()
+    $scubaOk = $false
+    $orcaOk = $false
+    $orcaSkipped = $false
+    & $markStage 2 'CISA ScubaGear' 'started' ''
+
     if (-not (Get-Module -ListAvailable -Name 'ScubaGear')) {
         & $Log "[Stage 2/5] ScubaGear not found — installing from PSGallery..."
-        try { Install-Module -Name ScubaGear -Repository PSGallery -Scope CurrentUser -Force -AllowClobber -ErrorAction Stop } catch {}
+        try { Install-Module -Name ScubaGear -Repository PSGallery -Scope CurrentUser -Force -AllowClobber -ErrorAction Stop } catch {
+            & $note 2 'ScubaGear' "Module install failed: $($_.Exception.Message)"
+        }
     }
     if (Get-Module -ListAvailable -Name 'ScubaGear') {
         $scubaOut = Join-Path $OutputPath 'raw-scuba'
@@ -417,21 +544,33 @@ function Invoke-ZtLensBaselineCollections {
                     }
                 }
                 & $Log "[Stage 2/5] ScubaGear completed: $scCount controls merged."
+                $scubaOk = ($scCount -gt 0)
             } else {
                 "ScubaGear finished without ScubaResults.json / *Report.json output." | Set-Content -Path (Join-Path $scubaOut 'scuba-error.txt') -Encoding UTF8
                 & $Log "[Stage 2/5] ScubaGear finished with no JSON output (check raw-scuba\DebugLogs)."
+                & $note 2 'ScubaGear' 'Finished without ScubaResults.json / *Report.json output.'
             }
         } catch {
             $errMsg = $_.Exception.Message
             $errMsg | Set-Content -Path (Join-Path $scubaOut 'scuba-error.txt') -Encoding UTF8
             & $Log "[Stage 2/5] ScubaGear skipped: $errMsg"
+            & $note 2 'ScubaGear' "Skipped: $errMsg"
         }
     }
 
+    if ($scubaOk) {
+        & $markStage 2 'CISA ScubaGear' 'completed' 'ScubaGear controls merged.'
+    } else {
+        & $markStage 2 'CISA ScubaGear' 'failed' 'ScubaGear produced no controls; the report continues without the SCuBA baseline.'
+    }
+
     $State.Stage = 3
+    & $markStage 3 'Microsoft ORCA' 'started' ''
     if (-not (Get-Module -ListAvailable -Name 'ORCA')) {
         & $Log "[Stage 3/5] ORCA not found — installing from PSGallery..."
-        try { Install-Module -Name ORCA -Repository PSGallery -Scope CurrentUser -Force -AllowClobber -ErrorAction Stop } catch {}
+        try { Install-Module -Name ORCA -Repository PSGallery -Scope CurrentUser -Force -AllowClobber -ErrorAction Stop } catch {
+            & $note 3 'ORCA' "Module install failed: $($_.Exception.Message)"
+        }
     }
     if (Get-Module -ListAvailable -Name 'ORCA') {
         $orcaOut = Join-Path $OutputPath 'raw-orca'
@@ -459,6 +598,8 @@ function Invoke-ZtLensBaselineCollections {
             if ($exoDoms.Count -eq 0) {
                 "Exchange Online session unavailable or Get-AcceptedDomain returned 0 domains." | Set-Content -Path (Join-Path $orcaOut 'orca-error.txt') -Encoding UTF8
                 & $Log "[Stage 3/5] ORCA skipped: Exchange Online session not connected or returned no domains."
+                & $note 3 'ORCA' 'Skipped: Exchange Online session not connected or Get-AcceptedDomain returned 0 domains.'
+                $orcaSkipped = $true
             } else {
                 & $Log "[Stage 3/5] Running Microsoft ORCA checks (Defender for Office 365)..."
                 Import-Module ORCA -Global -ErrorAction Stop
@@ -496,16 +637,27 @@ function Invoke-ZtLensBaselineCollections {
                         }
                     }
                     & $Log "[Stage 3/5] ORCA completed: $ocCount controls merged."
+                    $orcaOk = ($ocCount -gt 0)
                 } else {
                     "ORCA finished without emitting JSON into '$orcaOut'." | Set-Content -Path (Join-Path $orcaOut 'orca-error.txt') -Encoding UTF8
                     & $Log "[Stage 3/5] ORCA finished without JSON output."
+                    & $note 3 'ORCA' 'Finished without JSON output.'
                 }
             }
         } catch {
             $errMsg = $_.Exception.Message
             $errMsg | Set-Content -Path (Join-Path $orcaOut 'orca-error.txt') -Encoding UTF8
             & $Log "[Stage 3/5] ORCA skipped: $errMsg"
+            & $note 3 'ORCA' "Skipped: $errMsg"
         }
+    }
+
+    if ($orcaOk) {
+        & $markStage 3 'Microsoft ORCA' 'completed' 'ORCA controls merged.'
+    } elseif ($orcaSkipped) {
+        & $markStage 3 'Microsoft ORCA' 'skipped' 'Exchange Online session unavailable; ORCA was not executed.'
+    } else {
+        & $markStage 3 'Microsoft ORCA' 'failed' 'ORCA produced no controls; the report continues without Defender for Office 365 checks.'
     }
 
     return $collected
@@ -578,7 +730,9 @@ function Get-ZtLensFrameworkScorecard {
         [Parameter(Mandatory = $false)][ValidateSet('tr', 'en')][string]$Language = 'tr'
     )
 
-    $fwPillars = @{
+    # Fallback coverage table, used only when data/framework-mappings.json does not declare
+    # an explicit scoredPillars list for a framework. The data file is authoritative.
+    $fallbackPillars = @{
         'ZeroTrust'  = @('Identity', 'Devices', 'Network', 'Data', 'Infrastructure', 'SecOps', 'AI', 'CISA SCuBA', 'Defender for Office 365 (ORCA)')
         'ISO27001'   = @('Identity', 'Devices', 'Network', 'Data', 'Infrastructure', 'SecOps')
         'NIST_CSF_2' = @('Identity', 'Devices', 'Network', 'SecOps', 'AI')
@@ -589,7 +743,9 @@ function Get-ZtLensFrameworkScorecard {
     foreach ($fwId in $FrameworkIds) {
         $fwMeta = $FrameworkConfig.$fwId
         $fwName = if ($Language -eq 'tr') { $fwMeta.nameTr } else { $fwMeta.nameEn }
-        $allowed = $fwPillars[$fwId]
+
+        $scoredProp = $fwMeta.PSObject.Properties['scoredPillars']
+        $allowed = if ($scoredProp -and $scoredProp.Value) { @($scoredProp.Value) } else { $fallbackPillars[$fwId] }
 
         # A control can legitimately belong to several pillars (e.g. ZeroTrust + CISA SCuBA);
         # count it when ANY of its pillars belongs to the framework, but only once per framework.
@@ -603,7 +759,10 @@ function Get-ZtLensFrameworkScorecard {
         $fwPass = @($fwTests | Where-Object { $_.TestStatus -eq 'Passed' }).Count
         $fwFail = @($fwTests | Where-Object { $_.TestStatus -eq 'Failed' }).Count
         $fwInv  = @($fwTests | Where-Object { $_.TestStatus -eq 'Investigate' }).Count
-        $fwEval = $fwPass + $fwFail + $fwInv
+        # 'Error' means the control should have been evaluated but the engine failed: it is a
+        # non-pass that must stay visible in the denominator (unmeasured is not compliant).
+        $fwErr  = @($fwTests | Where-Object { $_.TestStatus -eq 'Error' }).Count
+        $fwEval = $fwPass + $fwFail + $fwInv + $fwErr
         $fwScore = if ($fwEval -gt 0) { [Math]::Round(($fwPass / $fwEval) * 100, 1) } else { 0 }
 
         [PSCustomObject]@{
@@ -611,6 +770,8 @@ function Get-ZtLensFrameworkScorecard {
             Name      = $fwName
             Score     = $fwScore
             Passed    = $fwPass
+            Failed    = $fwFail
+            Errors    = $fwErr
             Evaluated = $fwEval
         }
     }
@@ -698,6 +859,10 @@ function Invoke-ZtLensAssessment {
     All output is written under -OutputPath; the console prints the artifact paths. No
     telemetry or tenant data leaves the machine unless -TranslatorKey is supplied.
 
+    With -Resume, a run that stopped after Stage 1 is finished from its existing
+    ZeroTrustAssessmentReport.json instead of rescanning the tenant. Every run also writes
+    run-manifest.json with per-stage status and any degraded sub-analysis.
+
     .EXAMPLE
     Invoke-ZtLensAssessment -InputReportJson .\ZeroTrustAssessmentReport.json `
     -OutputPath .\demo -Language en -Anonymize -NoBrowser
@@ -729,7 +894,10 @@ function Invoke-ZtLensAssessment {
         [string]$TranslatorKey = $env:AZURE_TRANSLATOR_KEY,
 
         [Parameter()]
-        [string]$InputFastTrackJsonPath
+        [string]$InputFastTrackJsonPath,
+
+        [Parameter()]
+        [switch]$Resume
     )
 
     $OutputPath = $ExecutionContext.SessionState.Path.GetUnresolvedProviderPathFromPSPath($OutputPath)
@@ -737,6 +905,24 @@ function Invoke-ZtLensAssessment {
         $fallbackBase = Join-Path $HOME 'ZeroTrustLensReport'
         Write-Warning "[ZeroTrustLens] '$OutputPath' is inside a system-protected folder. Redirecting report output to '$fallbackBase'."
         $OutputPath = $fallbackBase
+    }
+
+    # -Resume: finish a run that died after Stage 1 by reusing its ZeroTrustAssessmentReport.json.
+    $resumeNote = $null
+    if ($Resume -and -not $InputReportJson) {
+        if (-not (Test-Path $OutputPath)) {
+            throw "-Resume: '$OutputPath' bulunamadi. Once bir tarama klasoru verin (or. `$HOME\ZeroTrustLensReport)."
+        }
+        $resumeSource = Get-ChildItem -Path $OutputPath -Filter 'ZeroTrustAssessmentReport.json' -Recurse -File -ErrorAction SilentlyContinue |
+            Sort-Object LastWriteTime -Descending | Select-Object -First 1
+        if (-not $resumeSource) {
+            throw "-Resume: '$OutputPath' altinda ZeroTrustAssessmentReport.json bulunamadi. Bir tarama calistirip tekrar deneyin."
+        }
+        $InputReportJson = $resumeSource.FullName
+        $runRoot = Split-Path -Path (Split-Path -Path (Split-Path -Path $resumeSource.FullName -Parent) -Parent) -Parent
+        if ($runRoot -and (Test-Path (Join-Path $runRoot 'raw-zt'))) { $OutputPath = $runRoot }
+        $resumeNote = "Stage 1 yeniden kullanildi: $($resumeSource.FullName)"
+        Write-Host "[ZeroTrustLens] -Resume: Stage 1 atlandi, mevcut tarama kullaniliyor -> $($resumeSource.FullName)" -ForegroundColor Yellow
     }
 
     if (-not $InputReportJson) {
@@ -768,6 +954,40 @@ function Invoke-ZtLensAssessment {
     }
 
     $rawOut = Join-Path $OutputPath 'raw-zt'
+
+    # --- P0: run trace (manifest + diagnostics) -------------------------------------------------
+    $diagnostics = [System.Collections.Generic.List[object]]::new()
+    $manifestPath = Join-Path $OutputPath 'run-manifest.json'
+    $moduleVersion = ''
+    try { $moduleVersion = (Get-Module ZeroTrustLens).Version.ToString() } catch {}
+    $manifest = [PSCustomObject]@{
+        StartedAt         = (Get-Date).ToString('o')
+        UpdatedAt         = $null
+        Status            = 'running'
+        Language          = $Language
+        Framework         = $Framework
+        PowerShellVersion = $PSVersionTable.PSVersion.ToString()
+        ModuleVersion     = $moduleVersion
+        SourceReport      = $InputReportJson
+        Resumed           = [bool]$resumeNote
+        OutputPath        = $OutputPath
+        Stages            = @()
+        Diagnostics       = @()
+    }
+    $markStage = {
+        param([int]$StageNumber, [string]$StageName, [string]$StageStatus, [string]$StageMessage)
+        Set-ZtLensStage -Manifest $manifest -Stage $StageNumber -Name $StageName -Status $StageStatus -Message $StageMessage
+        Save-ZtLensRunManifest -Manifest $manifest -Path $manifestPath -Diagnostics $diagnostics
+    }
+    if ($resumeNote) {
+        Add-ZtLensDiagnostic -Diagnostics $diagnostics -Stage 1 -Component 'Resume' -Message $resumeNote
+    }
+    if ($InputReportJson) {
+        & $markStage 1 'ZeroTrustAssessment' 'skipped' 'Offline mode: -InputReportJson supplied, tenant was not contacted.'
+    } else {
+        & $markStage 1 'ZeroTrustAssessment' 'started' ''
+    }
+    # -------------------------------------------------------------------------------------------
     $progressJob = $null
     $logQueue = [System.Collections.ArrayList]::Synchronized((New-Object System.Collections.ArrayList))
     $progressState = [hashtable]::Synchronized(@{
@@ -812,6 +1032,7 @@ function Invoke-ZtLensAssessment {
             throw "ZeroTrustAssessment did not produce a report at '$sourceJsonPath'. Authentication may have been canceled or failed."
         }
         & $addLog "[Stage 1/5] ZeroTrustAssessment completed."
+        & $markStage 1 'ZeroTrustAssessment' 'completed' "Report: $sourceJsonPath"
     }
     $progressState.Stage = 2
 
@@ -819,15 +1040,24 @@ function Invoke-ZtLensAssessment {
         throw "Assessment JSON report not found: $sourceJsonPath"
     }
 
-    $raw = Get-Content -Path $sourceJsonPath -Raw -Encoding UTF8 | ConvertFrom-Json
+    try {
+        $raw = Get-Content -Path $sourceJsonPath -Raw -Encoding UTF8 | ConvertFrom-Json
+    } catch {
+        & $markStage 1 'ZeroTrustAssessment' 'failed' "Report could not be parsed: $($_.Exception.Message)"
+        throw "Assessment JSON could not be parsed ('$sourceJsonPath'): $($_.Exception.Message)"
+    }
     $fwConfig = (Get-Content -Path $script:FrameworkMapPath -Raw -Encoding UTF8 | ConvertFrom-Json).frameworks
     $tests = New-ZtLensCorrelatedTests -Tests @($raw.Tests)
 
     if (-not $InputReportJson) {
         $accountName = if ($mgCheck -and $mgCheck.Account) { [string]$mgCheck.Account } else { '' }
-        $tests += @(Invoke-ZtLensBaselineCollections -OutputPath $OutputPath -Account $accountName -Log $addLog -State $progressState)
+        $tests += @(Invoke-ZtLensBaselineCollections -OutputPath $OutputPath -Account $accountName -Log $addLog -State $progressState -Diagnostics $diagnostics -Manifest $manifest -ManifestPath $manifestPath)
+    } else {
+        & $markStage 2 'CISA ScubaGear' 'skipped' 'Offline mode: -InputReportJson supplied, ScubaGear was not executed.'
+        & $markStage 3 'Microsoft ORCA' 'skipped' 'Offline mode: -InputReportJson supplied, ORCA was not executed.'
     }
     $progressState.Stage = 4
+    & $markStage 4 'Correlation & scoring' 'started' ''
     & $addLog "[Stage 4/5] Computing License ROI, Secure Score & Multi-Framework Scores..."
 
     $passedCount = @($tests | Where-Object { $_.TestStatus -eq 'Passed' }).Count
@@ -835,11 +1065,14 @@ function Invoke-ZtLensAssessment {
     $investigateCount = @($tests | Where-Object { $_.TestStatus -eq 'Investigate' }).Count
     $skippedCount = @($tests | Where-Object { $_.TestStatus -eq 'Skipped' }).Count
     $plannedCount = @($tests | Where-Object { $_.TestStatus -eq 'Planned' }).Count
+    $errorCount = @($tests | Where-Object { $_.TestStatus -eq 'Error' }).Count
     $highRiskFailed = @($tests | Where-Object { $_.TestStatus -eq 'Failed' -and $_.TestRisk -eq 'High' }).Count
     $medRiskFailed = @($tests | Where-Object { $_.TestStatus -eq 'Failed' -and $_.TestRisk -eq 'Medium' }).Count
     $lowRiskFailed = @($tests | Where-Object { $_.TestStatus -eq 'Failed' -and $_.TestRisk -eq 'Low' }).Count
 
-    $evaluatedTotal = $passedCount + $failedCount
+    # 'Error' controls should have been evaluated but the engine failed; they count as non-passes
+    # so an unmeasured control never inflates the posture score.
+    $evaluatedTotal = $passedCount + $failedCount + $errorCount
     $baseScore = if ($evaluatedTotal -gt 0) { [math]::Round(($passedCount / $evaluatedTotal) * 100, 1) } else { 0 }
 
     $selectedFwIds = if ($Framework -eq 'All') { @('ZeroTrust', 'ISO27001', 'NIST_CSF_2', 'CIS_M365', 'KVKK_TR') } else { @($Framework) }
@@ -1003,14 +1236,23 @@ function Invoke-ZtLensAssessment {
                 $liveSkus = if ($subResp -and $subResp.value) { @($subResp.value) } else { @() }
                 if ($liveSkus.Count -gt 0) {
                     $skuRoiList = @(Get-ZtLensLicenseRoi -SubscribedSkus $liveSkus)
-                    try { $licenseWaste = Get-ZtLensLicenseWaste -SubscribedSkus $liveSkus -Language $Language } catch {}
+                    try { $licenseWaste = Get-ZtLensLicenseWaste -SubscribedSkus $liveSkus -Language $Language }
+                    catch {
+                        Add-ZtLensDiagnostic -Diagnostics $diagnostics -Stage 4 -Component 'LicenseWaste' -Message "R1-R7 lisans israfi analizi tamamlanamadi: $($_.Exception.Message)"
+                        Write-Warning "[ZeroTrustLens] License waste analysis failed: $($_.Exception.Message)"
+                    }
+                } else {
+                    Add-ZtLensDiagnostic -Diagnostics $diagnostics -Stage 4 -Component 'LicenseROI' -Message 'Graph /subscribedSkus bos dondu: lisans ROI ve israf bolumleri bu raporda yok.'
                 }
                 try {
                     $crParams = @{ Language = $Language; TenantInsights = $tenantInsightObj }
                     if ($liveSkus.Count -gt 0) { $crParams['SubscribedSkus'] = $liveSkus }
                     if ($InputFastTrackJsonPath) { $crParams['InputFastTrackJsonPath'] = $InputFastTrackJsonPath }
                     $copilotReadiness = Get-ZtLensCopilotReadiness @crParams
-                } catch {}
+                } catch {
+                    Add-ZtLensDiagnostic -Diagnostics $diagnostics -Stage 4 -Component 'CopilotReadiness' -Message "Copilot hazirlik degerlendirmesi basarisiz: $($_.Exception.Message)"
+                    Write-Warning "[ZeroTrustLens] Copilot readiness evaluation failed: $($_.Exception.Message)"
+                }
                 $scResp = Invoke-MgGraphRequest -Method GET -Uri 'https://graph.microsoft.com/v1.0/security/secureScores?$top=1' -ErrorAction SilentlyContinue
                 if ($scResp -and $scResp.value -and $scResp.value.Count -gt 0) {
                     $secureCurrent = [Math]::Round([double]$scResp.value[0].currentScore, 1)
@@ -1018,8 +1260,13 @@ function Invoke-ZtLensAssessment {
                     $tenantInsightObj.SecureScoreCurrent = $secureCurrent
                     $tenantInsightObj.SecureScoreMax = $secureMax
                 }
+            } else {
+                Add-ZtLensDiagnostic -Diagnostics $diagnostics -Stage 4 -Component 'Graph' -Message 'Aktif Graph oturumu bulunamadi: lisans ROI, israf ve Copilot bolumleri uretilemedi.'
             }
-        } catch {}
+        } catch {
+            Add-ZtLensDiagnostic -Diagnostics $diagnostics -Stage 4 -Component 'Graph' -Message "Lisans/Copilot verisi alinamadi: $($_.Exception.Message)"
+            Write-Warning "[ZeroTrustLens] Stage 4 data collection failed: $($_.Exception.Message)"
+        }
     }
 
     if (-not $copilotReadiness) {
@@ -1028,14 +1275,23 @@ function Invoke-ZtLensAssessment {
             if ($InputFastTrackJsonPath) { $offParams['InputFastTrackJsonPath'] = $InputFastTrackJsonPath }
             $copilotReadiness = Get-ZtLensCopilotReadiness @offParams
         } catch {
+            Add-ZtLensDiagnostic -Diagnostics $diagnostics -Stage 4 -Component 'CopilotReadiness' -Message "Cevrimdisi Copilot degerlendirmesi de basarisiz: $($_.Exception.Message)"
             Write-Warning "[ZeroTrustLens] Copilot readiness evaluation warning: $($_.Exception.Message)"
         }
+    }
+    if (-not $licenseWaste -and -not $InputReportJson) {
+        Add-ZtLensDiagnostic -Diagnostics $diagnostics -Stage 4 -Component 'LicenseWaste' -Message 'Lisans israfi (R1-R7) bolumu bu raporda bos.'
     }
 
     $totalIdleMo = if ($skuRoiList.Count -gt 0) {
         [Math]::Round((($skuRoiList | Measure-Object -Property EstimatedIdleUsdMo -Sum).Sum), 2)
     } else { 0 }
     $totalIdleYr = [Math]::Round($totalIdleMo * 12, 2)
+
+    & $markStage 4 'Correlation & scoring' 'completed' "Findings: $(@($tests).Count)"
+    # A resumed Stage 1 is an audit note, not a degraded report; only real failures make it 'partial'.
+    $degraded = @($diagnostics | Where-Object { $_.Component -ne 'Resume' })
+    $runStatus = if ($degraded.Count -gt 0) { 'partial' } else { 'completed' }
 
     $reportObj = [PSCustomObject]@{
         Tenant           = $tenantDisplay
@@ -1049,8 +1305,18 @@ function Invoke-ZtLensAssessment {
             Investigate    = $investigateCount
             Skipped        = $skippedCount
             Planned        = $plannedCount
+            Error          = $errorCount
             HighRiskFailed = $highRiskFailed
         }
+        Run              = [PSCustomObject]@{
+            Status        = $runStatus
+            StartedAt     = $manifest.StartedAt
+            CompletedAt   = (Get-Date).ToString('o')
+            Resumed       = [bool]$resumeNote
+            SourceReport  = $InputReportJson
+            Stages        = @($manifest.Stages)
+        }
+        Diagnostics      = @($diagnostics)
         Frameworks       = @($frameworkCards)
         LicenseROI       = [PSCustomObject]@{
             Summary         = $roiSummary
@@ -1105,6 +1371,32 @@ function Invoke-ZtLensAssessment {
         '{{COL_TITLE}}'          = if ($isTr) { 'Kontrol Başlığı' } else { 'Control Title' }
         '{{COL_FRAMEWORK}}'      = if ($isTr) { 'Çerçeve Eşleşmesi' } else { 'Framework Mapping' }
         '{{FOOTER_NOTE}}'        = if ($isTr) { 'Yerel, salt okunur analiz — hiçbir veri dışarı gönderilmez' } else { 'Local, read-only analysis — zero telemetry' }
+        '{{DIAGNOSTICS_BANNER}}' = if (@($diagnostics).Count -gt 0) {
+            $resumeNotes = @($diagnostics | Where-Object { $_.Component -eq 'Resume' })
+            $warnings = @($diagnostics | Where-Object { $_.Component -ne 'Resume' })
+            $blocks = @()
+            if ($warnings.Count -gt 0) {
+                $dHead = if ($isTr) {
+                    'Bu rapor kismi veriyle olusturuldu. Asagidaki adimlar tamamlanamadi; eksik bolum "sorun yok" anlamina gelmez.'
+                } else {
+                    'This report was generated from partial data. The steps below did not complete; a missing section does not mean "no findings".'
+                }
+                $dItems = (@($warnings) | Select-Object -First 10 | ForEach-Object {
+                    "<li><strong>Stage $($_.Stage) &middot; $( [System.Net.WebUtility]::HtmlEncode([string]$_.Component)):</strong> $( [System.Net.WebUtility]::HtmlEncode([string]$_.Message))</li>"
+                }) -join ''
+                $dMore = if ($warnings.Count -gt 10) { "<div style='font-size:12px;margin-top:6px'>+ $($warnings.Count - 10) more in run-manifest.json</div>" } else { '' }
+                $blocks += "<div class='card' style='border-color:#f59e0b;background:rgba(245,158,11,.10);margin-bottom:14px;'><strong>$dHead</strong><ul style='margin:10px 0 0 18px;font-size:12.5px;line-height:1.55;'>$dItems</ul>$dMore</div>"
+            }
+            if ($resumeNotes.Count -gt 0) {
+                $rHead = if ($isTr) {
+                    'Bu rapor mevcut bir Stage 1 cikisi uzerine kuruldu; kiraci yeniden taranmadi.'
+                } else {
+                    'This report was built on a previous Stage 1 output; the tenant was not rescanned.'
+                }
+                $blocks += "<div class='card' style='border-color:#38bdf8;background:rgba(56,189,248,.10);margin-bottom:14px;'><strong>$rHead</strong></div>"
+            }
+            $blocks -join ''
+        } else { '' }
         '{{REPORT_JSON}}'        = ($reportObj | ConvertTo-Json -Depth 6 -Compress)
     }
 
@@ -1114,6 +1406,7 @@ function Invoke-ZtLensAssessment {
     }
 
     $progressState.Stage = 5
+    & $markStage 5 'Report generation' 'started' ''
     & $addLog "[Stage 5/5] Writing HTML, JSON and Executive Summary reports..."
     $reportHtmlPath = Join-Path $OutputPath "ZeroTrustLensReport-$($Language.ToUpper()).html"
     $html | Set-Content -Path $reportHtmlPath -Encoding UTF8
@@ -1121,10 +1414,19 @@ function Invoke-ZtLensAssessment {
     $execSummaryPath = Join-Path $OutputPath "ZeroTrustLens-ExecutiveSummary-$($Language.ToUpper()).html"
     $null = Export-ZtLensExecutiveSummary -InputLensJsonPath $reportJsonPath -OutputHtmlPath $execSummaryPath -Language $Language
 
+    & $markStage 5 'Report generation' 'completed' "HTML/JSON/ExecutiveSummary written to $OutputPath"
+    Save-ZtLensRunManifest -Manifest $manifest -Path $manifestPath -Status $runStatus -Diagnostics $diagnostics
+
     $progressState.Done = $true
     Start-Sleep -Seconds 2
     } catch {
+        $failedStage = [int]$progressState.Stage
         $progressState.Error = $_.Exception.Message
+        Add-ZtLensDiagnostic -Diagnostics $diagnostics -Stage $failedStage -Component 'Pipeline' -Message $_.Exception.Message
+        try {
+            Set-ZtLensStage -Manifest $manifest -Stage $failedStage -Name "Stage $failedStage" -Status 'failed' -Message $_.Exception.Message
+            Save-ZtLensRunManifest -Manifest $manifest -Path $manifestPath -Status 'failed' -Diagnostics $diagnostics
+        } catch {}
         Start-Sleep -Seconds 3
         throw
     } finally {
@@ -1294,6 +1596,17 @@ function Export-ZtLensExecutiveSummary {
     $data = Get-Content -Path $InputLensJsonPath -Raw -Encoding UTF8 | ConvertFrom-Json
     $title = if ($Language -eq 'tr') { 'Yönetici Özeti — Güvenlik Duruşu ve Lisans ROI' } else { 'Executive Summary — Security Posture & License ROI' }
 
+    $diagProp = $data.PSObject.Properties['Diagnostics']
+    $diagCount = if ($diagProp -and $diagProp.Value) { @($diagProp.Value).Count } else { 0 }
+    $diagNote = if ($diagCount -gt 0) {
+        $diagText = if ($Language -eq 'tr') {
+            "Rapor kısmi veriyle üretildi: $diagCount adım tamamlanamadı. Eksik bölümler 'sorun yok' anlamına gelmez; ayrıntı run-manifest.json içinde."
+        } else {
+            "Generated from partial data: $diagCount step(s) did not complete. Missing sections do not mean 'no findings'; see run-manifest.json."
+        }
+        "<div style='border:1px solid #f59e0b;background:#fffbeb;color:#92400e;padding:8px 12px;border-radius:6px;font-size:12.5px;margin-bottom:16px;'>$diagText</div>"
+    } else { '' }
+
     $fwRows = ($data.Frameworks | ForEach-Object {
         "<tr><td>$($_.Name)</td><td>$($_.Passed) / $($_.Evaluated)</td><td><strong>$($_.Score)%</strong></td></tr>"
     }) -join "`n"
@@ -1327,6 +1640,7 @@ function Export-ZtLensExecutiveSummary {
 <body>
   <h1>ZeroTrustLens — $title</h1>
   <div class="sub">Generated: $(Get-Date -Format 'yyyy-MM-dd HH:mm') | Read-Only Assessment</div>
+  $diagNote
   <div class="grid">
     <div class="card"><div>Total</div><div class="val">$($data.Summary.Total)</div></div>
     <div class="card"><div>Passed</div><div class="val">$($data.Summary.Passed)</div></div>
