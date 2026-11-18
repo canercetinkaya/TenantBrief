@@ -127,6 +127,7 @@
         </div>
       </div>
       <div class="card" id="mfaBanner" style="margin-bottom:20px;font-size:13.5px;color:var(--muted);"></div>
+      <div class="card" id="skippedOverviewBanner" style="display:none;margin-bottom:20px;font-size:13px;border-color:rgba(168,85,247,.35);background:rgba(168,85,247,.06);"></div>
       <div class="card" id="pillarMatrixCard" style="margin-bottom:20px;"></div>
       <div class="card" id="sourceCoverageCard" style="margin-bottom:20px;"></div>
       <div class="card" id="execActionDigest" style="margin-bottom:20px;"></div>
@@ -138,6 +139,7 @@
 
     <section id="tab-roi" class="tab-panel">
       <div class="card" id="roiBox" style="margin-bottom:16px;"></div>
+      <div class="card" id="skippedBox" style="margin-bottom:16px;"></div>
       <div class="card" id="skuRoiBox" style="margin-bottom:16px;"></div>
       <div class="card" id="wasteRoiBox" style="margin-bottom:16px;"></div>
       <div class="card" id="minLicBox"></div>
@@ -338,7 +340,7 @@
       <div class="card"><div class="lbl">${isTr ? 'Başarılı' : 'Passed'}</div><div class="val" style="color:var(--ok)">${s.Passed}</div></div>
       <div class="card"><div class="lbl">${isTr ? 'Başarısız (Yüksek)' : 'Failed (High)'}</div><div class="val" style="color:var(--fail)">${s.Failed} (${s.HighRiskFailed})</div></div>
       <div class="card"><div class="lbl">${isTr ? 'İnceleme / Planlanan' : 'Investigate / Planned'}</div><div class="val" style="color:var(--warn)">${s.Investigate + s.Planned}</div></div>
-      <div class="card"><div class="lbl">${isTr ? 'Atlanan (Lisans ROI)' : 'Skipped (License ROI)'}</div><div class="val" style="color:var(--skip)">${s.Skipped}</div></div>
+      <div class="card" style="cursor:pointer;" onclick="openSkippedBreakdown()" title="${isTr ? 'Atlanma nedenlerini görüntüle' : 'View skipped reasons breakdown'}"><div class="lbl">${isTr ? 'Atlanan Kontroller' : 'Skipped Controls'}</div><div class="val" style="color:var(--skip)">${s.Skipped}</div><div style="font-size:11px;color:var(--muted);margin-top:2px;">${isTr ? 'Nedenleri gör →' : 'See reasons →'}</div></div>
     `;
 
     const ti = DATA.TenantInsights || {};
@@ -353,6 +355,11 @@
       <div class="card"><div class="lbl">${isTr ? 'Microsoft Secure Score / AI Agent' : 'Secure Score / AI Agents'}</div><div class="val" style="font-size:18px;">${esc(secureLabel)} · ${ti.TotalAgents ?? 0}</div></div>
     `;
     document.getElementById('mfaBanner').innerHTML = `<strong>${isTr ? 'MFA & Koşullu Erişim Kapsamı:' : 'MFA & Conditional Access Coverage:'}</strong> ${esc(ti.MfaCoverageDesc || (isTr ? 'Veri yok' : 'No data'))}`;
+    const skBannerEl = document.getElementById('skippedOverviewBanner');
+    if ((s.Skipped || 0) > 0 && DATA.LicenseROI?.Summary) {
+      skBannerEl.style.display = 'block';
+      skBannerEl.innerHTML = `<div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;"><div><strong style="color:#d8b4fe;">${isTr ? 'Atlanan Kontrol Özeti (Skipped):' : 'Skipped Controls Breakdown:'}</strong> <span style="color:var(--text);">${esc(DATA.LicenseROI.Summary)}</span></div><div style="display:flex;gap:8px;flex-shrink:0;"><button class="chip" onclick="openSkippedBreakdown()">${isTr ? 'Dağılımı Gör' : 'View Breakdown'}</button><button class="chip" onclick="filterSkippedGap('')">${isTr ? 'Atlananları Listele' : 'Filter Skipped'}</button></div></div>`;
+    }
 
     // CISO Risk Posture Matrix across 6 Canonical Security Domains
     const matrixPillars = [
@@ -487,19 +494,152 @@
     }
     runSim();
 
+    // Skipped Controls Breakdown (Why Controls Were Skipped)
+    const gapCatLabel = cat => {
+      if (isTr) return ({ License: 'Lisans Eksikliği', Connection: 'Bağlantı Eksikliği', Permission: 'API / Yetki Eksikliği', Scope: 'Kapsam Dışı / Kullanılmıyor' }[cat] || 'Diğer');
+      return ({ License: 'Missing License', Connection: 'Disconnected Service', Permission: 'Missing API Scope', Scope: 'Not Applicable / Unused' }[cat] || 'Other');
+    };
+    const gapCatColor = cat => ({ License: 'var(--warn)', Connection: 'var(--fail)', Permission: 'var(--fail)', Scope: 'var(--skip)' }[cat] || 'var(--muted)');
+    window.openSkippedBreakdown = function() {
+      switchTab('roi');
+      setTimeout(() => document.getElementById('skippedBox')?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 40);
+    };
+    window.filterSkippedGap = function(searchTerm) {
+      activeStatus = 'Skipped';
+      activeRisk = 'ALL';
+      activeSource = 'ALL';
+      document.getElementById('searchInput').value = searchTerm || '';
+      switchTab('findings');
+      renderChips();
+      renderFindings();
+    };
+    window.filterByMinLicense = function(rawTerm) {
+      activeStatus = 'ALL';
+      activeRisk = 'ALL';
+      activeSource = 'ALL';
+      document.getElementById('searchInput').value = rawTerm || '';
+      switchTab('findings');
+      renderChips();
+      renderFindings();
+    };
+
+    const gaps = DATA.LicenseROI?.Gaps || [];
+    if (gaps.length > 0 || (s.Skipped || 0) > 0) {
+      const gapRows = gaps.map(g => {
+        const cat = g.Category || 'Scope';
+        const q = String(g.Search || '').replace(/'/g, "\\'");
+        return `<tr>
+          <td><strong>${esc(g.License)}</strong></td>
+          <td><span class="tag" style="color:${gapCatColor(cat)};border-color:${gapCatColor(cat)};">${esc(gapCatLabel(cat))}</span></td>
+          <td><strong>${g.Count}</strong></td>
+          <td style="font-size:12.5px;color:var(--muted);">${esc(g.Note || '')}</td>
+          <td><button class="chip" onclick="filterSkippedGap('${q}')">${isTr ? 'Kontrollerde Gör →' : 'View Controls →'}</button></td>
+        </tr>`;
+      }).join('');
+      document.getElementById('skippedBox').innerHTML = `
+        <h3 style="margin-bottom:6px;">${isTr ? 'Atlanan Kontrollerin Nedenleri (Skipped Analizi)' : 'Why Controls Were Skipped (Blind Spot & Scope Analysis)'}</h3>
+        <p style="font-size:13px;color:var(--muted);margin-bottom:12px;">${esc(DATA.LicenseROI?.Summary || '')}</p>
+        ${gapRows ? `<table class="md-table"><thead><tr><th>${isTr ? 'Atlanma Nedeni' : 'Skip Reason'}</th><th>${isTr ? 'Kategori' : 'Category'}</th><th>${isTr ? 'Adet' : 'Count'}</th><th>${isTr ? 'Açıklama' : 'Explanation'}</th><th></th></tr></thead><tbody>${gapRows}</tbody></table>` : ''}
+      `;
+    } else {
+      document.getElementById('skippedBox').innerHTML = `<h3 style="margin-bottom:6px;">${isTr ? 'Atlanan Kontrollerin Nedenleri (Skipped Analizi)' : 'Why Controls Were Skipped (Blind Spot & Scope Analysis)'}</h3><p style="font-size:13px;color:var(--ok);">✓ ${isTr ? 'Bu değerlendirmede atlanan kontrol bulunmuyor.' : 'No controls were skipped in this assessment.'}</p>`;
+    }
+
+    // Human-friendly Product Name normalization for Minimum License Requirements
+    const LICENSE_PRODUCT_MAP = {
+      'AAD_BASIC': isTr ? 'Microsoft Entra ID (Temel / Free)' : 'Microsoft Entra ID (Basic / Free)',
+      'FREE': isTr ? 'Ücretsiz / Temel Kiracı Özelliği' : 'Free / Baseline Tenant Feature',
+      'AAD_PREMIUM': 'Microsoft Entra ID P1',
+      'P1': 'Microsoft Entra ID P1',
+      'ENTRA_PREMIUM_P1': 'Microsoft Entra ID P1',
+      'AAD_PREMIUM_P2': 'Microsoft Entra ID P2',
+      'P2': 'Microsoft Entra ID P2',
+      'ENTRA_PREMIUM_P2': 'Microsoft Entra ID P2',
+      'ENTRA_IDENTITY_GOVERNANCE': 'Microsoft Entra ID Governance',
+      'GOVERNANCE': 'Microsoft Entra ID Governance',
+      'ENTRA_PREMIUM_INTERNET_ACCESS': 'Microsoft Entra Internet Access (SSE)',
+      'ENTRA_PREMIUM_PRIVATE_ACCESS': 'Microsoft Entra Private Access (SSE)',
+      'WORKLOAD': 'Microsoft Entra Workload ID',
+      'INTUNE_A': 'Microsoft Intune (Plan 1)',
+      'INTUNE': 'Microsoft Intune (Plan 1)',
+      'WINDEFATP': 'Microsoft Defender for Endpoint (P1/P2)',
+      'WIN_DEF_ATP': 'Microsoft Defender for Endpoint (P1/P2)',
+      'MDATP_XPLAT': 'Microsoft Defender for Endpoint (P1/P2)',
+      'MDE_LITE': 'Microsoft Defender for Endpoint (P1/P2)',
+      'MDE_SMB': 'Microsoft Defender for Endpoint (P1/P2)',
+      'ATP_ENTERPRISE': 'Microsoft Defender for Office 365 (Plan 1 / Plan 2)',
+      'THREAT_INTELLIGENCE': 'Microsoft Defender for Office 365 (Plan 1 / Plan 2)',
+      'ATA': 'Microsoft Defender for Identity',
+      'ADALLOM_STANDALONE': 'Microsoft Defender for Cloud Apps',
+      'ADALLOM_S_STANDALONE': 'Microsoft Defender for Cloud Apps',
+      'ADALLOM_S_O365': 'Microsoft Defender for Cloud Apps',
+      'IDENTITY_THREAT_PROTECTION': 'Microsoft Defender XDR / Identity Threat Protection',
+      'RMS_S_PREMIUM': 'Microsoft Purview Information Protection (P1)',
+      'MIP_S_CLP1': 'Microsoft Purview Information Protection (P1)',
+      'RMS_S_PREMIUM2': 'Microsoft Purview Information Protection (P2)',
+      'INFORMATION_PROTECTION_COMPLIANCE': 'Microsoft Purview Information Protection & Compliance',
+      'EXCHANGE_S_STANDARD': 'Exchange Online (Plan 1)',
+      'EXCHANGE_S_ENTERPRISE': 'Exchange Online (Plan 2)',
+      'MICROSOFT_365_COPILOT': 'Microsoft 365 Copilot',
+      'AGENT_365': 'Microsoft Agent 365',
+      'MICROSOFT_SENTINEL': isTr ? 'Microsoft Sentinel (Tüketim Bazlı)' : 'Microsoft Sentinel (Consumption-based)',
+      'CONSUMPTION-BASED: MICROSOFT SENTINEL': isTr ? 'Microsoft Sentinel (Tüketim Bazlı)' : 'Microsoft Sentinel (Consumption-based)',
+      'CONSUMPTION-BASED: MICROSOFT SECURITY COPILOT': isTr ? 'Microsoft Security Copilot (SCU)' : 'Microsoft Security Copilot (SCU)',
+      'MICROSOFT_DEFENDER_FOR_AI_SERVICES': 'Microsoft Defender for AI Services',
+      'MICROSOFT_DEFENDER_FOR_CLOUD': 'Microsoft Defender for Cloud',
+      'AZURE_FIREWALL_STANDARD': 'Azure Firewall (Standard / Premium)',
+      'AZURE_FIREWALL_PREMIUM': 'Azure Firewall (Standard / Premium)',
+      'AZURE WAF': 'Azure Web Application Firewall (WAF)',
+      'AZURE_WAF': 'Azure Web Application Firewall (WAF)',
+      'AZURE_APPLICATION_GATEWAY_WAF': 'Azure Web Application Firewall (WAF)',
+      'AZURE APPLICATION GATEWAY STANDARD SKU': 'Azure Application Gateway (Standard)',
+      'CONSUMPTION-BASED: AZURE WAF ON AZURE FRONT DOOR PREMIUM': 'Azure Web Application Firewall (WAF)',
+      'AZURE WAF ON AZURE FRONT DOOR PREMIUM SKU': 'Azure Web Application Firewall (WAF)',
+      'AZURE STANDARD SKU': 'Azure Front Door / Gateway (Standard)',
+      'AZURE_FRONT_DOOR_PREMIUM': 'Azure Front Door (Standard / Premium)',
+      'AZURE_FRONTDOOR_STANDARD': 'Azure Front Door (Standard / Premium)',
+      'AZURE_FRONTDOOR_PREMIUM': 'Azure Front Door (Standard / Premium)',
+      'DDOS_NETWORK_PROTECTION': 'Azure DDoS Protection',
+      'DDOS_IP_PROTECTION': 'Azure DDoS Protection'
+    };
+    const normalizeLicenseProduct = raw => {
+      const clean = String(raw || '').trim();
+      if (!clean || clean.toUpperCase() === 'N/A') return null;
+      const mapped = LICENSE_PRODUCT_MAP[clean.toUpperCase()];
+      if (mapped) return mapped;
+      return clean.replace(/_/g, ' ');
+    };
+
     const licCounts = {};
     F.filter(x => x.MinimumLicense).forEach(x => {
-      x.MinimumLicense.split(',').map(z => z.trim()).filter(Boolean).forEach(l => {
-        if (!licCounts[l]) licCounts[l] = { total: 0, skipped: 0, failed: 0 };
-        licCounts[l].total++;
-        if (x.Status === 'Skipped') licCounts[l].skipped++;
-        if (x.Status === 'Failed') licCounts[l].failed++;
+      const tokens = String(x.MinimumLicense)
+        .split(/,|\s+AND\s+/i)
+        .map(z => z.trim())
+        .filter(Boolean);
+      const seenProducts = new Set();
+      tokens.forEach(tok => {
+        const prodName = normalizeLicenseProduct(tok);
+        if (!prodName) return;
+        if (!licCounts[prodName]) licCounts[prodName] = { total: 0, passed: 0, failed: 0, skipped: 0, rawCodes: new Set(), firstRaw: tok };
+        licCounts[prodName].rawCodes.add(tok);
+        if (seenProducts.has(prodName)) return;
+        seenProducts.add(prodName);
+        licCounts[prodName].total++;
+        if (x.Status === 'Passed') licCounts[prodName].passed++;
+        else if (x.Status === 'Failed') licCounts[prodName].failed++;
+        else if (x.Status === 'Skipped') licCounts[prodName].skipped++;
       });
     });
-    const licRows = Object.entries(licCounts).sort((a,b) => b[1].total - a[1].total).map(([k,v]) =>
-      `<tr><td><code>${esc(k)}</code></td><td>${v.total}</td><td style="color:var(--fail)">${v.failed}</td><td style="color:var(--skip)">${v.skipped}</td></tr>`
-    ).join('');
-    document.getElementById('minLicBox').innerHTML = `<h3 style="margin-bottom:10px;">${isTr ? 'Kontrollerin Minimum Lisans Gereksinimi Dağılımı' : 'Minimum License Requirements Breakdown'}</h3><table class="md-table"><thead><tr><th>SKU / Plan</th><th>${isTr ? 'Toplam' : 'Total'}</th><th>Failed</th><th>Skipped</th></tr></thead><tbody>${licRows}</tbody></table>`;
+    const licRows = Object.entries(licCounts).sort((a,b) => b[1].total - a[1].total).map(([prod,v]) => {
+      const rawHint = [...v.rawCodes].slice(0, 4).join(', ') + (v.rawCodes.size > 4 ? '…' : '');
+      const filterTok = String(v.firstRaw || '').replace(/'/g, "\\'");
+      return `<tr style="cursor:pointer;" onclick="filterByMinLicense('${filterTok}')" title="${isTr ? 'Bu lisansla eşleşen kontrolleri filtrele' : 'Filter controls matching this product'}"><td><strong>${esc(prod)}</strong><div style="font-size:11px;color:var(--muted);">${esc(rawHint)}</div></td><td>${v.total}</td><td style="color:var(--ok)">${v.passed}</td><td style="color:var(--fail)">${v.failed}</td><td style="color:var(--skip)">${v.skipped}</td></tr>`;
+    }).join('');
+    document.getElementById('minLicBox').innerHTML = `
+      <h3 style="margin-bottom:6px;">${isTr ? 'Kontrollerin Minimum Ürün / Lisans Gereksinimi Dağılımı' : 'Minimum Product & License Requirements Breakdown'}</h3>
+      <p style="font-size:13px;color:var(--muted);margin-bottom:12px;">${isTr ? 'Bu tablo, tarama kapsamındaki güvenlik kontrollerinin çalıştırılabilmesi veya sıkılaştırılabilmesi için kiracıda bulunması gereken en düşük Microsoft ürün kademesini gösterir. Aynı ürüne karşılık gelen teknik servis planı kodları (ör. AAD_PREMIUM + P1) tek ürün altında birleştirilmiştir; satıra tıklayarak ilgili kontrolleri listeleyebilirsiniz.' : 'This breakdown maps evaluated security checks to the minimum Microsoft product or license tier required to enforce or assess each control. Equivalent service plan codes (e.g., AAD_PREMIUM + P1) are grouped under their canonical product name; click any row to inspect matching controls.'}</p>
+      <table class="md-table"><thead><tr><th>${isTr ? 'Microsoft Ürünü / Lisans Kademesi' : 'Microsoft Product / License Tier'}</th><th>${isTr ? 'Toplam' : 'Total'}</th><th>${isTr ? 'Geçti' : 'Passed'}</th><th>${isTr ? 'Başarısız' : 'Failed'}</th><th>${isTr ? 'Atlandı' : 'Skipped'}</th></tr></thead><tbody>${licRows}</tbody></table>
+    `;
 
     const skus = DATA.LicenseROI?.Skus || [];
     if (skus.length > 0) {

@@ -1829,33 +1829,115 @@ function Invoke-TenantBriefAssessment {
 
     # License ROI & Blind Spot Analysis from SkippedReason
     $licenseGaps = @{}
-    foreach ($t in ($tests | Where-Object { $_.TestStatus -eq 'Skipped' -and $_.SkippedReason })) {
+    foreach ($t in ($tests | Where-Object { $_.TestStatus -eq 'Skipped' })) {
         $reason = [string]$t.SkippedReason
-        $key = if ($reason -match 'Entra_Premium_Internet_Access|Entra_Premium_Private_Access') {
-            'Microsoft Entra Internet / Private Access (SSE)'
+        $meta = if ($reason -match 'Entra_Premium_Internet_Access|Entra_Premium_Private_Access') {
+            @{
+                Key = if ($Language -eq 'tr') { 'Lisans: Microsoft Entra Internet / Private Access (SSE)' } else { 'License: Microsoft Entra Internet / Private Access (SSE)' }
+                Category = 'License'
+                Note = if ($Language -eq 'tr') { 'Global Secure Access (SSE) lisansı kiracıda bulunmadığı için ağ erişim kontrolleri atlandı.' } else { 'Global Secure Access (SSE) license is not assigned in this tenant.' }
+                Search = 'Entra_Premium_'
+            }
         } elseif ($reason -match 'WINDEFATP|MDE_LITE') {
-            'Microsoft Defender for Endpoint (P1/P2)'
+            @{
+                Key = if ($Language -eq 'tr') { 'Lisans: Microsoft Defender for Endpoint (P1/P2)' } else { 'License: Microsoft Defender for Endpoint (P1/P2)' }
+                Category = 'License'
+                Note = if ($Language -eq 'tr') { 'MDE planı kiracıda etkin olmadığı için uç nokta güvenlik kontrolleri çalıştırılamadı.' } else { 'Defender for Endpoint plan is not licensed in this tenant.' }
+                Search = 'WINDEFATP'
+            }
+        } elseif ($reason -match 'Microsoft_365_Copilot|AGENT_365') {
+            @{
+                Key = if ($Language -eq 'tr') { 'Lisans: Microsoft 365 Copilot / Agent 365' } else { 'License: Microsoft 365 Copilot / Agent 365' }
+                Category = 'License'
+                Note = if ($Language -eq 'tr') { 'Copilot veya Agent 365 lisansı bulunmadığı için yapay zekâ yönetişim kontrolleri atlandı.' } else { 'Microsoft 365 Copilot or Agent 365 license is not present in the tenant.' }
+                Search = 'AGENT_365'
+            }
         } elseif ($reason -match 'Workload ID') {
-            'Microsoft Entra Workload ID'
-        } elseif ($reason -match 'SharePointOnline') {
-            if ($Language -eq 'tr') { 'Bağlantı Eksikliği: SharePointOnline Modülü' } else { 'Disconnected Service: SharePointOnline' }
-        } elseif ($reason -match 'EXCHANGE_S_STANDARD') {
-            'Exchange Online Standard / Plan'
+            @{
+                Key = if ($Language -eq 'tr') { 'Lisans: Microsoft Entra Workload ID' } else { 'License: Microsoft Entra Workload ID' }
+                Category = 'License'
+                Note = if ($Language -eq 'tr') { 'Workload ID Premium lisansı olmadığı için hizmet sorumlusu (SPN) risk kontrolleri atlandı.' } else { 'Entra Workload ID license is not present for service principal risk checks.' }
+                Search = 'Workload'
+            }
+        } elseif ($reason -match 'EXCHANGE_S_STANDARD|non-trial licenses|Entra ID Premium') {
+            @{
+                Key = if ($Language -eq 'tr') { 'Lisans: Exchange Online / Entra ID Premium (Deneme Dışı)' } else { 'License: Exchange Online / Entra ID Premium (Non-Trial)' }
+                Category = 'License'
+                Note = if ($Language -eq 'tr') { 'Ücretli/deneme dışı Exchange Online veya Entra ID Premium lisansı yetersiz olduğu için atlandı.' } else { 'Required paid Exchange Online or Entra ID Premium license is unavailable.' }
+                Search = 'EXCHANGE_S_STANDARD'
+            }
+        } elseif ($reason -match 'SharePointOnline|Not connected to SharePoint Online') {
+            @{
+                Key = if ($Language -eq 'tr') { 'Bağlantı Eksikliği: SharePoint Online' } else { 'Disconnected Service: SharePoint Online' }
+                Category = 'Connection'
+                Note = if ($Language -eq 'tr') { 'SharePoint Online yönetim oturumu bağlı olmadığı için SPO paylaşım ve erişim kontrolleri atlandı.' } else { 'SharePoint Online session was not connected during assessment.' }
+                Search = 'SharePoint'
+            }
+        } elseif ($reason -match 'Not connected to Teams') {
+            @{
+                Key = if ($Language -eq 'tr') { 'Bağlantı Eksikliği: Microsoft Teams' } else { 'Disconnected Service: Microsoft Teams' }
+                Category = 'Connection'
+                Note = if ($Language -eq 'tr') { 'MicrosoftTeams PowerShell oturumu kurulmadığı için Teams dış erişim/toplantı kontrolleri atlandı.' } else { 'MicrosoftTeams PowerShell session was not connected.' }
+                Search = 'Teams'
+            }
+        } elseif ($reason -match 'AipService') {
+            @{
+                Key = if ($Language -eq 'tr') { 'Bağlantı Eksikliği: AIPService (Purview Şifreleme)' } else { 'Disconnected Service: AIPService' }
+                Category = 'Connection'
+                Note = if ($Language -eq 'tr') { 'AIPService modülü/oturumu bağlı olmadığı için RMS/şifreleme kontrolleri atlandı.' } else { 'AIPService connection was unavailable during the scan.' }
+                Search = 'AipService'
+            }
+        } elseif ($reason -match 'Missing permission scope|Missing Scope|S2SUnauthorized') {
+            @{
+                Key = if ($Language -eq 'tr') { 'API / Yetki Eksikliği (Graph Scope / S2S)' } else { 'Missing API Permission (Graph Scope / S2S)' }
+                Category = 'Permission'
+                Note = if ($Language -eq 'tr') { 'Oturumda ilgili salt okunur Graph/Exchange yetki kapsamı onaylanmadığı için sorgu atlandı.' } else { 'Required read-only Graph or Exchange permission scope was not granted to the session.' }
+                Search = ''
+            }
+        } elseif ($reason -match 'No MDE-managed Windows devices|Apple |Android Enterprise|Intune Certificate|Mobile Threat Defense|Windows Feature Update') {
+            @{
+                Key = if ($Language -eq 'tr') { 'Platform Kullanılmıyor: MDM / Mobil / MDE Cihaz Profili Yok' } else { 'Not Configured: MDM / Mobile / MDE Device Profiles' }
+                Category = 'Scope'
+                Note = if ($Language -eq 'tr') { 'Kiracıda Apple ADE/APN/VPP, Android Enterprise veya MDE yönetimli Windows cihazı bulunmadığından uygulanamaz.' } else { 'No Apple, Android Enterprise, Intune connector, or MDE-managed devices exist in the tenant.' }
+                Search = ''
+            }
         } else {
-            if ($Language -eq 'tr') { 'Ortam / Kapsam Dışı (Not Applicable)' } else { 'Not Applicable to Current Environment' }
+            @{
+                Key = if ($Language -eq 'tr') { 'Kapsam Dışı / Özellik Etkin Değil (Not Applicable)' } else { 'Not Applicable / Feature Disabled in Tenant' }
+                Category = 'Scope'
+                Note = if ($Language -eq 'tr') { 'İlgili özellik (ör. şirket içi AD senkronizasyonu, paylaşımlı posta kutusu, SMS/FIDO2 veya riskli CA) kiracıda kullanılmıyor.' } else { 'Target feature (e.g., on-prem AD sync, shared mailboxes, SMS/FIDO2, or risk CA) is disabled or unused.' }
+                Search = ''
+            }
         }
-        if (-not $licenseGaps.ContainsKey($key)) { $licenseGaps[$key] = 0 }
-        $licenseGaps[$key]++
+        if (-not $licenseGaps.ContainsKey($meta.Key)) {
+            $licenseGaps[$meta.Key] = @{
+                Count    = 0
+                Category = $meta.Category
+                Note     = $meta.Note
+                Search   = $meta.Search
+            }
+        }
+        $licenseGaps[$meta.Key].Count++
     }
 
-    $roiGapsList = $licenseGaps.GetEnumerator() | Sort-Object Value -Descending | ForEach-Object {
-        [PSCustomObject]@{ License = $_.Key; Count = $_.Value }
+    $roiGapsList = $licenseGaps.GetEnumerator() | Sort-Object { $_.Value.Count } -Descending | ForEach-Object {
+        [PSCustomObject]@{
+            License  = $_.Key
+            Count    = $_.Value.Count
+            Category = $_.Value.Category
+            Note     = $_.Value.Note
+            Search   = $_.Value.Search
+        }
     }
+
+    $licGapTotal  = @($roiGapsList | Where-Object { $_.Category -eq 'License' } | ForEach-Object { $_.Count } | Measure-Object -Sum).Sum
+    $connGapTotal = @($roiGapsList | Where-Object { $_.Category -in @('Connection', 'Permission') } | ForEach-Object { $_.Count } | Measure-Object -Sum).Sum
+    $scopeGapTotal = @($roiGapsList | Where-Object { $_.Category -eq 'Scope' } | ForEach-Object { $_.Count } | Measure-Object -Sum).Sum
 
     $roiSummary = if ($Language -eq 'tr') {
-        "Toplam $skippedCount kontrol lisans eksikliği veya servis bağlantısı nedeniyle atlandı. Bu alanlar 'güvenli' değil, ölçülemeyen risk yüzeyi olarak değerlendirilmelidir."
+        "Toplam $skippedCount kontrol atlandı: $licGapTotal tanesi lisans eksikliğinden, $connGapTotal tanesi servis bağlantısı veya API yetki eksikliğinden (ölçülemeyen kör nokta), $scopeGapTotal tanesi ise kiracıda ilgili platform/özellik kullanılmadığından kapsam dışı olarak işaretlendi."
     } else {
-        "A total of $skippedCount checks were skipped due to missing licenses or disconnected services. These areas represent unmeasured attack surface rather than verified compliance."
+        "Out of $skippedCount skipped controls, $licGapTotal are blocked by missing licenses, $connGapTotal by disconnected services or missing API scopes (blind spots), and $scopeGapTotal are not applicable because those features/platforms are unused in the tenant."
     }
 
     $roadmap = if ($Language -eq 'tr') {
