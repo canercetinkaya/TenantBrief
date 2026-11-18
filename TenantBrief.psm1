@@ -408,9 +408,9 @@ function New-TenantBriefProgressDashboard {
         $pHtml = Get-Content -Path $progressHtmlPath -Raw -Encoding UTF8
         $isTrUi = ($Language -eq 'tr')
         $labelsJson = if ($isTrUi) {
-            '["1. ZeroTrustAssessment (Kiracı Veri Toplama & Testler)","2. CISA ScubaGear (Güvenlik Taban Hattı)","3. Microsoft ORCA (Defender for Office 365)","4. Korelasyon, Lisans ROI & Çerçeve Puanlama","5. TenantBrief Rapor Üretimi"]'
+            '["1. ZeroTrustAssessment (Kiracı Veri Toplama & Testler)","2. CISA ScubaGear (Güvenlik Taban Hattı)","3. Microsoft ORCA & Maester (MDO, EIDSCA & CIS)","4. Korelasyon, Lisans ROI/İsraf, Copilot & 5 Çerçeve","5. TenantBrief Rapor Üretimi"]'
         } else {
-            '["1. ZeroTrustAssessment (Tenant Data & Checks)","2. CISA ScubaGear (Security Baselines)","3. Microsoft ORCA (Defender for Office 365)","4. Correlation, License ROI & Framework Scoring","5. Generating TenantBrief Reports"]'
+            '["1. ZeroTrustAssessment (Tenant Data & Checks)","2. CISA ScubaGear (Security Baselines)","3. Microsoft ORCA & Maester (MDO, EIDSCA & CIS)","4. Correlation, License ROI/Waste, Copilot & 5 Frameworks","5. Generating TenantBrief Reports"]'
         }
         $noticeTxt = if ($isTrUi) {
             'Bilgi: Kiracı büyüklüğüne bağlı olarak tarama birkaç dakikadan 30+ dakikaya kadar sürebilir. Hata mesajı görmediğiniz sürece PowerShell penceresini kapatmayın.'
