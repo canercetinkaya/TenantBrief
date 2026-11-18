@@ -200,4 +200,44 @@ Describe 'TenantBrief Module' {
         $w.UnassignedSeats | Should -Be 2
         $w.UnassignedUsdMo | Should -Be 114
     }
+
+    It 'evaluates COP-SPO-01 via Graph /admin/sharepoint/settings when Get-SPOTenant is unavailable' {
+        InModuleScope TenantBrief {
+            function Get-MgContext { param($ErrorAction) return [PSCustomObject]@{ Account = 'admin@contoso.onmicrosoft.com' } }
+            function Get-SPOTenant { param($ErrorAction) throw 'SPO session not connected' }
+            function Invoke-MgGraphRequest {
+                param($Method, $Uri, $ErrorAction)
+                switch -Wildcard ($Uri) {
+                    '*/admin/sharepoint/settings' {
+                        return @{
+                            sharingCapability                 = 'externalUserAndGuestSharing'
+                            isResharingByExternalUsersEnabled = $true
+                            sharingDomainRestrictionMode      = 'none'
+                        }
+                    }
+                    '*/policies/authorizationPolicy' {
+                        return [PSCustomObject]@{
+                            allowInvitesFrom = 'adminsAndGuestInviters'
+                            guestUserRoleId  = '2af84b1e-32c8-42b7-82bc-daa82404023b'
+                            defaultUserRolePermissions = [PSCustomObject]@{ permissionGrantPoliciesAssigned = @() }
+                        }
+                    }
+                    '*sensitivityLabels*' { return [PSCustomObject]@{ value = @([PSCustomObject]@{ id = 'lbl1' }) } }
+                    default { return [PSCustomObject]@{ value = @() } }
+                }
+            }
+            try {
+                $mockSkus = @([PSCustomObject]@{ skuPartNumber = 'SPE_E5'; prepaidUnits = @{ enabled = 10 }; consumedUnits = 10 })
+                $ti = [PSCustomObject]@{ UserCount = 10; GuestCount = 0; TotalAgents = 0 }
+                $cr = Get-TenantBriefCopilotReadiness -SubscribedSkus $mockSkus -TenantInsights $ti -Language tr
+                $spo = $cr.Checks | Where-Object { $_.Id -eq 'COP-SPO-01' }
+                $spo | Should -Not -BeNullOrEmpty
+                $spo.Status | Should -Be 'Warning'
+                $spo.Detail | Should -Match 'Graph API'
+                $spo.Detail | Should -Match 'externalUserAndGuestSharing'
+            } finally {
+                Remove-Item function:Get-MgContext, function:Get-SPOTenant, function:Invoke-MgGraphRequest -ErrorAction SilentlyContinue
+            }
+        }
+    }
 }

@@ -75,7 +75,11 @@ function Connect-TenantBrief {
     try { Disconnect-ExchangeOnline -Confirm:$false -ErrorAction SilentlyContinue | Out-Null } catch {}
 
     Write-Host "[TenantBrief] Checking ZeroTrustAssessment, ScubaGear, ORCA & PSGallery dependencies..." -ForegroundColor Cyan
-    foreach ($dep in @('Microsoft.Graph.Beta.Teams', 'Microsoft.Online.SharePoint.PowerShell', 'powershell-yaml', 'ScubaGear', 'ORCA')) {
+    if (-not (Get-Module -ListAvailable -Name 'ZeroTrustAssessment')) {
+        throw "Required module 'ZeroTrustAssessment' is not installed. Run: Install-Module ZeroTrustAssessment -Scope CurrentUser"
+    }
+
+    foreach ($dep in @('Microsoft.Graph.Beta.Teams', 'powershell-yaml', 'ScubaGear', 'ORCA')) {
         if (-not (Get-Module -ListAvailable -Name $dep)) {
             Write-Host "[TenantBrief] Installing missing module '$dep' from PSGallery..." -ForegroundColor Yellow
             try {
@@ -85,27 +89,89 @@ function Connect-TenantBrief {
             }
         }
     }
+
+    # ZeroTrustAssessment loads Microsoft.Online.SharePoint.PowerShell in Windows PowerShell 5.1 (-UseWindowsPowerShell)
+    # and requires an exact pinned version from ZeroTrustAssessment.psd1.
+    $spoReqVersion = '16.0.27612.12000'
+    $ztAvail = Get-Module -ListAvailable -Name 'ZeroTrustAssessment' | Sort-Object Version -Descending | Select-Object -First 1
+    if ($ztAvail) {
+        try {
+            $ztManifest = Import-PowerShellDataFile -Path $ztAvail.Path -ErrorAction Stop
+            $winSpecs = $ztManifest.PrivateData.WindowsPowerShellRequiredModules
+            $spoSpec = @($winSpecs) | Where-Object { $_ -and $_.ModuleName -eq 'Microsoft.Online.SharePoint.PowerShell' } | Select-Object -First 1
+            if ($spoSpec -and $spoSpec.RequiredVersion) { $spoReqVersion = [string]$spoSpec.RequiredVersion }
+        } catch {}
+    }
+
+    $docsDir = [Environment]::GetFolderPath('MyDocuments')
+    $winPsModulesDir = if ($docsDir) { Join-Path $docsDir 'WindowsPowerShell\Modules' } else { Join-Path $HOME 'Documents\WindowsPowerShell\Modules' }
+    if (-not (Test-Path $winPsModulesDir)) {
+        try { $null = New-Item -ItemType Directory -Path $winPsModulesDir -Force -ErrorAction Stop } catch {}
+    }
+    $pathEntries = @($env:PSModulePath -split [System.IO.Path]::PathSeparator | Where-Object { $_ })
+    if ($pathEntries -notcontains $winPsModulesDir) {
+        $env:PSModulePath = (@($winPsModulesDir) + $pathEntries) -join [System.IO.Path]::PathSeparator
+    }
+
+    # Remove newer/unpinned copies in the PS7-only Documents\PowerShell\Modules folder that -UseWindowsPowerShell
+    # cannot load and that can shadow the pinned version expected by ZeroTrustAssessment.
+    if ($docsDir) {
+        $ps7SpoDir = Join-Path $docsDir 'PowerShell\Modules\Microsoft.Online.SharePoint.PowerShell'
+        if (Test-Path $ps7SpoDir) {
+            foreach ($verDir in @(Get-ChildItem -Path $ps7SpoDir -Directory -ErrorAction SilentlyContinue)) {
+                if ($verDir.Name -ne $spoReqVersion) {
+                    try {
+                        Remove-Item -Path $verDir.FullName -Recurse -Force -ErrorAction Stop
+                    } catch {
+                        Write-Warning "[TenantBrief] Could not remove unpinned PS7 SharePoint module '$($verDir.FullName)': $($_.Exception.Message)"
+                    }
+                }
+            }
+        }
+    }
+
+    $spoTargetDir = Join-Path $winPsModulesDir "Microsoft.Online.SharePoint.PowerShell\$spoReqVersion"
+    if (-not (Test-Path $spoTargetDir)) {
+        Write-Host "[TenantBrief] Installing Microsoft.Online.SharePoint.PowerShell v$spoReqVersion into WindowsPowerShell\Modules for PS7/WinPS5 compatibility..." -ForegroundColor Yellow
+        try {
+            if (Get-Command Save-Module -ErrorAction SilentlyContinue) {
+                Save-Module -Name 'Microsoft.Online.SharePoint.PowerShell' -RequiredVersion $spoReqVersion -Repository PSGallery -Path $winPsModulesDir -Force -ErrorAction Stop
+            } elseif (Get-Command Save-PSResource -ErrorAction SilentlyContinue) {
+                Save-PSResource -Name 'Microsoft.Online.SharePoint.PowerShell' -Version $spoReqVersion -Repository PSGallery -Path $winPsModulesDir -TrustRepository -ErrorAction Stop
+            } else {
+                Write-Warning "Could not auto-install Microsoft.Online.SharePoint.PowerShell v$spoReqVersion`: neither Save-Module nor Save-PSResource is available."
+            }
+        } catch {
+            Write-Warning "Could not auto-install Microsoft.Online.SharePoint.PowerShell v$spoReqVersion`: $($_.Exception.Message)"
+        }
+    }
+
     $opaExe = Join-Path $env:USERPROFILE '.scubagear\Tools\opa_windows_amd64.exe'
     if (-not (Test-Path $opaExe) -and (Get-Module -ListAvailable -Name 'ScubaGear')) {
         Write-Host "[TenantBrief] Installing OPA executable for ScubaGear..." -ForegroundColor Yellow
         try {
-            Import-Module ScubaGear -ErrorAction SilentlyContinue 2>$null 3>$null | Out-Null
+            Set-StrictMode -Off
+            Import-Module ScubaGear -ErrorAction SilentlyContinue -WarningAction SilentlyContinue 6>$null 3>$null 2>$null | Out-Null
             Install-OPAforSCuBA | Out-Null
         } catch {
             Write-Warning "Could not auto-install OPA: $($_.Exception.Message)"
+        } finally {
+            Set-StrictMode -Version Latest
         }
     }
 
-    if (-not (Get-Module -ListAvailable -Name 'ZeroTrustAssessment')) {
-        throw "Required module 'ZeroTrustAssessment' is not installed. Run: Install-Module ZeroTrustAssessment -Scope CurrentUser"
-    }
-    Import-Module ZeroTrustAssessment -ErrorAction SilentlyContinue 2>$null 3>$null | Out-Null
     $params = @{ Service = $Service }
     if ($Tenant) { $params['TenantId'] = $Tenant }
     if ($UseDeviceCode) { $params['UseDeviceCode'] = $true }
 
     Write-Host "[TenantBrief] Connecting in Read-Only mode..." -ForegroundColor Green
-    Connect-ZtAssessment @params
+    Set-StrictMode -Off
+    try {
+        Import-Module ZeroTrustAssessment -Global -ErrorAction SilentlyContinue 2>$null 3>$null | Out-Null
+        Connect-ZtAssessment @params
+    } finally {
+        Set-StrictMode -Version Latest
+    }
 
     $mgCtx = Get-MgContext -ErrorAction SilentlyContinue
     if (-not $mgCtx) {
@@ -475,7 +541,12 @@ function Invoke-TenantBriefBaselineCollections {
             if (-not (Get-Module -ListAvailable -Name 'powershell-yaml')) {
                 Install-Module -Name 'powershell-yaml' -Repository PSGallery -Scope CurrentUser -Force -ErrorAction SilentlyContinue
             }
-            Import-Module ScubaGear -ErrorAction Stop
+            Set-StrictMode -Off
+            try {
+                Import-Module ScubaGear -ErrorAction Stop -WarningAction SilentlyContinue 6>$null 3>$null 2>$null | Out-Null
+            } finally {
+                Set-StrictMode -Version Latest
+            }
             $opaDir = Join-Path $env:USERPROFILE '.scubagear\Tools'
             $opaExePath = Join-Path $opaDir 'opa_windows_amd64.exe'
             if (-not (Test-Path $opaExePath)) {
@@ -576,7 +647,7 @@ function Invoke-TenantBriefBaselineCollections {
         $orcaOut = Join-Path $OutputPath 'raw-orca'
         if (-not (Test-Path $orcaOut)) { New-Item -ItemType Directory -Path $orcaOut -Force | Out-Null }
         try {
-            Get-Module tmpEXO_* -ErrorAction SilentlyContinue | Import-Module -Global -ErrorAction SilentlyContinue | Out-Null
+            Get-Module tmpEXO_* -ErrorAction SilentlyContinue | Import-Module -Global -DisableNameChecking -WarningAction SilentlyContinue -ErrorAction SilentlyContinue | Out-Null
             $exoDoms = @()
             if (Get-Command Get-AcceptedDomain -ErrorAction SilentlyContinue) {
                 try { $exoDoms = @(Get-AcceptedDomain -ErrorAction Stop) } catch { $exoDoms = @() }
@@ -590,7 +661,7 @@ function Invoke-TenantBriefBaselineCollections {
                     } else {
                         $null = Connect-ExchangeOnline -ShowBanner:$false -ErrorAction Stop
                     }
-                    Get-Module tmpEXO_* -ErrorAction SilentlyContinue | Import-Module -Global -ErrorAction SilentlyContinue | Out-Null
+                    Get-Module tmpEXO_* -ErrorAction SilentlyContinue | Import-Module -Global -DisableNameChecking -WarningAction SilentlyContinue -ErrorAction SilentlyContinue | Out-Null
                     $exoDoms = @(Get-AcceptedDomain -ErrorAction SilentlyContinue)
                 } catch {}
             }
@@ -602,7 +673,7 @@ function Invoke-TenantBriefBaselineCollections {
                 $orcaSkipped = $true
             } else {
                 & $Log "[Stage 3/5] Running Microsoft ORCA checks (Defender for Office 365)..."
-                Import-Module ORCA -Global -ErrorAction Stop
+                Import-Module ORCA -Global -DisableNameChecking -WarningAction SilentlyContinue -ErrorAction Stop 6>$null 3>$null | Out-Null
                 $null = Invoke-ORCA -Connect:$false -SCC:$false -PerformVersionCheck:$false -InstallModules:$false -ShowSurvey:$false -Output @('JSON') -OutputOptions @{ JSON = @{ OutputDirectory = $orcaOut } } 6>$null 3>$null
                 $orcaFile = Get-ChildItem -Path $orcaOut -Filter '*.json' -Recurse -ErrorAction SilentlyContinue | Select-Object -First 1
                 if ($orcaFile) {
@@ -676,6 +747,10 @@ function Get-TenantBriefPropertyValue {
     # StrictMode-safe accessor: engines export slightly different shapes and a missing
     # property must read as $null instead of throwing.
     if ($null -eq $Object) { return $null }
+    if ($Object -is [System.Collections.IDictionary]) {
+        if ($Object.Contains($Name)) { return $Object[$Name] }
+        return $null
+    }
     $prop = $Object.PSObject.Properties[$Name]
     if ($prop) { return $prop.Value }
     return $null
@@ -974,7 +1049,12 @@ function Invoke-TenantBriefAssessment {
         if (-not (Get-Module -ListAvailable -Name 'ZeroTrustAssessment')) {
             throw "Required module 'ZeroTrustAssessment' is not installed. Run: Install-Module ZeroTrustAssessment -Scope CurrentUser"
         }
-        Import-Module ZeroTrustAssessment -ErrorAction Stop 2>$null 3>$null | Out-Null
+        Set-StrictMode -Off
+        try {
+            Import-Module ZeroTrustAssessment -Global -ErrorAction Stop 2>$null 3>$null | Out-Null
+        } finally {
+            Set-StrictMode -Version Latest
+        }
 
         $tenantFolder = 'tenant'
         if ($mgCheck.Account -and $mgCheck.Account -match '@(.+)$') {
@@ -1067,7 +1147,12 @@ function Invoke-TenantBriefAssessment {
     $sourceJsonPath = $InputReportJson
     if (-not $sourceJsonPath) {
         & $addLog "[Stage 1/5] Starting read-only ZeroTrustAssessment (using active session in main runspace)..."
-        Invoke-ZtAssessment -Path $rawOut -DisableTelemetry -NoBrowser 6>$null 3>$null
+        Set-StrictMode -Off
+        try {
+            Invoke-ZtAssessment -Path $rawOut -DisableTelemetry -NoBrowser 6>$null 3>$null
+        } finally {
+            Set-StrictMode -Version Latest
+        }
         $sourceJsonPath = Join-Path $rawOut 'zt-export\ZeroTrustAssessmentReport.json'
         if (-not (Test-Path $sourceJsonPath)) {
             throw "ZeroTrustAssessment did not produce a report at '$sourceJsonPath'. Authentication may have been canceled or failed."
@@ -2116,25 +2201,69 @@ function Get-TenantBriefCopilotReadiness {
             Warning     = if ($racCount -eq 0 -and $rcdCount -eq 0) { if ($isTr) { 'UYARI: Hiçbir SharePoint sitesinde RAC/RCD kısıtı bulunmadı.' } else { 'WARNING: No SharePoint sites have RAC/RCD restrictions.' } } else { '' }
         }
     } else {
+        $spoEvaluated = $false
         $spoAvail = [bool](Get-Command Get-SPOTenant -ErrorAction SilentlyContinue)
         if ($spoAvail -and $hasLiveGraph) {
             try {
                 $spoT = Get-SPOTenant -ErrorAction Stop
-                $rss = [bool]($spoT.PSObject.Properties['RestrictedSearchMode'] -and $spoT.RestrictedSearchMode -eq 'Enabled')
+                $rssMode = if ($spoT.PSObject.Properties['RestrictedSearchMode']) { [string]$spoT.RestrictedSearchMode } else { 'NotExposed' }
+                $shCap = if ($spoT.PSObject.Properties['SharingCapability']) { [string]$spoT.SharingCapability } else { 'Unknown' }
+                $aipInt = if ($spoT.PSObject.Properties['EnableAIPIntegration']) { [bool]$spoT.EnableAIPIntegration } else { $false }
+                $rss = ($rssMode -eq 'Enabled')
+                $spoPermissive = ($shCap -eq 'ExternalUserAndGuestSharing')
+                $spoStatus = if ($rss -and -not $spoPermissive) { 'Pass' } else { 'Warning' }
+                $spoWarn = if (-not $rss) {
+                    if ($isTr) { 'UYARI: Restricted SharePoint Search etkin değil (veya kiracı özelliği kapalı); herkesle paylaşılan siteler taranabilir.' } else { 'WARNING: Restricted SharePoint Search is not enabled; broadly shared sites may be indexed.' }
+                } elseif ($spoPermissive) {
+                    if ($isTr) { 'UYARI: SharePoint paylaşım kapsamı dış/konuk erişimine açık (ExternalUserAndGuestSharing); RAC/RCD kısıtları doğrulanmalıdır.' } else { 'WARNING: SharePoint SharingCapability allows ExternalUserAndGuestSharing; verify site RAC/RCD restrictions.' }
+                } else { '' }
+                if ($spoWarn) { $warnings += $spoWarn }
                 $checks += [PSCustomObject]@{
                     Id          = 'COP-SPO-01'
                     Category    = if ($isTr) { 'SharePoint Aşırı Paylaşım Kalkanı' } else { 'SharePoint Oversharing Shield' }
-                    Status      = if ($rss) { 'Pass' } else { 'Warning' }
+                    Status      = $spoStatus
                     Title       = if ($isTr) { 'Restricted SharePoint Search & Paylaşım Durumu' } else { 'Restricted SharePoint Search & Sharing Posture' }
-                    Detail      = "SharingCapability=$($spoT.SharingCapability) | RestrictedSearch=$($spoT.RestrictedSearchMode)"
-                    Explanation = if ($isTr) { 'SharePoint varsayılan paylaşım kapsamı ve kısıtlı arama modu Copilot indeks sınırını belirler.' } else { 'SharePoint tenant sharing posture and Restricted Search control Copilot search scope.' }
-                    Warning     = if (-not $rss) { if ($isTr) { 'UYARI: Restricted SharePoint Search etkin değil; herkesle paylaşılan siteler taranabilir.' } else { 'WARNING: Restricted SharePoint Search is not enabled.' } } else { '' }
+                    Detail      = "SharingCapability=$shCap | RestrictedSearch=$rssMode | AIPIntegration=$aipInt"
+                    Explanation = if ($isTr) { 'SharePoint varsayılan paylaşım kapsamı, AIP etiketi bütünleşmesi ve kısıtlı arama modu Copilot indeks sınırını belirler.' } else { 'SharePoint tenant sharing posture, AIP integration, and Restricted Search control Copilot search scope.' }
+                    Warning     = $spoWarn
                 }
+                $spoEvaluated = $true
             } catch {
-                $spoAvail = $false
+                $spoEvaluated = $false
             }
         }
-        if (-not $spoAvail) {
+        if (-not $spoEvaluated -and $hasLiveGraph) {
+            try {
+                $spoGraph = Invoke-MgGraphRequest -Method GET -Uri 'https://graph.microsoft.com/v1.0/admin/sharepoint/settings' -ErrorAction Stop
+                $shCap = [string](Get-TenantBriefPropertyValue -Object $spoGraph -Name 'sharingCapability')
+                $reshare = Get-TenantBriefPropertyValue -Object $spoGraph -Name 'isResharingByExternalUsersEnabled'
+                $domMode = [string](Get-TenantBriefPropertyValue -Object $spoGraph -Name 'sharingDomainRestrictionMode')
+                if (-not $domMode) { $domMode = 'none' }
+                $permissive = ($shCap -eq 'externalUserAndGuestSharing') -or ($reshare -eq $true)
+                $spoWarn = if ($permissive) {
+                    $wTxt = if ($isTr) {
+                        "UYARI: SharePoint dış paylaşımı ($shCap / reshare=$reshare) geniş açık; Copilot dağıtımı öncesi hassas sitelerde RAC/RCD kısıtlaması ve SharePoint Yönetim Merkezi kontrolü önerilir."
+                    } else {
+                        "WARNING: SharePoint external sharing posture ($shCap / reshare=$reshare) is permissive; verify site-level RAC/RCD restrictions before Copilot rollout."
+                    }
+                    $warnings += $wTxt
+                    $wTxt
+                } else { '' }
+                $checks += [PSCustomObject]@{
+                    Id          = 'COP-SPO-01'
+                    Category    = if ($isTr) { 'SharePoint Aşırı Paylaşım Kalkanı' } else { 'SharePoint Oversharing Shield' }
+                    Status      = if ($permissive) { 'Warning' } else { 'Pass' }
+                    Title       = if ($isTr) { 'SharePoint Paylaşım Sınırı ve Dış Erişim Durumu (Graph API)' } else { 'SharePoint Sharing Boundary & External Access Posture (Graph API)' }
+                    Detail      = "SharingCapability=$shCap | ExternalResharing=$reshare | DomainRestriction=$domMode (Graph API)"
+                    Explanation = if ($isTr) { 'Microsoft Graph /admin/sharepoint/settings üzerinden okunan varsayılan paylaşım kapsamı ve dış yeniden paylaşım izni Copilot aşırı paylaşım sınırını gösterir; site düzeyi RAC/RCD için SharePoint Online oturumu veya FastTrack JSON bağlanabilir.' } else { 'Tenant sharing capability and external resharing settings retrieved via Microsoft Graph /admin/sharepoint/settings measure oversharing exposure; site-level RAC/RCD checks can be added via SharePoint Online or FastTrack JSON.' }
+                    Warning     = $spoWarn
+                }
+                $spoEvaluated = $true
+            } catch {
+                $spoEvaluated = $false
+            }
+        }
+        if (-not $spoEvaluated) {
             $w = if ($isTr) { 'BİLGİ/UYARI: SharePoint Online modülü bağlı olmadığı için RAC / Restricted Content Discovery kontrolü otomatik yapılamadı; FastTrack Get-M365CopilotReadiness.ps1 çıktısını -InputFastTrackJsonPath ile bağlayabilir veya SharePoint yönetim merkezinden doğrulayabilirsiniz.' } else { 'NOTICE/WARNING: SharePoint Online module is not connected; RAC / Restricted Content Discovery could not be queried directly. Pass -InputFastTrackJsonPath or verify in SharePoint Admin Center.' }
             $warnings += $w
             $checks += [PSCustomObject]@{
