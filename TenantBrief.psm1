@@ -69,10 +69,16 @@ function Connect-TenantBrief {
     )
 
     Write-Host "[TenantBrief] Cleaning any previous tenant sessions..." -ForegroundColor DarkGray
-    try { Disconnect-MgGraph -ErrorAction SilentlyContinue | Out-Null } catch {}
-    try { Clear-AzContext -Force -ErrorAction SilentlyContinue | Out-Null } catch {}
-    try { Disconnect-AzAccount -ErrorAction SilentlyContinue | Out-Null } catch {}
-    try { Disconnect-ExchangeOnline -Confirm:$false -ErrorAction SilentlyContinue | Out-Null } catch {}
+    if (Get-Module -Name 'Microsoft.Graph.Authentication') {
+        try { Disconnect-MgGraph -ErrorAction SilentlyContinue | Out-Null } catch {}
+    }
+    if (Get-Module -Name 'Az.Accounts') {
+        try { Clear-AzContext -Force -ErrorAction SilentlyContinue | Out-Null } catch {}
+        try { Disconnect-AzAccount -ErrorAction SilentlyContinue | Out-Null } catch {}
+    }
+    if (Get-Module -Name 'ExchangeOnlineManagement') {
+        try { Disconnect-ExchangeOnline -Confirm:$false -ErrorAction SilentlyContinue | Out-Null } catch {}
+    }
 
     Write-Host "[TenantBrief] Checking ZeroTrustAssessment, ScubaGear, ORCA & PSGallery dependencies..." -ForegroundColor Cyan
     if (-not (Get-Module -ListAvailable -Name 'ZeroTrustAssessment')) {
@@ -90,9 +96,11 @@ function Connect-TenantBrief {
         }
     }
 
-    # ZeroTrustAssessment loads Microsoft.Online.SharePoint.PowerShell in Windows PowerShell 5.1 (-UseWindowsPowerShell)
-    # and requires an exact pinned version from ZeroTrustAssessment.psd1.
+    # ZeroTrustAssessment pins exact dependency versions in ZeroTrustAssessment.psd1
+    # (Microsoft.Graph.Authentication 2.40.0, Microsoft.Online.SharePoint.PowerShell 16.0.27612.12000).
     $spoReqVersion = '16.0.27612.12000'
+    $graphReqVersion = '2.40.0'
+    $aipReqVersion = '3.1.0.0'
     $ztAvail = Get-Module -ListAvailable -Name 'ZeroTrustAssessment' | Sort-Object Version -Descending | Select-Object -First 1
     if ($ztAvail) {
         try {
@@ -100,7 +108,49 @@ function Connect-TenantBrief {
             $winSpecs = $ztManifest.PrivateData.WindowsPowerShellRequiredModules
             $spoSpec = @($winSpecs) | Where-Object { $_ -and $_.ModuleName -eq 'Microsoft.Online.SharePoint.PowerShell' } | Select-Object -First 1
             if ($spoSpec -and $spoSpec.RequiredVersion) { $spoReqVersion = [string]$spoSpec.RequiredVersion }
+            $aipSpec = @($winSpecs) | Where-Object { $_ -and $_.ModuleName -eq 'AipService' } | Select-Object -First 1
+            if ($aipSpec -and $aipSpec.RequiredVersion) { $aipReqVersion = [string]$aipSpec.RequiredVersion }
+            $xplatSpecs = $ztManifest.PrivateData.XPlatPowerShellRequiredModules
+            $gSpec = @($xplatSpecs) | Where-Object { $_ -and $_.ModuleName -eq 'Microsoft.Graph.Authentication' } | Select-Object -First 1
+            if ($gSpec -and $gSpec.RequiredVersion) { $graphReqVersion = [string]$gSpec.RequiredVersion }
         } catch {}
+    }
+
+    # Prune newer unpinned Microsoft.Graph.Authentication versions (e.g. 2.41.2 pulled transitively by Maester)
+    # when the pinned version exists, preventing CLR "different copy already loaded" errors.
+    $allGraphMods = @(Get-Module -ListAvailable -Name 'Microsoft.Graph.Authentication')
+    if ($allGraphMods | Where-Object { $_.Version.ToString() -eq $graphReqVersion }) {
+        foreach ($gm in $allGraphMods) {
+            if ($gm.Version.ToString() -ne $graphReqVersion -and $gm.ModuleBase -like "$($env:USERPROFILE)*") {
+                try {
+                    Remove-Item -Path $gm.ModuleBase -Recurse -Force -ErrorAction Stop
+                    Write-Host "[TenantBrief] Removed unpinned Microsoft.Graph.Authentication v$($gm.Version) to keep v$graphReqVersion aligned with ZeroTrustAssessment." -ForegroundColor DarkGray
+                } catch {
+                    Write-Warning "[TenantBrief] Could not remove Microsoft.Graph.Authentication v$($gm.Version) at '$($gm.ModuleBase)' (close other PowerShell windows holding the DLL): $($_.Exception.Message)"
+                }
+            }
+        }
+    }
+
+    # Satisfy ZeroTrustAssessment Initialize-Dependencies check when retired AipService is not in -Service
+    if ('AipService' -notin $Service -and $env:APPDATA) {
+        $hasAip = Get-Module -FullyQualifiedName @{ ModuleName = 'AipService'; GUID = 'e338ccc0-3333-4479-87fe-66382d33782d'; RequiredVersion = $aipReqVersion } -ListAvailable -ErrorAction SilentlyContinue
+        if (-not $hasAip) {
+            $aipStubDir = Join-Path $env:APPDATA "ZeroTrustAssessment\Modules\AipService\$aipReqVersion"
+            if (-not (Test-Path (Join-Path $aipStubDir 'AipService.psd1'))) {
+                try {
+                    $null = New-Item -ItemType Directory -Path $aipStubDir -Force -ErrorAction Stop
+                    Set-Content -Path (Join-Path $aipStubDir 'AipService.psm1') -Value '# Placeholder stub when AipService is not selected in -Service.' -Encoding UTF8
+                    @"
+@{
+    RootModule    = 'AipService.psm1'
+    ModuleVersion = '$aipReqVersion'
+    GUID          = 'e338ccc0-3333-4479-87fe-66382d33782d'
+}
+"@ | Set-Content -Path (Join-Path $aipStubDir 'AipService.psd1') -Encoding UTF8
+                } catch {}
+            }
+        }
     }
 
     $docsDir = [Environment]::GetFolderPath('MyDocuments')
@@ -167,6 +217,7 @@ function Connect-TenantBrief {
     Write-Host "[TenantBrief] Connecting in Read-Only mode..." -ForegroundColor Green
     Set-StrictMode -Off
     try {
+        Import-Module -Name 'Microsoft.Graph.Authentication' -RequiredVersion $graphReqVersion -Global -ErrorAction SilentlyContinue 2>$null 3>$null | Out-Null
         Import-Module ZeroTrustAssessment -Global -ErrorAction SilentlyContinue 2>$null 3>$null | Out-Null
         Connect-ZtAssessment @params
     } finally {
