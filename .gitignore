@@ -1,4 +1,5 @@
-# ZeroTrustLens local outputs
+# TenantBrief local outputs
+TenantBriefReport/
 ZeroTrustLensReport/
 *.log
 .DS_Store

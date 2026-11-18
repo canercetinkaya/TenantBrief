@@ -1,4 +1,4 @@
-name: ZeroTrustLens CI
+name: TenantBrief CI
 
 on:
   push:

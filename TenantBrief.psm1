@@ -4,10 +4,10 @@ $script:ModuleRoot = $PSScriptRoot
 $script:FrameworkMapPath = Join-Path $script:ModuleRoot 'data\framework-mappings.json'
 $script:ReportTemplatePath = Join-Path $script:ModuleRoot 'assets\report-template.html'
 
-function Get-ZtLensFrameworks {
+function Get-TenantBriefFrameworks {
     <#
     .SYNOPSIS
-    Lists the compliance frameworks supported by ZeroTrustLens.
+    Lists the compliance frameworks supported by TenantBrief.
 
     .DESCRIPTION
     Returns the five shipped frameworks (ZeroTrust, ISO27001, NIST_CSF_2, CIS_M365, KVKK_TR)
@@ -17,7 +17,7 @@ function Get-ZtLensFrameworks {
     is enough to surface it here.
 
     .EXAMPLE
-    Get-ZtLensFrameworks | Format-Table Id, NameTr
+    Get-TenantBriefFrameworks | Format-Table Id, NameTr
     #>
     [CmdletBinding()]
     [OutputType([PSCustomObject])]
@@ -39,7 +39,7 @@ function Get-ZtLensFrameworks {
     }
 }
 
-function Connect-ZtLens {
+function Connect-TenantBrief {
     <#
     .SYNOPSIS
     Connects read-only to the Microsoft 365 and Azure services used by the assessment.
@@ -52,7 +52,7 @@ function Connect-ZtLens {
     directory object is modified, and Disconnect-MgGraph is never called mid-session.
 
     .EXAMPLE
-    Connect-ZtLens -UseDeviceCode
+    Connect-TenantBrief -UseDeviceCode
     #>
     [CmdletBinding()]
     [OutputType([void])]
@@ -68,16 +68,16 @@ function Connect-ZtLens {
         [switch]$UseDeviceCode
     )
 
-    Write-Host "[ZeroTrustLens] Cleaning any previous tenant sessions..." -ForegroundColor DarkGray
+    Write-Host "[TenantBrief] Cleaning any previous tenant sessions..." -ForegroundColor DarkGray
     try { Disconnect-MgGraph -ErrorAction SilentlyContinue | Out-Null } catch {}
     try { Clear-AzContext -Force -ErrorAction SilentlyContinue | Out-Null } catch {}
     try { Disconnect-AzAccount -ErrorAction SilentlyContinue | Out-Null } catch {}
     try { Disconnect-ExchangeOnline -Confirm:$false -ErrorAction SilentlyContinue | Out-Null } catch {}
 
-    Write-Host "[ZeroTrustLens] Checking ZeroTrustAssessment, ScubaGear, ORCA & PSGallery dependencies..." -ForegroundColor Cyan
+    Write-Host "[TenantBrief] Checking ZeroTrustAssessment, ScubaGear, ORCA & PSGallery dependencies..." -ForegroundColor Cyan
     foreach ($dep in @('Microsoft.Graph.Beta.Teams', 'Microsoft.Online.SharePoint.PowerShell', 'powershell-yaml', 'ScubaGear', 'ORCA')) {
         if (-not (Get-Module -ListAvailable -Name $dep)) {
-            Write-Host "[ZeroTrustLens] Installing missing module '$dep' from PSGallery..." -ForegroundColor Yellow
+            Write-Host "[TenantBrief] Installing missing module '$dep' from PSGallery..." -ForegroundColor Yellow
             try {
                 Install-Module -Name $dep -Repository PSGallery -Scope CurrentUser -Force -AllowClobber -ErrorAction Stop
             } catch {
@@ -87,7 +87,7 @@ function Connect-ZtLens {
     }
     $opaExe = Join-Path $env:USERPROFILE '.scubagear\Tools\opa_windows_amd64.exe'
     if (-not (Test-Path $opaExe) -and (Get-Module -ListAvailable -Name 'ScubaGear')) {
-        Write-Host "[ZeroTrustLens] Installing OPA executable for ScubaGear..." -ForegroundColor Yellow
+        Write-Host "[TenantBrief] Installing OPA executable for ScubaGear..." -ForegroundColor Yellow
         try {
             Import-Module ScubaGear -ErrorAction SilentlyContinue 2>$null 3>$null | Out-Null
             Install-OPAforSCuBA | Out-Null
@@ -104,17 +104,17 @@ function Connect-ZtLens {
     if ($Tenant) { $params['TenantId'] = $Tenant }
     if ($UseDeviceCode) { $params['UseDeviceCode'] = $true }
 
-    Write-Host "[ZeroTrustLens] Connecting in Read-Only mode..." -ForegroundColor Green
+    Write-Host "[TenantBrief] Connecting in Read-Only mode..." -ForegroundColor Green
     Connect-ZtAssessment @params
 
     $mgCtx = Get-MgContext -ErrorAction SilentlyContinue
     if (-not $mgCtx) {
         throw "Authentication canceled or failed: Microsoft Graph session could not be established."
     }
-    Write-Host "[ZeroTrustLens] Verified active Graph session for: $($mgCtx.Account)" -ForegroundColor Green
+    Write-Host "[TenantBrief] Verified active Graph session for: $($mgCtx.Account)" -ForegroundColor Green
 }
 
-function ConvertTo-ZtLensTurkish {
+function ConvertTo-TenantBriefTurkish {
     param([string]$Text)
     if ([string]::IsNullOrWhiteSpace($Text)) { return $Text }
     $map = [ordered]@{
@@ -158,7 +158,7 @@ function ConvertTo-ZtLensTurkish {
 
 #region Internal pipeline helpers (analysis / presentation)
 
-function Add-ZtLensDiagnostic {
+function Add-TenantBriefDiagnostic {
     [CmdletBinding()]
     param(
         [Parameter(Mandatory = $true)]
@@ -183,10 +183,10 @@ function Add-ZtLensDiagnostic {
         Message   = $Message
         Timestamp = (Get-Date).ToString('o')
     })
-    Write-Verbose "[ZeroTrustLens] Stage $Stage / ${Component}: $Message"
+    Write-Verbose "[TenantBrief] Stage $Stage / ${Component}: $Message"
 }
 
-function Set-ZtLensStage {
+function Set-TenantBriefStage {
     [CmdletBinding()]
     param(
         [Parameter(Mandatory = $true)]
@@ -228,7 +228,7 @@ function Set-ZtLensStage {
     if ($Message) { $entry.Message = $Message }
 }
 
-function Save-ZtLensRunManifest {
+function Save-TenantBriefRunManifest {
     [CmdletBinding()]
     param(
         [Parameter(Mandatory = $true)]
@@ -252,11 +252,11 @@ function Save-ZtLensRunManifest {
         # Written after every stage transition so an interrupted run still leaves a trace on disk.
         $Manifest | ConvertTo-Json -Depth 6 | Set-Content -Path $Path -Encoding UTF8 -ErrorAction Stop
     } catch {
-        Write-Verbose "[ZeroTrustLens] run manifest could not be written: $($_.Exception.Message)"
+        Write-Verbose "[TenantBrief] run manifest could not be written: $($_.Exception.Message)"
     }
 }
 
-function New-ZtLensProgressDashboard {
+function New-TenantBriefProgressDashboard {
     [CmdletBinding()]
     param(
         [Parameter(Mandatory = $true)]
@@ -291,9 +291,9 @@ function New-ZtLensProgressDashboard {
         $pHtml = Get-Content -Path $progressHtmlPath -Raw -Encoding UTF8
         $isTrUi = ($Language -eq 'tr')
         $labelsJson = if ($isTrUi) {
-            '["1. ZeroTrustAssessment (Kiracı Veri Toplama & Testler)","2. CISA ScubaGear (Güvenlik Taban Hattı)","3. Microsoft ORCA (Defender for Office 365)","4. Korelasyon, Lisans ROI & Çerçeve Puanlama","5. ZeroTrustLens Rapor Üretimi"]'
+            '["1. ZeroTrustAssessment (Kiracı Veri Toplama & Testler)","2. CISA ScubaGear (Güvenlik Taban Hattı)","3. Microsoft ORCA (Defender for Office 365)","4. Korelasyon, Lisans ROI & Çerçeve Puanlama","5. TenantBrief Rapor Üretimi"]'
         } else {
-            '["1. ZeroTrustAssessment (Tenant Data & Checks)","2. CISA ScubaGear (Security Baselines)","3. Microsoft ORCA (Defender for Office 365)","4. Correlation, License ROI & Framework Scoring","5. Generating ZeroTrustLens Reports"]'
+            '["1. ZeroTrustAssessment (Tenant Data & Checks)","2. CISA ScubaGear (Security Baselines)","3. Microsoft ORCA (Defender for Office 365)","4. Correlation, License ROI & Framework Scoring","5. Generating TenantBrief Reports"]'
         }
         $noticeTxt = if ($isTrUi) {
             'Bilgi: Kiracı büyüklüğüne bağlı olarak tarama birkaç dakikadan 30+ dakikaya kadar sürebilir. Hata mesajı görmediğiniz sürece PowerShell penceresini kapatmayın.'
@@ -411,14 +411,14 @@ function New-ZtLensProgressDashboard {
         })
         $asyncHandle = $ps.BeginInvoke()
         $progressJob = @{ Ps = $ps; Handle = $asyncHandle; Rs = $rs }
-        Write-Host "[ZeroTrustLens] Live progress dashboard: http://localhost:$selectedPort/" -ForegroundColor Green
+        Write-Host "[TenantBrief] Live progress dashboard: http://localhost:$selectedPort/" -ForegroundColor Green
         Start-Process "http://localhost:$selectedPort/"
     }
 
     return $progressJob
 }
 
-function Invoke-ZtLensBaselineCollections {
+function Invoke-TenantBriefBaselineCollections {
     [CmdletBinding()]
     param(
         [Parameter(Mandatory = $true)]
@@ -447,13 +447,13 @@ function Invoke-ZtLensBaselineCollections {
     $markStage = {
         param([int]$StageNumber, [string]$StageName, [string]$StageStatus, [string]$StageMessage)
         if (-not $Manifest -or -not $ManifestPath) { return }
-        Set-ZtLensStage -Manifest $Manifest -Stage $StageNumber -Name $StageName -Status $StageStatus -Message $StageMessage
-        Save-ZtLensRunManifest -Manifest $Manifest -Path $ManifestPath -Diagnostics $Diagnostics
+        Set-TenantBriefStage -Manifest $Manifest -Stage $StageNumber -Name $StageName -Status $StageStatus -Message $StageMessage
+        Save-TenantBriefRunManifest -Manifest $Manifest -Path $ManifestPath -Diagnostics $Diagnostics
     }
     $note = {
         param([int]$StageNumber, [string]$Component, [string]$Note)
         if ($null -eq $Diagnostics) { return }
-        Add-ZtLensDiagnostic -Diagnostics $Diagnostics -Stage $StageNumber -Component $Component -Message $Note
+        Add-TenantBriefDiagnostic -Diagnostics $Diagnostics -Stage $StageNumber -Component $Component -Message $Note
     }
 
     $collected = @()
@@ -663,7 +663,7 @@ function Invoke-ZtLensBaselineCollections {
     return $collected
 }
 
-function Get-ZtLensPropertyValue {
+function Get-TenantBriefPropertyValue {
     [CmdletBinding()]
     param(
         [Parameter(Mandatory = $false)]
@@ -681,7 +681,7 @@ function Get-ZtLensPropertyValue {
     return $null
 }
 
-function New-ZtLensCorrelatedTests {
+function New-TenantBriefCorrelatedTests {
     [CmdletBinding()]
     param(
         [Parameter(Mandatory = $true)]
@@ -698,49 +698,49 @@ function New-ZtLensCorrelatedTests {
     foreach ($t in @($Tests)) {
         if ($null -eq $t) { continue }
 
-        $title = [string](Get-ZtLensPropertyValue -Object $t -Name 'TestTitle')
+        $title = [string](Get-TenantBriefPropertyValue -Object $t -Name 'TestTitle')
         # Trim after collapsing separators: a title ending in punctuation would otherwise keep a
         # trailing space and never match its counterpart from another engine.
         $normTitle = ($title.ToLowerInvariant().Trim() -replace '[^a-z0-9]+', ' ').Trim()
-        if (-not $normTitle) { $normTitle = [string](Get-ZtLensPropertyValue -Object $t -Name 'TestId') }
+        if (-not $normTitle) { $normTitle = [string](Get-TenantBriefPropertyValue -Object $t -Name 'TestId') }
 
-        $pillar = [string](Get-ZtLensPropertyValue -Object $t -Name 'TestPillar')
+        $pillar = [string](Get-TenantBriefPropertyValue -Object $t -Name 'TestPillar')
 
         if ($correlated.Contains($normTitle)) {
             $existing = $correlated[$normTitle]
             if ($pillar -and ($existing.TestPillar -notcontains $pillar)) {
                 $existing.TestPillar = @($existing.TestPillar) + $pillar
             }
-            $newStatus = [string](Get-ZtLensPropertyValue -Object $t -Name 'TestStatus')
+            $newStatus = [string](Get-TenantBriefPropertyValue -Object $t -Name 'TestStatus')
             if (($statusRank[$newStatus] ?? 0) -gt ($statusRank[[string]$existing.TestStatus] ?? 0)) {
                 $existing.TestStatus = $newStatus
             }
-            $newRisk = [string](Get-ZtLensPropertyValue -Object $t -Name 'TestRisk')
+            $newRisk = [string](Get-TenantBriefPropertyValue -Object $t -Name 'TestRisk')
             if (($riskRank[$newRisk] ?? 0) -gt ($riskRank[[string]$existing.TestRisk] ?? 0)) {
                 $existing.TestRisk = $newRisk
             }
             # Keep the richest metadata available from any engine reporting the same control.
             foreach ($field in $enrichable) {
-                $incoming = Get-ZtLensPropertyValue -Object $t -Name $field
-                if ($incoming -and -not (Get-ZtLensPropertyValue -Object $existing -Name $field)) {
+                $incoming = Get-TenantBriefPropertyValue -Object $t -Name $field
+                if ($incoming -and -not (Get-TenantBriefPropertyValue -Object $existing -Name $field)) {
                     $existing.$field = $incoming
                 }
             }
         } else {
             $correlated[$normTitle] = [PSCustomObject]@{
-                TestId                 = Get-ZtLensPropertyValue -Object $t -Name 'TestId'
-                TestTitle              = Get-ZtLensPropertyValue -Object $t -Name 'TestTitle'
-                TestStatus             = Get-ZtLensPropertyValue -Object $t -Name 'TestStatus'
-                TestRisk               = Get-ZtLensPropertyValue -Object $t -Name 'TestRisk'
+                TestId                 = Get-TenantBriefPropertyValue -Object $t -Name 'TestId'
+                TestTitle              = Get-TenantBriefPropertyValue -Object $t -Name 'TestTitle'
+                TestStatus             = Get-TenantBriefPropertyValue -Object $t -Name 'TestStatus'
+                TestRisk               = Get-TenantBriefPropertyValue -Object $t -Name 'TestRisk'
                 TestPillar             = @($pillar)
-                TestCategory           = Get-ZtLensPropertyValue -Object $t -Name 'TestCategory'
-                TestSfiPillar          = Get-ZtLensPropertyValue -Object $t -Name 'TestSfiPillar'
-                TestImplementationCost = Get-ZtLensPropertyValue -Object $t -Name 'TestImplementationCost'
-                TestMinimumLicense     = Get-ZtLensPropertyValue -Object $t -Name 'TestMinimumLicense'
-                SkippedReason          = Get-ZtLensPropertyValue -Object $t -Name 'SkippedReason'
-                TestResult             = Get-ZtLensPropertyValue -Object $t -Name 'TestResult'
-                TestImpact             = Get-ZtLensPropertyValue -Object $t -Name 'TestImpact'
-                TestDescription        = Get-ZtLensPropertyValue -Object $t -Name 'TestDescription'
+                TestCategory           = Get-TenantBriefPropertyValue -Object $t -Name 'TestCategory'
+                TestSfiPillar          = Get-TenantBriefPropertyValue -Object $t -Name 'TestSfiPillar'
+                TestImplementationCost = Get-TenantBriefPropertyValue -Object $t -Name 'TestImplementationCost'
+                TestMinimumLicense     = Get-TenantBriefPropertyValue -Object $t -Name 'TestMinimumLicense'
+                SkippedReason          = Get-TenantBriefPropertyValue -Object $t -Name 'SkippedReason'
+                TestResult             = Get-TenantBriefPropertyValue -Object $t -Name 'TestResult'
+                TestImpact             = Get-TenantBriefPropertyValue -Object $t -Name 'TestImpact'
+                TestDescription        = Get-TenantBriefPropertyValue -Object $t -Name 'TestDescription'
             }
         }
     }
@@ -748,7 +748,7 @@ function New-ZtLensCorrelatedTests {
     return @($correlated.Values)
 }
 
-function Get-ZtLensFrameworkScorecard {
+function Get-TenantBriefFrameworkScorecard {
     [CmdletBinding()]
     param(
         [Parameter(Mandatory = $true)][AllowEmptyCollection()][object[]]$Tests,
@@ -804,7 +804,7 @@ function Get-ZtLensFrameworkScorecard {
     }
 }
 
-function New-ZtLensFindings {
+function New-TenantBriefFindings {
     [CmdletBinding()]
     param(
         [Parameter(Mandatory = $true)][AllowEmptyCollection()][object[]]$Tests,
@@ -814,7 +814,7 @@ function New-ZtLensFindings {
     )
 
     foreach ($t in @($Tests)) {
-        $pillarRaw = Get-ZtLensPropertyValue -Object $t -Name 'TestPillar'
+        $pillarRaw = Get-TenantBriefPropertyValue -Object $t -Name 'TestPillar'
         $pillarStr = if ($pillarRaw -is [System.Array]) { ($pillarRaw -join ', ') } else { [string]$pillarRaw }
         $primaryPillar = if ($pillarRaw -is [System.Array]) { [string]$pillarRaw[0] } else { [string]$pillarRaw }
         $fwRef = if ($PillarMap -and $primaryPillar -and $PillarMap.PSObject.Properties[$primaryPillar]) {
@@ -822,10 +822,10 @@ function New-ZtLensFindings {
         } else {
             'General Control'
         }
-        $fTitle = [string](Get-ZtLensPropertyValue -Object $t -Name 'TestTitle')
-        $fDesc  = [string](Get-ZtLensPropertyValue -Object $t -Name 'TestDescription')
-        $fImp   = [string](Get-ZtLensPropertyValue -Object $t -Name 'TestImpact')
-        $tid    = [string](Get-ZtLensPropertyValue -Object $t -Name 'TestId')
+        $fTitle = [string](Get-TenantBriefPropertyValue -Object $t -Name 'TestTitle')
+        $fDesc  = [string](Get-TenantBriefPropertyValue -Object $t -Name 'TestDescription')
+        $fImp   = [string](Get-TenantBriefPropertyValue -Object $t -Name 'TestImpact')
+        $tid    = [string](Get-TenantBriefPropertyValue -Object $t -Name 'TestId')
         if ($Language -eq 'tr' -and $TranslationCache.ContainsKey($tid)) {
             if ($TranslationCache[$tid].Title) { $fTitle = [string]$TranslationCache[$tid].Title }
             if ($TranslationCache[$tid].Desc)  { $fDesc  = [string]$TranslationCache[$tid].Desc }
@@ -833,7 +833,7 @@ function New-ZtLensFindings {
         if ($Language -eq 'tr' -and $fImp) {
             $fImp = $fImp -replace '^High$', 'Yüksek' -replace '^Medium$', 'Orta' -replace '^Low$', 'Düşük'
         }
-        $statusRaw = Get-ZtLensPropertyValue -Object $t -Name 'TestStatus'
+        $statusRaw = Get-TenantBriefPropertyValue -Object $t -Name 'TestStatus'
         $portalName = switch ($primaryPillar) {
             'Identity'                        { 'Microsoft Entra yönetim merkezi (entra.microsoft.com)' }
             'Devices'                         { 'Microsoft Intune yönetim merkezi (intune.microsoft.com)' }
@@ -851,15 +851,15 @@ function New-ZtLensFindings {
         $remTr = if ($statusRaw -in @('Failed', 'Investigate')) {
             "1. $portalName üzerinden '$fTitle' kontrolüne karşılık gelen ilkeyi açın. 2. Değişikliği önce Denetim (Report-only) kipinde pilot gruba uygulayıp oturum açma/olay günlüklerini doğrulayın. 3. Etki analizi sonrası kademeli olarak Zorunlu (Enforce) durumuna geçin."
         } else { '' }
-        $minLicRaw = Get-ZtLensPropertyValue -Object $t -Name 'TestMinimumLicense'
+        $minLicRaw = Get-TenantBriefPropertyValue -Object $t -Name 'TestMinimumLicense'
         $minLicStr = if ($minLicRaw -is [System.Array]) { ($minLicRaw -join ', ') } else { [string]$minLicRaw }
-        $implCostRaw = Get-ZtLensPropertyValue -Object $t -Name 'TestImplementationCost'
-        $categoryRaw = Get-ZtLensPropertyValue -Object $t -Name 'TestCategory'
-        $sfiRaw      = Get-ZtLensPropertyValue -Object $t -Name 'TestSfiPillar'
-        $riskRaw     = Get-ZtLensPropertyValue -Object $t -Name 'TestRisk'
-        $resultRaw   = Get-ZtLensPropertyValue -Object $t -Name 'TestResult'
-        $skippedRaw  = Get-ZtLensPropertyValue -Object $t -Name 'SkippedReason'
-        $idRaw       = Get-ZtLensPropertyValue -Object $t -Name 'TestId'
+        $implCostRaw = Get-TenantBriefPropertyValue -Object $t -Name 'TestImplementationCost'
+        $categoryRaw = Get-TenantBriefPropertyValue -Object $t -Name 'TestCategory'
+        $sfiRaw      = Get-TenantBriefPropertyValue -Object $t -Name 'TestSfiPillar'
+        $riskRaw     = Get-TenantBriefPropertyValue -Object $t -Name 'TestRisk'
+        $resultRaw   = Get-TenantBriefPropertyValue -Object $t -Name 'TestResult'
+        $skippedRaw  = Get-TenantBriefPropertyValue -Object $t -Name 'SkippedReason'
+        $idRaw       = Get-TenantBriefPropertyValue -Object $t -Name 'TestId'
 
         [PSCustomObject]@{
             Id                 = $idRaw
@@ -884,7 +884,7 @@ function New-ZtLensFindings {
 
 #endregion
 
-function Invoke-ZtLensAssessment {
+function Invoke-TenantBriefAssessment {
     <#
     .SYNOPSIS
     Runs the read-only assessment pipeline and writes HTML, JSON and executive-summary reports.
@@ -894,7 +894,7 @@ function Invoke-ZtLensAssessment {
     correlation/license/framework scoring, and report generation.
     
     Without -InputReportJson the function talks to the live tenant and requires an active
-    session from Connect-ZtLens. With -InputReportJson it analyses an existing
+    session from Connect-TenantBrief. With -InputReportJson it analyses an existing
     ZeroTrustAssessmentReport.json completely offline and performs no Graph call at all.
     
     All output is written under -OutputPath; the console prints the artifact paths. No
@@ -905,7 +905,7 @@ function Invoke-ZtLensAssessment {
     run-manifest.json with per-stage status and any degraded sub-analysis.
 
     .EXAMPLE
-    Invoke-ZtLensAssessment -InputReportJson .\ZeroTrustAssessmentReport.json `
+    Invoke-TenantBriefAssessment -InputReportJson .\ZeroTrustAssessmentReport.json `
     -OutputPath .\demo -Language en -Anonymize -NoBrowser
     #>
     [CmdletBinding()]
@@ -915,7 +915,7 @@ function Invoke-ZtLensAssessment {
         [string]$InputReportJson,
 
         [Parameter()]
-        [string]$OutputPath = (Join-Path (Get-Location).Path 'ZeroTrustLensReport'),
+        [string]$OutputPath = (Join-Path (Get-Location).Path 'TenantBriefReport'),
 
         [Parameter()]
         [ValidateSet('tr', 'en')]
@@ -943,8 +943,8 @@ function Invoke-ZtLensAssessment {
 
     $OutputPath = $ExecutionContext.SessionState.Path.GetUnresolvedProviderPathFromPSPath($OutputPath)
     if ($OutputPath -like "$($env:SystemRoot)*") {
-        $fallbackBase = Join-Path $HOME 'ZeroTrustLensReport'
-        Write-Warning "[ZeroTrustLens] '$OutputPath' is inside a system-protected folder. Redirecting report output to '$fallbackBase'."
+        $fallbackBase = Join-Path $HOME 'TenantBriefReport'
+        Write-Warning "[TenantBrief] '$OutputPath' is inside a system-protected folder. Redirecting report output to '$fallbackBase'."
         $OutputPath = $fallbackBase
     }
 
@@ -952,7 +952,7 @@ function Invoke-ZtLensAssessment {
     $resumeNote = $null
     if ($Resume -and -not $InputReportJson) {
         if (-not (Test-Path $OutputPath)) {
-            throw "-Resume: '$OutputPath' bulunamadi. Once bir tarama klasoru verin (or. `$HOME\ZeroTrustLensReport)."
+            throw "-Resume: '$OutputPath' bulunamadi. Once bir tarama klasoru verin (or. `$HOME\TenantBriefReport)."
         }
         $resumeSource = Get-ChildItem -Path $OutputPath -Filter 'ZeroTrustAssessmentReport.json' -Recurse -File -ErrorAction SilentlyContinue |
             Sort-Object LastWriteTime -Descending | Select-Object -First 1
@@ -963,13 +963,13 @@ function Invoke-ZtLensAssessment {
         $runRoot = Split-Path -Path (Split-Path -Path (Split-Path -Path $resumeSource.FullName -Parent) -Parent) -Parent
         if ($runRoot -and (Test-Path (Join-Path $runRoot 'raw-zt'))) { $OutputPath = $runRoot }
         $resumeNote = "Stage 1 yeniden kullanildi: $($resumeSource.FullName)"
-        Write-Host "[ZeroTrustLens] -Resume: Stage 1 atlandi, mevcut tarama kullaniliyor -> $($resumeSource.FullName)" -ForegroundColor Yellow
+        Write-Host "[TenantBrief] -Resume: Stage 1 atlandi, mevcut tarama kullaniliyor -> $($resumeSource.FullName)" -ForegroundColor Yellow
     }
 
     if (-not $InputReportJson) {
         $mgCheck = Get-MgContext -ErrorAction SilentlyContinue
         if (-not $mgCheck) {
-            throw "Authentication required or was canceled. Run Connect-ZtLens and complete sign-in before Invoke-ZtLensAssessment."
+            throw "Authentication required or was canceled. Run Connect-TenantBrief and complete sign-in before Invoke-TenantBriefAssessment."
         }
         if (-not (Get-Module -ListAvailable -Name 'ZeroTrustAssessment')) {
             throw "Required module 'ZeroTrustAssessment' is not installed. Run: Install-Module ZeroTrustAssessment -Scope CurrentUser"
@@ -987,11 +987,11 @@ function Invoke-ZtLensAssessment {
         if (-not (Test-Path $OutputPath)) {
             $null = New-Item -ItemType Directory -Path $OutputPath -Force -ErrorAction Stop
         }
-        $writeProbe = Join-Path $OutputPath '.ztl_write_probe'
+        $writeProbe = Join-Path $OutputPath '.tb_write_probe'
         [System.IO.File]::WriteAllText($writeProbe, 'ok')
         Remove-Item -Path $writeProbe -Force -ErrorAction SilentlyContinue
     } catch {
-        throw "OutputPath '$OutputPath' is not writable: $($_.Exception.Message). Specify a writable folder with -OutputPath `"$HOME\ZeroTrustLensReport`"."
+        throw "OutputPath '$OutputPath' is not writable: $($_.Exception.Message). Specify a writable folder with -OutputPath `"$HOME\TenantBriefReport`"."
     }
 
     $rawOut = Join-Path $OutputPath 'raw-zt'
@@ -1000,7 +1000,7 @@ function Invoke-ZtLensAssessment {
     $diagnostics = [System.Collections.Generic.List[object]]::new()
     $manifestPath = Join-Path $OutputPath 'run-manifest.json'
     $moduleVersion = ''
-    try { $moduleVersion = (Get-Module ZeroTrustLens).Version.ToString() } catch {}
+    try { $moduleVersion = (Get-Module TenantBrief).Version.ToString() } catch {}
     $manifest = [PSCustomObject]@{
         StartedAt         = (Get-Date).ToString('o')
         UpdatedAt         = $null
@@ -1017,11 +1017,11 @@ function Invoke-ZtLensAssessment {
     }
     $markStage = {
         param([int]$StageNumber, [string]$StageName, [string]$StageStatus, [string]$StageMessage)
-        Set-ZtLensStage -Manifest $manifest -Stage $StageNumber -Name $StageName -Status $StageStatus -Message $StageMessage
-        Save-ZtLensRunManifest -Manifest $manifest -Path $manifestPath -Diagnostics $diagnostics
+        Set-TenantBriefStage -Manifest $manifest -Stage $StageNumber -Name $StageName -Status $StageStatus -Message $StageMessage
+        Save-TenantBriefRunManifest -Manifest $manifest -Path $manifestPath -Diagnostics $diagnostics
     }
     if ($resumeNote) {
-        Add-ZtLensDiagnostic -Diagnostics $diagnostics -Stage 1 -Component 'Resume' -Message $resumeNote
+        Add-TenantBriefDiagnostic -Diagnostics $diagnostics -Stage 1 -Component 'Resume' -Message $resumeNote
     }
     if ($InputReportJson) {
         & $markStage 1 'ZeroTrustAssessment' 'skipped' 'Offline mode: -InputReportJson supplied, tenant was not contacted.'
@@ -1061,7 +1061,7 @@ function Invoke-ZtLensAssessment {
     try {
     $progressJob = $null
     if (-not $NoBrowser -and -not $InputReportJson) {
-        $progressJob = New-ZtLensProgressDashboard -Language $Language -State $progressState -ZtDict $ztProgressDict
+        $progressJob = New-TenantBriefProgressDashboard -Language $Language -State $progressState -ZtDict $ztProgressDict
     }
 
     $sourceJsonPath = $InputReportJson
@@ -1095,12 +1095,12 @@ function Invoke-ZtLensAssessment {
     $collectedTests = @()
     if (-not $InputReportJson) {
         $accountName = if ($mgCheck -and $mgCheck.Account) { [string]$mgCheck.Account } else { '' }
-        $collectedTests = @(Invoke-ZtLensBaselineCollections -OutputPath $OutputPath -Account $accountName -Log $addLog -State $progressState -Diagnostics $diagnostics -Manifest $manifest -ManifestPath $manifestPath)
+        $collectedTests = @(Invoke-TenantBriefBaselineCollections -OutputPath $OutputPath -Account $accountName -Log $addLog -State $progressState -Diagnostics $diagnostics -Manifest $manifest -ManifestPath $manifestPath)
     } else {
         & $markStage 2 'CISA ScubaGear' 'skipped' 'Offline mode: -InputReportJson supplied, ScubaGear was not executed.'
         & $markStage 3 'Microsoft ORCA' 'skipped' 'Offline mode: -InputReportJson supplied, ORCA was not executed.'
     }
-    $tests = New-ZtLensCorrelatedTests -Tests (@($ztTests) + @($collectedTests))
+    $tests = New-TenantBriefCorrelatedTests -Tests (@($ztTests) + @($collectedTests))
     $progressState.Stage = 4
     & $markStage 4 'Correlation & scoring' 'started' ''
     & $addLog "[Stage 4/5] Computing License ROI, Secure Score & Multi-Framework Scores..."
@@ -1121,7 +1121,7 @@ function Invoke-ZtLensAssessment {
     $baseScore = if ($evaluatedTotal -gt 0) { [math]::Round(($passedCount / $evaluatedTotal) * 100, 1) } else { 0 }
 
     $selectedFwIds = if ($Framework -eq 'All') { @('ZeroTrust', 'ISO27001', 'NIST_CSF_2', 'CIS_M365', 'KVKK_TR') } else { @($Framework) }
-    $frameworkCards = Get-ZtLensFrameworkScorecard -Tests $tests -FrameworkConfig $fwConfig -FrameworkIds $selectedFwIds -Language $Language
+    $frameworkCards = Get-TenantBriefFrameworkScorecard -Tests $tests -FrameworkConfig $fwConfig -FrameworkIds $selectedFwIds -Language $Language
 
     # License ROI & Blind Spot Analysis from SkippedReason
     $licenseGaps = @{}
@@ -1188,7 +1188,7 @@ function Invoke-ZtLensAssessment {
             if ($k -and -not $trCache.ContainsKey($k)) { $toTranslate += $t }
         }
         if ($toTranslate.Count -gt 0) {
-            Write-Host "[ZeroTrustLens] Translating $($toTranslate.Count) controls via Azure AI Translator..." -ForegroundColor Cyan
+            Write-Host "[TenantBrief] Translating $($toTranslate.Count) controls via Azure AI Translator..." -ForegroundColor Cyan
             for ($i = 0; $i -lt $toTranslate.Count; $i += 15) {
                 $chunk = $toTranslate[$i..([Math]::Min($i + 14, $toTranslate.Count - 1))]
                 $payload = @()
@@ -1212,7 +1212,7 @@ function Invoke-ZtLensAssessment {
                         if ($attempt -eq 1 -and $_.Exception.Message -match '429') {
                             Start-Sleep -Seconds 25
                         } else {
-                            Write-Warning "[ZeroTrustLens] Translator batch skipped: $($_.Exception.Message)"
+                            Write-Warning "[TenantBrief] Translator batch skipped: $($_.Exception.Message)"
                         }
                     }
                 }
@@ -1231,7 +1231,7 @@ function Invoke-ZtLensAssessment {
         }
     }
 
-    $findings = New-ZtLensFindings -Tests $tests -PillarMap $pillarMap -Language $Language -TranslationCache $trCache
+    $findings = New-TenantBriefFindings -Tests $tests -PillarMap $pillarMap -Language $Language -TranslationCache $trCache
 
     $tenantDisplay = if ($Anonymize) { 'contoso.onmicrosoft.com (Anonymized)' } else { [string]$raw.Domain }
     $ti = $raw.PSObject.Properties['TenantInfo'].Value
@@ -1280,23 +1280,23 @@ function Invoke-ZtLensAssessment {
                 $subResp = Invoke-MgGraphRequest -Method GET -Uri 'https://graph.microsoft.com/v1.0/subscribedSkus' -ErrorAction SilentlyContinue
                 $liveSkus = if ($subResp -and $subResp.value) { @($subResp.value) } else { @() }
                 if ($liveSkus.Count -gt 0) {
-                    $skuRoiList = @(Get-ZtLensLicenseRoi -SubscribedSkus $liveSkus)
-                    try { $licenseWaste = Get-ZtLensLicenseWaste -SubscribedSkus $liveSkus -Language $Language }
+                    $skuRoiList = @(Get-TenantBriefLicenseRoi -SubscribedSkus $liveSkus)
+                    try { $licenseWaste = Get-TenantBriefLicenseWaste -SubscribedSkus $liveSkus -Language $Language }
                     catch {
-                        Add-ZtLensDiagnostic -Diagnostics $diagnostics -Stage 4 -Component 'LicenseWaste' -Message "R1-R7 lisans israfi analizi tamamlanamadi: $($_.Exception.Message)"
-                        Write-Warning "[ZeroTrustLens] License waste analysis failed: $($_.Exception.Message)"
+                        Add-TenantBriefDiagnostic -Diagnostics $diagnostics -Stage 4 -Component 'LicenseWaste' -Message "R1-R7 lisans israfi analizi tamamlanamadi: $($_.Exception.Message)"
+                        Write-Warning "[TenantBrief] License waste analysis failed: $($_.Exception.Message)"
                     }
                 } else {
-                    Add-ZtLensDiagnostic -Diagnostics $diagnostics -Stage 4 -Component 'LicenseROI' -Message 'Graph /subscribedSkus bos dondu: lisans ROI ve israf bolumleri bu raporda yok.'
+                    Add-TenantBriefDiagnostic -Diagnostics $diagnostics -Stage 4 -Component 'LicenseROI' -Message 'Graph /subscribedSkus bos dondu: lisans ROI ve israf bolumleri bu raporda yok.'
                 }
                 try {
                     $crParams = @{ Language = $Language; TenantInsights = $tenantInsightObj }
                     if ($liveSkus.Count -gt 0) { $crParams['SubscribedSkus'] = $liveSkus }
                     if ($InputFastTrackJsonPath) { $crParams['InputFastTrackJsonPath'] = $InputFastTrackJsonPath }
-                    $copilotReadiness = Get-ZtLensCopilotReadiness @crParams
+                    $copilotReadiness = Get-TenantBriefCopilotReadiness @crParams
                 } catch {
-                    Add-ZtLensDiagnostic -Diagnostics $diagnostics -Stage 4 -Component 'CopilotReadiness' -Message "Copilot hazirlik degerlendirmesi basarisiz: $($_.Exception.Message)"
-                    Write-Warning "[ZeroTrustLens] Copilot readiness evaluation failed: $($_.Exception.Message)"
+                    Add-TenantBriefDiagnostic -Diagnostics $diagnostics -Stage 4 -Component 'CopilotReadiness' -Message "Copilot hazirlik degerlendirmesi basarisiz: $($_.Exception.Message)"
+                    Write-Warning "[TenantBrief] Copilot readiness evaluation failed: $($_.Exception.Message)"
                 }
                 $scResp = Invoke-MgGraphRequest -Method GET -Uri 'https://graph.microsoft.com/v1.0/security/secureScores?$top=1' -ErrorAction SilentlyContinue
                 if ($scResp -and $scResp.value -and $scResp.value.Count -gt 0) {
@@ -1306,11 +1306,11 @@ function Invoke-ZtLensAssessment {
                     $tenantInsightObj.SecureScoreMax = $secureMax
                 }
             } else {
-                Add-ZtLensDiagnostic -Diagnostics $diagnostics -Stage 4 -Component 'Graph' -Message 'Aktif Graph oturumu bulunamadi: lisans ROI, israf ve Copilot bolumleri uretilemedi.'
+                Add-TenantBriefDiagnostic -Diagnostics $diagnostics -Stage 4 -Component 'Graph' -Message 'Aktif Graph oturumu bulunamadi: lisans ROI, israf ve Copilot bolumleri uretilemedi.'
             }
         } catch {
-            Add-ZtLensDiagnostic -Diagnostics $diagnostics -Stage 4 -Component 'Graph' -Message "Lisans/Copilot verisi alinamadi: $($_.Exception.Message)"
-            Write-Warning "[ZeroTrustLens] Stage 4 data collection failed: $($_.Exception.Message)"
+            Add-TenantBriefDiagnostic -Diagnostics $diagnostics -Stage 4 -Component 'Graph' -Message "Lisans/Copilot verisi alinamadi: $($_.Exception.Message)"
+            Write-Warning "[TenantBrief] Stage 4 data collection failed: $($_.Exception.Message)"
         }
     }
 
@@ -1318,14 +1318,14 @@ function Invoke-ZtLensAssessment {
         try {
             $offParams = @{ Language = $Language; TenantInsights = $tenantInsightObj; OfflineOnly = $true }
             if ($InputFastTrackJsonPath) { $offParams['InputFastTrackJsonPath'] = $InputFastTrackJsonPath }
-            $copilotReadiness = Get-ZtLensCopilotReadiness @offParams
+            $copilotReadiness = Get-TenantBriefCopilotReadiness @offParams
         } catch {
-            Add-ZtLensDiagnostic -Diagnostics $diagnostics -Stage 4 -Component 'CopilotReadiness' -Message "Cevrimdisi Copilot degerlendirmesi de basarisiz: $($_.Exception.Message)"
-            Write-Warning "[ZeroTrustLens] Copilot readiness evaluation warning: $($_.Exception.Message)"
+            Add-TenantBriefDiagnostic -Diagnostics $diagnostics -Stage 4 -Component 'CopilotReadiness' -Message "Cevrimdisi Copilot degerlendirmesi de basarisiz: $($_.Exception.Message)"
+            Write-Warning "[TenantBrief] Copilot readiness evaluation warning: $($_.Exception.Message)"
         }
     }
     if (-not $licenseWaste -and -not $InputReportJson) {
-        Add-ZtLensDiagnostic -Diagnostics $diagnostics -Stage 4 -Component 'LicenseWaste' -Message 'Lisans israfi (R1-R7) bolumu bu raporda bos.'
+        Add-TenantBriefDiagnostic -Diagnostics $diagnostics -Stage 4 -Component 'LicenseWaste' -Message 'Lisans israfi (R1-R7) bolumu bu raporda bos.'
     }
 
     $totalIdleMo = if ($skuRoiList.Count -gt 0) {
@@ -1358,7 +1358,7 @@ function Invoke-ZtLensAssessment {
             StartedAt     = $manifest.StartedAt
             CompletedAt   = (Get-Date).ToString('o')
             Resumed       = [bool]$resumeNote
-            SourceReport  = $InputReportJson
+            SourceReport  = if ($Anonymize -and $InputReportJson) { Split-Path -Path $InputReportJson -Leaf } else { $InputReportJson }
             Stages        = @($manifest.Stages)
         }
         Diagnostics      = @($diagnostics)
@@ -1391,14 +1391,14 @@ function Invoke-ZtLensAssessment {
         }
     }
 
-    $reportJsonPath = Join-Path $OutputPath "ZeroTrustLensReport-$($Language.ToUpper()).json"
+    $reportJsonPath = Join-Path $OutputPath "TenantBriefReport-$($Language.ToUpper()).json"
     $reportObj | ConvertTo-Json -Depth 6 | Set-Content -Path $reportJsonPath -Encoding UTF8
 
     $template = Get-Content -Path $script:ReportTemplatePath -Raw -Encoding UTF8
     $isTr = $Language -eq 'tr'
     $replacements = @{
         '{{LANG}}'               = $Language
-        '{{TITLE}}'              = if ($isTr) { "ZeroTrustLens Raporu — $tenantDisplay" } else { "ZeroTrustLens Report — $tenantDisplay" }
+        '{{TITLE}}'              = if ($isTr) { "TenantBrief Raporu — $tenantDisplay" } else { "TenantBrief Report — $tenantDisplay" }
         '{{HEADER_TITLE}}'       = if ($isTr) { 'Sıfır Güven, Lisans ROI ve Uyumluluk Analizi' } else { 'Zero Trust, License ROI & Compliance Assessment' }
         '{{SUBTITLE}}'           = if ($isTr) { "Kiracı: $tenantDisplay · Çerçeve: $Framework" } else { "Tenant: $tenantDisplay · Framework: $Framework" }
         '{{READONLY_BADGE}}'     = if ($isTr) { 'Salt Okunur (Read-Only)' } else { 'Read-Only Mode' }
@@ -1453,24 +1453,24 @@ function Invoke-ZtLensAssessment {
     $progressState.Stage = 5
     & $markStage 5 'Report generation' 'started' ''
     & $addLog "[Stage 5/5] Writing HTML, JSON and Executive Summary reports..."
-    $reportHtmlPath = Join-Path $OutputPath "ZeroTrustLensReport-$($Language.ToUpper()).html"
+    $reportHtmlPath = Join-Path $OutputPath "TenantBriefReport-$($Language.ToUpper()).html"
     $html | Set-Content -Path $reportHtmlPath -Encoding UTF8
 
-    $execSummaryPath = Join-Path $OutputPath "ZeroTrustLens-ExecutiveSummary-$($Language.ToUpper()).html"
-    $null = Export-ZtLensExecutiveSummary -InputLensJsonPath $reportJsonPath -OutputHtmlPath $execSummaryPath -Language $Language
+    $execSummaryPath = Join-Path $OutputPath "TenantBrief-ExecutiveSummary-$($Language.ToUpper()).html"
+    $null = Export-TenantBriefExecutiveSummary -InputJsonPath $reportJsonPath -OutputHtmlPath $execSummaryPath -Language $Language
 
     & $markStage 5 'Report generation' 'completed' "HTML/JSON/ExecutiveSummary written to $OutputPath"
-    Save-ZtLensRunManifest -Manifest $manifest -Path $manifestPath -Status $runStatus -Diagnostics $diagnostics
+    Save-TenantBriefRunManifest -Manifest $manifest -Path $manifestPath -Status $runStatus -Diagnostics $diagnostics
 
     $progressState.Done = $true
     Start-Sleep -Seconds 2
     } catch {
         $failedStage = [int]$progressState.Stage
         $progressState.Error = $_.Exception.Message
-        Add-ZtLensDiagnostic -Diagnostics $diagnostics -Stage $failedStage -Component 'Pipeline' -Message $_.Exception.Message
+        Add-TenantBriefDiagnostic -Diagnostics $diagnostics -Stage $failedStage -Component 'Pipeline' -Message $_.Exception.Message
         try {
-            Set-ZtLensStage -Manifest $manifest -Stage $failedStage -Name "Stage $failedStage" -Status 'failed' -Message $_.Exception.Message
-            Save-ZtLensRunManifest -Manifest $manifest -Path $manifestPath -Status 'failed' -Diagnostics $diagnostics
+            Set-TenantBriefStage -Manifest $manifest -Stage $failedStage -Name "Stage $failedStage" -Status 'failed' -Message $_.Exception.Message
+            Save-TenantBriefRunManifest -Manifest $manifest -Path $manifestPath -Status 'failed' -Diagnostics $diagnostics
         } catch {}
         Start-Sleep -Seconds 3
         throw
@@ -1482,7 +1482,7 @@ function Invoke-ZtLensAssessment {
         }
     }
 
-    Write-Host "[ZeroTrustLens] Report generated: $reportHtmlPath" -ForegroundColor Green
+    Write-Host "[TenantBrief] Report generated: $reportHtmlPath" -ForegroundColor Green
     if (-not $NoBrowser) {
         Start-Process $reportHtmlPath
     }
@@ -1495,7 +1495,7 @@ function Invoke-ZtLensAssessment {
     }
 }
 
-function Get-ZtLensLicenseRoi {
+function Get-TenantBriefLicenseRoi {
     <#
     .SYNOPSIS
     Computes purchased/assigned/idle seat ratios and idle USD estimate per SKU.
@@ -1505,7 +1505,7 @@ function Get-ZtLensLicenseRoi {
     data/sku-catalog.json to estimate unused spend per month.
 
     .EXAMPLE
-    Get-ZtLensLicenseRoi | Format-Table ProductName, Purchased, Assigned, Unassigned, EstimatedIdleUsdMo
+    Get-TenantBriefLicenseRoi | Format-Table ProductName, Purchased, Assigned, Unassigned, EstimatedIdleUsdMo
     #>
     [CmdletBinding()]
     [OutputType([PSCustomObject])]
@@ -1553,10 +1553,10 @@ function Get-ZtLensLicenseRoi {
     return @($results)
 }
 
-function Compare-ZtLensReports {
+function Compare-TenantBriefReports {
     <#
     .SYNOPSIS
-    Compares two ZeroTrustLens JSON reports and lists improved and regressed controls.
+    Compares two TenantBrief JSON reports and lists improved and regressed controls.
 
     .DESCRIPTION
     Matches findings by control Id. A control that moves to Passed is reported as improved;
@@ -1564,8 +1564,8 @@ function Compare-ZtLensReports {
     two assessment runs.
 
     .EXAMPLE
-    Compare-ZtLensReports -BaselineJsonPath .\old\ZeroTrustLensReport-TR.json `
-    -CurrentJsonPath .\new\ZeroTrustLensReport-TR.json
+    Compare-TenantBriefReports -BaselineJsonPath .\old\TenantBriefReport-TR.json `
+    -CurrentJsonPath .\new\TenantBriefReport-TR.json
     #>
     [CmdletBinding()]
     [OutputType([PSCustomObject])]
@@ -1614,7 +1614,7 @@ function Compare-ZtLensReports {
     }
 }
 
-function Export-ZtLensExecutiveSummary {
+function Export-TenantBriefExecutiveSummary {
     <#
     .SYNOPSIS
     Builds an offline Print-to-PDF executive brief from a report JSON.
@@ -1624,24 +1624,24 @@ function Export-ZtLensExecutiveSummary {
     the top high-risk remediations) that can be printed to PDF without any network access.
 
     .EXAMPLE
-    Export-ZtLensExecutiveSummary -InputLensJsonPath .\ZeroTrustLensReport-TR.json -Language tr
+    Export-TenantBriefExecutiveSummary -InputJsonPath .\TenantBriefReport-TR.json -Language tr
     #>
     [CmdletBinding()]
     [OutputType([string])]
     param(
         [Parameter(Mandatory = $true)]
-        [string]$InputLensJsonPath,
+        [Alias('InputLensJsonPath')][string]$InputJsonPath,
 
         [Parameter(Mandatory = $false)]
-        [string]$OutputHtmlPath = '.\ZeroTrustLens-ExecutiveSummary.html',
+        [string]$OutputHtmlPath = '.\TenantBrief-ExecutiveSummary.html',
 
         [Parameter(Mandatory = $false)]
         [ValidateSet('tr', 'en')]
         [string]$Language = 'tr'
     )
 
-    if (-not (Test-Path $InputLensJsonPath)) { throw "ZeroTrustLens JSON not found: $InputLensJsonPath" }
-    $data = Get-Content -Path $InputLensJsonPath -Raw -Encoding UTF8 | ConvertFrom-Json
+    if (-not (Test-Path $InputJsonPath)) { throw "TenantBrief JSON not found: $InputJsonPath" }
+    $data = Get-Content -Path $InputJsonPath -Raw -Encoding UTF8 | ConvertFrom-Json
     $title = if ($Language -eq 'tr') { 'Yönetici Özeti — Güvenlik Duruşu ve Lisans ROI' } else { 'Executive Summary — Security Posture & License ROI' }
 
     $diagProp = $data.PSObject.Properties['Diagnostics']
@@ -1679,7 +1679,7 @@ function Export-ZtLensExecutiveSummary {
 <html lang="$Language">
 <head>
 <meta charset="UTF-8" />
-<title>ZeroTrustLens - $title</title>
+<title>TenantBrief - $title</title>
 <style>
   body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; color: #0f172a; margin: 32px; }
   h1 { font-size: 22px; margin-bottom: 4px; }
@@ -1694,7 +1694,7 @@ function Export-ZtLensExecutiveSummary {
 </style>
 </head>
 <body>
-  <h1>ZeroTrustLens — $title</h1>
+  <h1>TenantBrief — $title</h1>
   <div class="sub">Generated: $(Get-Date -Format 'yyyy-MM-dd HH:mm') | Read-Only Assessment</div>
   $diagNote
   <div class="grid">
@@ -1719,7 +1719,7 @@ function Export-ZtLensExecutiveSummary {
     return (Resolve-Path $OutputHtmlPath).Path
 }
 
-function Get-ZtLensGraphCollection {
+function Get-TenantBriefGraphCollection {
     [CmdletBinding()]
     param(
         [Parameter(Mandatory = $true)]
@@ -1767,7 +1767,7 @@ function Get-ZtLensGraphCollection {
     return $items.ToArray()
 }
 
-function Get-ZtLensLicenseWaste {
+function Get-TenantBriefLicenseWaste {
     <#
     .SYNOPSIS
     Audits disabled, inactive, guest and overlapping licensed users (R1-R7).
@@ -1779,7 +1779,7 @@ function Get-ZtLensLicenseWaste {
     overlapping SKUs (R4) and licensed guests (R7).
 
     .EXAMPLE
-    Get-ZtLensLicenseWaste -InactiveDays 90 | Format-List
+    Get-TenantBriefLicenseWaste -InactiveDays 90 | Format-List
     #>
     [CmdletBinding()]
     [OutputType([PSCustomObject])]
@@ -1829,13 +1829,13 @@ function Get-ZtLensLicenseWaste {
     $signInChecked = $false
     if (-not $Users -and (Get-MgContext -ErrorAction SilentlyContinue)) {
         try {
-            $Users = @(Get-ZtLensGraphCollection -Uri 'https://graph.microsoft.com/v1.0/users?$select=id,displayName,userPrincipalName,accountEnabled,userType,assignedLicenses,signInActivity&$top=999' -ErrorAction Stop)
+            $Users = @(Get-TenantBriefGraphCollection -Uri 'https://graph.microsoft.com/v1.0/users?$select=id,displayName,userPrincipalName,accountEnabled,userType,assignedLicenses,signInActivity&$top=999' -ErrorAction Stop)
             $signInChecked = $true
         } catch {
             Write-Verbose "signInActivity alani okunamadi, pasif kullanici analizi atlanacak: $($_.Exception.Message)"
             $signInChecked = $false
             try {
-                $Users = @(Get-ZtLensGraphCollection -Uri 'https://graph.microsoft.com/v1.0/users?$select=id,displayName,userPrincipalName,accountEnabled,userType,assignedLicenses&$top=999' -ErrorAction SilentlyContinue)
+                $Users = @(Get-TenantBriefGraphCollection -Uri 'https://graph.microsoft.com/v1.0/users?$select=id,displayName,userPrincipalName,accountEnabled,userType,assignedLicenses&$top=999' -ErrorAction SilentlyContinue)
             } catch {
                 Write-Verbose "Kullanici listesi okunamadi: $($_.Exception.Message)"
                 $Users = $null
@@ -1943,7 +1943,7 @@ function Get-ZtLensLicenseWaste {
     }
 }
 
-function Get-ZtLensCopilotReadiness {
+function Get-TenantBriefCopilotReadiness {
     <#
     .SYNOPSIS
     Evaluates M365 Copilot / Agent 365 readiness with L1-L4 maturity and warnings.
@@ -1954,7 +1954,7 @@ function Get-ZtLensCopilotReadiness {
     -InputFastTrackJsonPath. Use -OfflineOnly to evaluate purely from supplied data.
 
     .EXAMPLE
-    Get-ZtLensCopilotReadiness -Language tr -OfflineOnly
+    Get-TenantBriefCopilotReadiness -Language tr -OfflineOnly
     #>
     [CmdletBinding()]
     [OutputType([PSCustomObject])]
@@ -2030,7 +2030,7 @@ function Get-ZtLensCopilotReadiness {
             Status      = 'Warning'
             Title       = if ($isTr) { 'Copilot ve Temel Lisans Kontrolü (Canlı Oturum Gerekir)' } else { 'Copilot Base License Check (Requires Live Session)' }
             Detail      = if ($isTr) { 'Çevrimdışı analizde subscribedSkus verisi yer almaz.' } else { 'Offline report mode lacks subscribedSkus Graph payload.' }
-            Explanation = if ($isTr) { 'Gerçek satın alınan/atanan Copilot ve E3/E5 koltuk sayıları Connect-ZtLens sonrası canlı çekilir.' } else { 'Actual purchased vs. assigned Copilot & E3/E5 seats are pulled live after Connect-ZtLens.' }
+            Explanation = if ($isTr) { 'Gerçek satın alınan/atanan Copilot ve E3/E5 koltuk sayıları Connect-TenantBrief sonrası canlı çekilir.' } else { 'Actual purchased vs. assigned Copilot & E3/E5 seats are pulled live after Connect-TenantBrief.' }
             Warning     = if ($isTr) { 'Gerçek lisans dağılımı için canlı tarama çalıştırın.' } else { 'Run a live tenant scan for actual SKU counts.' }
         }
     }
@@ -2182,4 +2182,15 @@ function Get-ZtLensCopilotReadiness {
     }
 }
 
-Export-ModuleMember -Function Connect-ZtLens, Invoke-ZtLensAssessment, Get-ZtLensFrameworks, Get-ZtLensLicenseRoi, Get-ZtLensLicenseWaste, Get-ZtLensCopilotReadiness, Compare-ZtLensReports, Export-ZtLensExecutiveSummary
+Set-Alias -Name Connect-ZtLens -Value Connect-TenantBrief -Force
+Set-Alias -Name Invoke-ZtLensAssessment -Value Invoke-TenantBriefAssessment -Force
+Set-Alias -Name Get-ZtLensFrameworks -Value Get-TenantBriefFrameworks -Force
+Set-Alias -Name Get-ZtLensLicenseRoi -Value Get-TenantBriefLicenseRoi -Force
+Set-Alias -Name Get-ZtLensLicenseWaste -Value Get-TenantBriefLicenseWaste -Force
+Set-Alias -Name Get-ZtLensCopilotReadiness -Value Get-TenantBriefCopilotReadiness -Force
+Set-Alias -Name Compare-ZtLensReports -Value Compare-TenantBriefReports -Force
+Set-Alias -Name Export-ZtLensExecutiveSummary -Value Export-TenantBriefExecutiveSummary -Force
+
+Export-ModuleMember `
+    -Function Connect-TenantBrief, Invoke-TenantBriefAssessment, Get-TenantBriefFrameworks, Get-TenantBriefLicenseRoi, Get-TenantBriefLicenseWaste, Get-TenantBriefCopilotReadiness, Compare-TenantBriefReports, Export-TenantBriefExecutiveSummary `
+    -Alias Connect-ZtLens, Invoke-ZtLensAssessment, Get-ZtLensFrameworks, Get-ZtLensLicenseRoi, Get-ZtLensLicenseWaste, Get-ZtLensCopilotReadiness, Compare-ZtLensReports, Export-ZtLensExecutiveSummary

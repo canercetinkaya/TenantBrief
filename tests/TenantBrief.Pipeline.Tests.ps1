@@ -1,10 +1,10 @@
-BeforeAll {
-    Import-Module (Join-Path $PSScriptRoot '..\ZeroTrustLens.psd1') -Force
+﻿BeforeAll {
+    Import-Module (Join-Path $PSScriptRoot '..\TenantBrief.psd1') -Force
 
     $script:FixturePath = Join-Path $PSScriptRoot 'fixtures\ZeroTrustAssessmentReport.sample.json'
-    $script:OutDir = Join-Path ([System.IO.Path]::GetTempPath()) ("ztl-pipeline-" + [guid]::NewGuid().ToString('N').Substring(0, 8))
+    $script:OutDir = Join-Path ([System.IO.Path]::GetTempPath()) ("tb-pipeline-" + [guid]::NewGuid().ToString('N').Substring(0, 8))
 
-    $script:Run = Invoke-ZtLensAssessment `
+    $script:Run = Invoke-TenantBriefAssessment `
         -InputReportJson $script:FixturePath `
         -OutputPath $script:OutDir `
         -Language tr `
@@ -21,13 +21,13 @@ AfterAll {
     }
 }
 
-Describe 'Invoke-ZtLensAssessment (offline pipeline)' {
+Describe 'Invoke-TenantBriefAssessment (offline pipeline)' {
     It 'writes the three report artifacts' {
         $script:Run.HtmlPath | Should -Exist
         $script:Run.JsonPath | Should -Exist
         $script:Run.ExecutiveSummaryPath | Should -Exist
-        $script:Run.HtmlPath | Should -Match 'ZeroTrustLensReport-TR\.html$'
-        $script:Run.JsonPath | Should -Match 'ZeroTrustLensReport-TR\.json$'
+        $script:Run.HtmlPath | Should -Match 'TenantBriefReport-TR\.html$'
+        $script:Run.JsonPath | Should -Match 'TenantBriefReport-TR\.json$'
     }
 
     It 'correlates duplicate control titles reported by two engines' {
@@ -129,7 +129,7 @@ Describe 'Invoke-ZtLensAssessment (offline pipeline)' {
     }
 
     It 'keeps the machine-readable contract in English' {
-        # Risk/Status stay English so Compare-ZtLensReports and the HTML filters keep working.
+        # Risk/Status stay English so Compare-TenantBriefReports and the HTML filters keep working.
         ($script:Report.Findings | Where-Object { $_.Risk -notin @('High', 'Medium', 'Low') }).Count | Should -Be 0
         ($script:Report.Findings | Where-Object { $_.Status -notin @('Passed', 'Failed', 'Skipped', 'Investigate', 'Planned', 'Error') }).Count | Should -Be 0
     }
@@ -137,7 +137,7 @@ Describe 'Invoke-ZtLensAssessment (offline pipeline)' {
     It 'embeds the report payload inside the standalone HTML file' {
         $html = Get-Content -Path $script:Run.HtmlPath -Raw -Encoding UTF8
         $html.Length | Should -BeGreaterThan 50000
-        $html | Should -Match 'ZeroTrustLens Raporu'
+        $html | Should -Match 'TenantBrief Raporu'
         $html | Should -Not -Match '\{\{LANG\}\}'
         $html | Should -Not -Match '\{\{REPORT_JSON\}\}'
     }
@@ -146,14 +146,14 @@ Describe 'Invoke-ZtLensAssessment (offline pipeline)' {
         $exec = Get-Content -Path $script:Run.ExecutiveSummaryPath -Raw -Encoding UTF8
         $exec | Should -Match 'Yönetici Özeti'
         $exec | Should -Match '@media print'
-        $exec | Should -Match 'ZeroTrust'
+        $exec | Should -Match 'TenantBrief'
     }
 }
 
-Describe 'Invoke-ZtLensAssessment framework selection' {
+Describe 'Invoke-TenantBriefAssessment framework selection' {
     BeforeAll {
-        $script:FwOutDir = Join-Path ([System.IO.Path]::GetTempPath()) ("ztl-fw-" + [guid]::NewGuid().ToString('N').Substring(0, 8))
-        $script:FwRun = Invoke-ZtLensAssessment -InputReportJson $script:FixturePath -OutputPath $script:FwOutDir -Language en -Framework ISO27001 -NoBrowser
+        $script:FwOutDir = Join-Path ([System.IO.Path]::GetTempPath()) ("tb-fw-" + [guid]::NewGuid().ToString('N').Substring(0, 8))
+        $script:FwRun = Invoke-TenantBriefAssessment -InputReportJson $script:FixturePath -OutputPath $script:FwOutDir -Language en -Framework ISO27001 -NoBrowser
         $script:FwReport = Get-Content -Path $script:FwRun.JsonPath -Raw -Encoding UTF8 | ConvertFrom-Json
     }
 
@@ -175,13 +175,13 @@ Describe 'Invoke-ZtLensAssessment framework selection' {
 
     It 'keeps English labels' {
         $script:FwReport.Labels.TotalChecks | Should -Be 'Total Checks'
-        $script:FwRun.HtmlPath | Should -Match 'ZeroTrustLensReport-EN\.html$'
+        $script:FwRun.HtmlPath | Should -Match 'TenantBriefReport-EN\.html$'
     }
 }
 
-Describe 'Compare-ZtLensReports' {
+Describe 'Compare-TenantBriefReports' {
     BeforeAll {
-        $script:CompareDir = Join-Path ([System.IO.Path]::GetTempPath()) ("ztl-compare-" + [guid]::NewGuid().ToString('N').Substring(0, 8))
+        $script:CompareDir = Join-Path ([System.IO.Path]::GetTempPath()) ("tb-compare-" + [guid]::NewGuid().ToString('N').Substring(0, 8))
         $null = New-Item -ItemType Directory -Path $script:CompareDir -Force
 
         $baseline = Get-Content -Path $script:Run.JsonPath -Raw -Encoding UTF8 | ConvertFrom-Json
@@ -195,7 +195,7 @@ Describe 'Compare-ZtLensReports' {
         $baseline | ConvertTo-Json -Depth 8 | Set-Content -Path $script:BaselineJson -Encoding UTF8
         $current | ConvertTo-Json -Depth 8 | Set-Content -Path $script:CurrentJson -Encoding UTF8
 
-        $script:Diff = Compare-ZtLensReports -BaselineJsonPath $script:BaselineJson -CurrentJsonPath $script:CurrentJson
+        $script:Diff = Compare-TenantBriefReports -BaselineJsonPath $script:BaselineJson -CurrentJsonPath $script:CurrentJson
     }
 
     AfterAll {
@@ -216,15 +216,15 @@ Describe 'Compare-ZtLensReports' {
     }
 
     It 'fails fast on a missing baseline file' {
-        { Compare-ZtLensReports -BaselineJsonPath 'Z:\does\not\exist.json' -CurrentJsonPath $script:CurrentJson } | Should -Throw '*not found*'
+        { Compare-TenantBriefReports -BaselineJsonPath 'Z:\does\not\exist.json' -CurrentJsonPath $script:CurrentJson } | Should -Throw '*not found*'
     }
 }
 
-Describe 'Export-ZtLensExecutiveSummary' {
+Describe 'Export-TenantBriefExecutiveSummary' {
     It 'generates a standalone brief from any report JSON' {
-        $target = Join-Path ([System.IO.Path]::GetTempPath()) ("ztl-exec-" + [guid]::NewGuid().ToString('N').Substring(0, 8) + '.html')
+        $target = Join-Path ([System.IO.Path]::GetTempPath()) ("tb-exec-" + [guid]::NewGuid().ToString('N').Substring(0, 8) + '.html')
         try {
-            $path = Export-ZtLensExecutiveSummary -InputLensJsonPath $script:Run.JsonPath -OutputHtmlPath $target -Language tr
+            $path = Export-TenantBriefExecutiveSummary -InputJsonPath $script:Run.JsonPath -OutputHtmlPath $target -Language tr
             $path | Should -Exist
             $content = Get-Content -Path $target -Raw -Encoding UTF8
             $content | Should -Match 'Framework'
@@ -236,12 +236,12 @@ Describe 'Export-ZtLensExecutiveSummary' {
 }
 
 Describe 'Stage failure handling' {
-    It 'records a diagnostic instead of swallowing the error' {        $out = Join-Path ([System.IO.Path]::GetTempPath()) ("ztl-diag-" + [guid]::NewGuid().ToString('N').Substring(0, 8))
+    It 'records a diagnostic instead of swallowing the error' {        $out = Join-Path ([System.IO.Path]::GetTempPath()) ("tb-diag-" + [guid]::NewGuid().ToString('N').Substring(0, 8))
         try {
-            $result = InModuleScope ZeroTrustLens -Parameters @{ Fixture = $script:FixturePath; Out = $out } {
+            $result = InModuleScope TenantBrief -Parameters @{ Fixture = $script:FixturePath; Out = $out } {
                 param($Fixture, $Out)
-                Mock Get-ZtLensCopilotReadiness { throw 'simulated copilot outage' }
-                Invoke-ZtLensAssessment -InputReportJson $Fixture -OutputPath $Out -Language tr -NoBrowser
+                Mock Get-TenantBriefCopilotReadiness { throw 'simulated copilot outage' }
+                Invoke-TenantBriefAssessment -InputReportJson $Fixture -OutputPath $Out -Language tr -NoBrowser
             }
 
             $rep = Get-Content -Path $result.JsonPath -Raw -Encoding UTF8 | ConvertFrom-Json
@@ -267,13 +267,13 @@ Describe 'Stage failure handling' {
 
 Describe '-Resume' {
     BeforeAll {
-        $script:ResumeRoot = Join-Path ([System.IO.Path]::GetTempPath()) ("ztl-resume-" + [guid]::NewGuid().ToString('N').Substring(0, 8))
+        $script:ResumeRoot = Join-Path ([System.IO.Path]::GetTempPath()) ("tb-resume-" + [guid]::NewGuid().ToString('N').Substring(0, 8))
         $script:ResumeRunDir = Join-Path $script:ResumeRoot 'tenant_20260101_0000'
         $exportDir = Join-Path $script:ResumeRunDir 'raw-zt\zt-export'
         $null = New-Item -ItemType Directory -Path $exportDir -Force
         Copy-Item -Path $script:FixturePath -Destination (Join-Path $exportDir 'ZeroTrustAssessmentReport.json')
 
-        $script:ResumeRun = Invoke-ZtLensAssessment -Resume -OutputPath $script:ResumeRoot -Language en -NoBrowser
+        $script:ResumeRun = Invoke-TenantBriefAssessment -Resume -OutputPath $script:ResumeRoot -Language en -NoBrowser
         $script:ResumeReport = Get-Content -Path $script:ResumeRun.JsonPath -Raw -Encoding UTF8 | ConvertFrom-Json
     }
 
@@ -301,10 +301,10 @@ Describe '-Resume' {
     }
 
     It 'fails fast when there is nothing to resume' {
-        $empty = Join-Path ([System.IO.Path]::GetTempPath()) ("ztl-empty-" + [guid]::NewGuid().ToString('N').Substring(0, 8))
+        $empty = Join-Path ([System.IO.Path]::GetTempPath()) ("tb-empty-" + [guid]::NewGuid().ToString('N').Substring(0, 8))
         $null = New-Item -ItemType Directory -Path $empty -Force
         try {
-            { Invoke-ZtLensAssessment -Resume -OutputPath $empty -NoBrowser } | Should -Throw '*ZeroTrustAssessmentReport.json*'
+            { Invoke-TenantBriefAssessment -Resume -OutputPath $empty -NoBrowser } | Should -Throw '*ZeroTrustAssessmentReport.json*'
         } finally {
             Remove-Item -Path $empty -Recurse -Force -ErrorAction SilentlyContinue
         }
@@ -330,7 +330,7 @@ Describe 'Remediation payload' {
 
 Describe 'Executive summary prioritisation' {
     BeforeAll {
-        $script:ExecDir = Join-Path ([System.IO.Path]::GetTempPath()) ("ztl-exec2-" + [guid]::NewGuid().ToString('N').Substring(0, 8))
+        $script:ExecDir = Join-Path ([System.IO.Path]::GetTempPath()) ("tb-exec2-" + [guid]::NewGuid().ToString('N').Substring(0, 8))
         $null = New-Item -ItemType Directory -Path $script:ExecDir -Force
 
         $findings = @(
@@ -350,7 +350,7 @@ Describe 'Executive summary prioritisation' {
         $lens | ConvertTo-Json -Depth 6 | Set-Content -Path $script:LensJson -Encoding UTF8
 
         $script:ExecHtml = Join-Path $script:ExecDir 'exec.html'
-        $null = Export-ZtLensExecutiveSummary -InputLensJsonPath $script:LensJson -OutputHtmlPath $script:ExecHtml -Language en
+        $null = Export-TenantBriefExecutiveSummary -InputJsonPath $script:LensJson -OutputHtmlPath $script:ExecHtml -Language en
         $script:ExecContent = Get-Content -Path $script:ExecHtml -Raw -Encoding UTF8
     }
 

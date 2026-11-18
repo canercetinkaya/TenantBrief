@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>ZeroTrustLens — {{TITLE}}</title>
+  <title>TenantBrief — {{TITLE}}</title>
   <style>
     :root {
       --bg:#090d16; --card:#111827; --card2:#0d1320; --border:#1e293b;
@@ -77,7 +77,7 @@
 </head>
 <body>
   <aside class="sidebar">
-    <div class="brand"><div class="logo">ZL</div><span>ZeroTrustLens</span></div>
+    <div class="brand"><div class="logo">TB</div><span>TenantBrief</span></div>
     <button class="nav-btn active" onclick="switchView('overview', null, this)" id="navOverview">Genel Bakış</button>
     <div class="nav-grp" id="grpPillars">Güvenlik Sütunları</div>
     <button class="nav-btn" onclick="switchView('findings', 'Identity', this)" id="navIdentity"><span>Identity (Kimlik)</span><span class="cnt" id="cntIdentity">0</span></button>
@@ -99,7 +99,7 @@
   <main class="main">
     <div class="header">
       <div>
-        <h1 id="pageTitle">ZeroTrustLens</h1>
+        <h1 id="pageTitle">TenantBrief</h1>
         <div class="meta" id="tenantMeta"></div>
       </div>
       <div style="display:flex;gap:8px;">
@@ -419,7 +419,7 @@
         <table class="md-table"><thead><tr><th>${isTr ? 'Ürün / SKU' : 'Product / SKU'}</th><th>${isTr ? 'Satın Alınan' : 'Purchased'}</th><th>${isTr ? 'Atanan' : 'Assigned'}</th><th>${isTr ? 'Atıl' : 'Unassigned'}</th><th>${isTr ? 'Kullanım' : 'Utilization'}</th><th>${isTr ? 'Atıl $/Ay' : 'Idle $/Mo'}</th></tr></thead><tbody>${skuRows}</tbody></table>
       `;
     } else {
-      document.getElementById('skuRoiBox').innerHTML = `<h3 style="margin-bottom:6px;">${isTr ? 'Gerçek Kiracı Lisans Kullanımı (subscribedSkus)' : 'Live Tenant License Utilization (subscribedSkus)'}</h3><p style="font-size:13px;color:var(--muted);">${isTr ? 'Canlı kiracı bağlantısı (Connect-ZtLens + Invoke-ZtLensAssessment) ile çalıştırıldığında satın alınan/atanan lisanslar ve tahmini aylık atıl USD bütçesi burada otomatik listelenir.' : 'When executed with a live tenant session, purchased vs. assigned SKUs and estimated monthly idle USD spend are automatically populated here.'}</p>`;
+      document.getElementById('skuRoiBox').innerHTML = `<h3 style="margin-bottom:6px;">${isTr ? 'Gerçek Kiracı Lisans Kullanımı (subscribedSkus)' : 'Live Tenant License Utilization (subscribedSkus)'}</h3><p style="font-size:13px;color:var(--muted);">${isTr ? 'Canlı kiracı bağlantısı (Connect-TenantBrief + Invoke-TenantBriefAssessment) ile çalıştırıldığında satın alınan/atanan lisanslar ve tahmini aylık atıl USD bütçesi burada otomatik listelenir.' : 'When executed with a live tenant session, purchased vs. assigned SKUs and estimated monthly idle USD spend are automatically populated here.'}</p>`;
     }
 
     // M365 License Waste & Overlap Analysis (R1-R7)
@@ -655,7 +655,7 @@
       const blob = new Blob([rows.map(r => r.join(',')).join('\n')], { type: 'text/csv;charset=utf-8;' });
       const a = document.createElement('a');
       a.href = URL.createObjectURL(blob);
-      a.download = `ZeroTrustLens-${DATA.Language}.csv`;
+      a.download = `TenantBrief-${DATA.Language}.csv`;
       a.click();
     }
 

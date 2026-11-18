@@ -1,22 +1,34 @@
 BeforeAll {
-    Import-Module (Join-Path $PSScriptRoot '..\ZeroTrustLens.psd1') -Force
+    Import-Module (Join-Path $PSScriptRoot '..\TenantBrief.psd1') -Force
 }
 
-Describe 'ZeroTrustLens Module' {
+Describe 'TenantBrief Module' {
     It 'Exports expected functions' {
-        $cmds = (Get-Module ZeroTrustLens).ExportedFunctions.Keys
-        $cmds | Should -Contain 'Connect-ZtLens'
-        $cmds | Should -Contain 'Invoke-ZtLensAssessment'
-        $cmds | Should -Contain 'Get-ZtLensFrameworks'
-        $cmds | Should -Contain 'Get-ZtLensLicenseRoi'
-        $cmds | Should -Contain 'Get-ZtLensLicenseWaste'
-        $cmds | Should -Contain 'Get-ZtLensCopilotReadiness'
-        $cmds | Should -Contain 'Compare-ZtLensReports'
-        $cmds | Should -Contain 'Export-ZtLensExecutiveSummary'
+        $cmds = (Get-Module TenantBrief).ExportedFunctions.Keys
+        $cmds | Should -Contain 'Connect-TenantBrief'
+        $cmds | Should -Contain 'Invoke-TenantBriefAssessment'
+        $cmds | Should -Contain 'Get-TenantBriefFrameworks'
+        $cmds | Should -Contain 'Get-TenantBriefLicenseRoi'
+        $cmds | Should -Contain 'Get-TenantBriefLicenseWaste'
+        $cmds | Should -Contain 'Get-TenantBriefCopilotReadiness'
+        $cmds | Should -Contain 'Compare-TenantBriefReports'
+        $cmds | Should -Contain 'Export-TenantBriefExecutiveSummary'
+    }
+
+    It 'Preserves backward-compatible *-ZtLens* aliases' {
+        $aliases = (Get-Module TenantBrief).ExportedAliases
+        $aliases['Connect-ZtLens'].Definition | Should -Be 'Connect-TenantBrief'
+        $aliases['Invoke-ZtLensAssessment'].Definition | Should -Be 'Invoke-TenantBriefAssessment'
+        $aliases['Get-ZtLensFrameworks'].Definition | Should -Be 'Get-TenantBriefFrameworks'
+        $aliases['Get-ZtLensLicenseRoi'].Definition | Should -Be 'Get-TenantBriefLicenseRoi'
+        $aliases['Get-ZtLensLicenseWaste'].Definition | Should -Be 'Get-TenantBriefLicenseWaste'
+        $aliases['Get-ZtLensCopilotReadiness'].Definition | Should -Be 'Get-TenantBriefCopilotReadiness'
+        $aliases['Compare-ZtLensReports'].Definition | Should -Be 'Compare-TenantBriefReports'
+        $aliases['Export-ZtLensExecutiveSummary'].Definition | Should -Be 'Export-TenantBriefExecutiveSummary'
     }
 
     It 'Lists 5 compliance frameworks' {
-        $fws = Get-ZtLensFrameworks
+        $fws = Get-TenantBriefFrameworks
         $fws.Count | Should -Be 5
     }
 
@@ -25,13 +37,13 @@ Describe 'ZeroTrustLens Module' {
             [PSCustomObject]@{ skuPartNumber = 'SPE_E5'; prepaidUnits = @{ enabled = 100 }; consumedUnits = 75 },
             [PSCustomObject]@{ skuPartNumber = 'AAD_PREMIUM_P2'; prepaidUnits = @{ enabled = 50 }; consumedUnits = 50 }
         )
-        $roi = Get-ZtLensLicenseRoi -SubscribedSkus $mockSkus
+        $roi = Get-TenantBriefLicenseRoi -SubscribedSkus $mockSkus
         $roi.Count | Should -Be 2
         $roi[0].Unassigned | Should -Be 25
         $roi[0].EstimatedIdleUsdMo | Should -Be 1425
     }
 
-    It 'Audits disabled, inactive, guest and overlapping SKUs via Get-ZtLensLicenseWaste' {
+    It 'Audits disabled, inactive, guest and overlapping SKUs via Get-TenantBriefLicenseWaste' {
         $skus = @(
             [PSCustomObject]@{ skuId = '111'; skuPartNumber = 'SPE_E5'; prepaidUnits = @{ enabled = 10 }; consumedUnits = 8 },
             [PSCustomObject]@{ skuId = '222'; skuPartNumber = 'SPE_E3'; prepaidUnits = @{ enabled = 10 }; consumedUnits = 9 }
@@ -42,7 +54,7 @@ Describe 'ZeroTrustLens Module' {
             [PSCustomObject]@{ id = 'u2'; accountEnabled = $true; userType = 'Guest'; assignedLicenses = @(@{ skuId = '222' }) },
             [PSCustomObject]@{ id = 'u3'; accountEnabled = $true; userType = 'Member'; assignedLicenses = @(@{ skuId = '111' }, @{ skuId = '222' }); signInActivity = [PSCustomObject]@{ lastSignInDateTime = $oldDate } }
         )
-        $w = Get-ZtLensLicenseWaste -SubscribedSkus $skus -Users $users -Language en
+        $w = Get-TenantBriefLicenseWaste -SubscribedSkus $skus -Users $users -Language en
         $w.UnassignedSeats | Should -Be 3
         $w.DisabledLicensedUsers | Should -Be 1
         $w.DisabledUsdMo | Should -Be 57
@@ -52,14 +64,14 @@ Describe 'ZeroTrustLens Module' {
         $w.Inactive90dUsers | Should -Be 1
     }
 
-    It 'Documents every exported cmdlet with comment-based help' {        foreach ($cmd in (Get-Module ZeroTrustLens).ExportedFunctions.Keys) {
+    It 'Documents every exported cmdlet with comment-based help' {        foreach ($cmd in (Get-Module TenantBrief).ExportedFunctions.Keys) {
             $help = Get-Help $cmd -ErrorAction SilentlyContinue
             $help.Synopsis | Should -Not -BeNullOrEmpty -Because "$cmd needs a synopsis"
         }
     }
 
     It 'Follows @odata.nextLink pagination when enumerating users' {
-        InModuleScope ZeroTrustLens {
+        InModuleScope TenantBrief {
             $script:__pagingCalls = 0
             function Invoke-MgGraphRequest {
                 param($Method, $Uri, $ErrorAction)
@@ -70,7 +82,7 @@ Describe 'ZeroTrustLens Module' {
                 return [PSCustomObject]@{ value = @([PSCustomObject]@{ id = 'p2' }) }
             }
             try {
-                $res = @(Get-ZtLensGraphCollection -Uri 'https://graph.microsoft.com/v1.0/users?$top=999')
+                $res = @(Get-TenantBriefGraphCollection -Uri 'https://graph.microsoft.com/v1.0/users?$top=999')
                 $res.Count | Should -Be 2
                 $script:__pagingCalls | Should -Be 2
             } finally {
@@ -85,7 +97,7 @@ Describe 'ZeroTrustLens Module' {
             [PSCustomObject]@{ skuPartNumber = 'Microsoft_365_Copilot'; prepaidUnits = @{ enabled = 5 }; consumedUnits = 5 }
         )
         $ti = [PSCustomObject]@{ UserCount = 25; GuestCount = 6; TotalAgents = 2 }
-        $cr = Get-ZtLensCopilotReadiness -SubscribedSkus $mockSkus -TenantInsights $ti -OfflineOnly -Language tr
+        $cr = Get-TenantBriefCopilotReadiness -SubscribedSkus $mockSkus -TenantInsights $ti -OfflineOnly -Language tr
         $cr.EligibleBaseSeats | Should -Be 25
         $cr.CopilotSeats | Should -Be 5
         $cr.Checks.Count | Should -BeGreaterThan 1
@@ -93,7 +105,7 @@ Describe 'ZeroTrustLens Module' {
     }
 
     It 'correlates the same control reported by two engines and keeps both pillars' {
-        InModuleScope ZeroTrustLens {
+        InModuleScope TenantBrief {
             $incoming = @(
                 [PSCustomObject]@{
                     TestId = 'ZT.1'; TestTitle = 'Ensure MFA is enforced for all users'; TestStatus = 'Passed'
@@ -108,7 +120,7 @@ Describe 'ZeroTrustLens Module' {
                     TestResult = 'Guests excluded from policy.'; TestImpact = 'High'; TestDescription = 'ScubaGear requirement text'
                 }
             )
-            $r = @(New-ZtLensCorrelatedTests -Tests $incoming)
+            $r = @(New-TenantBriefCorrelatedTests -Tests $incoming)
             $r.Count | Should -Be 1
             $r[0].TestStatus | Should -Be 'Failed'
             $r[0].TestRisk | Should -Be 'High'
@@ -120,26 +132,26 @@ Describe 'ZeroTrustLens Module' {
     }
 
     It 'tolerates engine objects that lack optional properties' {
-        InModuleScope ZeroTrustLens {
+        InModuleScope TenantBrief {
             $legacy = [PSCustomObject]@{ TestId = 'X'; TestTitle = 'Only the basics'; TestStatus = 'Failed' }
-            { New-ZtLensCorrelatedTests -Tests @($legacy) } | Should -Not -Throw
-            $r = @(New-ZtLensCorrelatedTests -Tests @($legacy))
+            { New-TenantBriefCorrelatedTests -Tests @($legacy) } | Should -Not -Throw
+            $r = @(New-TenantBriefCorrelatedTests -Tests @($legacy))
             $r.Count | Should -Be 1
             $r[0].TestImplementationCost | Should -BeNullOrEmpty
         }
     }
 
     It 'marks a missing implementation cost as Unknown instead of guessing Medium' {
-        InModuleScope ZeroTrustLens {
-            $f = @(New-ZtLensFindings -Tests @([PSCustomObject]@{ TestId = 'X'; TestTitle = 't'; TestStatus = 'Failed'; TestPillar = @('Identity') }) -Language en)
+        InModuleScope TenantBrief {
+            $f = @(New-TenantBriefFindings -Tests @([PSCustomObject]@{ TestId = 'X'; TestTitle = 't'; TestStatus = 'Failed'; TestPillar = @('Identity') }) -Language en)
             $f[0].ImplementationCost | Should -Be 'Unknown'
             $f[0].Pillar | Should -Be 'Identity'
         }
     }
 
     It 'normalizes a grouped pillar into Pillar/PrimaryPillar' {
-        InModuleScope ZeroTrustLens {
-            $f = @(New-ZtLensFindings -Tests @([PSCustomObject]@{ TestId = 'X'; TestTitle = 't'; TestStatus = 'Failed'; TestPillar = @('Identity', 'CISA SCuBA') }) -Language en)
+        InModuleScope TenantBrief {
+            $f = @(New-TenantBriefFindings -Tests @([PSCustomObject]@{ TestId = 'X'; TestTitle = 't'; TestStatus = 'Failed'; TestPillar = @('Identity', 'CISA SCuBA') }) -Language en)
             $f[0].Pillar | Should -Be 'Identity, CISA SCuBA'
             $f[0].PrimaryPillar | Should -Be 'Identity'
         }
@@ -166,7 +178,7 @@ Describe 'ZeroTrustLens Module' {
             [PSCustomObject]@{ skuPartNumber = 'FLOW_FREE'; prepaidUnits = @{ enabled = 10000 }; consumedUnits = 1 },
             [PSCustomObject]@{ skuPartNumber = 'DEVELOPERPACK_E5'; prepaidUnits = @{ enabled = 25 }; consumedUnits = 1 }
         )
-        $roi = Get-ZtLensLicenseRoi -SubscribedSkus $mock
+        $roi = Get-TenantBriefLicenseRoi -SubscribedSkus $mock
         $flow = $roi | Where-Object { $_.SkuPartNumber -eq 'FLOW_FREE' }
         $dev = $roi | Where-Object { $_.SkuPartNumber -eq 'DEVELOPERPACK_E5' }
         $flow.Category | Should -Be 'Included/Free'
@@ -183,7 +195,7 @@ Describe 'ZeroTrustLens Module' {
             [PSCustomObject]@{ skuPartNumber = 'FLOW_FREE'; prepaidUnits = @{ enabled = 10000 }; consumedUnits = 1 }
         )
         $users = @([PSCustomObject]@{ id = 'u1'; accountEnabled = $true; userType = 'Member'; assignedLicenses = @() })
-        $w = Get-ZtLensLicenseWaste -SubscribedSkus $skus -Users $users -Language en
+        $w = Get-TenantBriefLicenseWaste -SubscribedSkus $skus -Users $users -Language en
         # Only the paid suite contributes: 10 - 8 = 2, not 2 + 9,999 free seats.
         $w.UnassignedSeats | Should -Be 2
         $w.UnassignedUsdMo | Should -Be 114
