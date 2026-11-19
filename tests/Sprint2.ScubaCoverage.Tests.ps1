@@ -17,16 +17,12 @@ Describe 'S2.1 - ScubaGear 2.0.0 Multi-Product Coverage & Run Manifest Recording
                     $script:__capturedProducts = @($ProductNames)
                 }
                 Mock Get-Module {
-                    [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSReviewUnusedParameter', '')]
                     param($Name, [switch]$ListAvailable)
+                    $null = $ListAvailable
                     if ($Name -in @('ScubaGear', 'powershell-yaml')) { return [PSCustomObject]@{ Name = $Name; Version = [version]'2.0.0' } }
                     return $null
                 }
                 Mock Import-Module { }
-                function Install-Module {
-                    [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSReviewUnusedParameter', '')]
-                    param($Name, $Repository, $Scope, [switch]$Force, [switch]$AllowClobber, $ErrorAction)
-                }
                 Mock Test-Path { return $true }
                 Mock Import-TenantBriefScubaResults {
                     return @(

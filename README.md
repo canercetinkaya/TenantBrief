@@ -176,6 +176,12 @@ TenantBrief stands on top of trusted Microsoft and community open-source securit
 - **Strict Read-Only Surface:** Executes only read-only Graph GET endpoints and read-only PowerShell assessment cmdlets.
 - **Anonymization (`-Anonymize`):** Masks primary tenant domains before generating shareable reports.
 
+## Local Machine Changes (Yerel Değişiklikler)
+
+- By default, `Connect-TenantBrief` and `Invoke-TenantBriefAssessment` **never** install modules (`Install-Module` / `Save-Module`), download OPA (`Install-OPAforSCuBA`), or prune conflicting local module versions (`Remove-Item`). Missing dependencies emit a warning with the exact manual command.
+- Run `Test-TenantBriefPrerequisites` for a strictly read-only preflight check of installed modules, OPA, and active M365 sessions.
+- Pass **`-AutoFixDependencies`** explicitly to `Connect-TenantBrief` only if you want TenantBrief to install missing PSGallery modules, OPA, or prune conflicting local `Microsoft.Graph.Authentication` / `SharePoint` copies automatically.
+
 ---
 
 ## Development & Tests
