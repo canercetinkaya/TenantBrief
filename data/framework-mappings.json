@@ -55,6 +55,14 @@
       "upstreamUrl": "https://github.com/CompassSecurity/EntraFalcon",
       "descriptionEn": "Compass Security EntraFalcon attack-path, tiered administration, and privileged Entra role findings.",
       "descriptionTr": "Compass Security EntraFalcon yetki yükseltme yolları, katmanlı yönetim ve ayrıcalıklı Entra rol bulguları."
+    },
+    "FastTrack": {
+      "nameEn": "Microsoft FastTrack Copilot & SharePoint Risk",
+      "nameTr": "Microsoft FastTrack Copilot & SharePoint Riski",
+      "sourceTag": "FastTrack",
+      "upstreamUrl": "https://microsoft.github.io/FastTrack/",
+      "descriptionEn": "Microsoft FastTrack read-only SharePoint oversharing risk (Analyze-SharePointRisk) and Power Platform / Copilot Studio agent inventory controls.",
+      "descriptionTr": "Microsoft FastTrack salt okunur SharePoint aşırı paylaşım riski (Analyze-SharePointRisk) ve Power Platform / Copilot Studio ajan envanteri kontrolleri."
     }
   }
 }

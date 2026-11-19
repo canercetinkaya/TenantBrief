@@ -14,6 +14,8 @@
         'Get-TenantBriefLicenseRoi',
         'Get-TenantBriefLicenseWaste',
         'Get-TenantBriefCopilotReadiness',
+        'Import-TenantBriefSharePointRisk',
+        'Import-TenantBriefPowerPlatformAgents',
         'Compare-TenantBriefReports',
         'Export-TenantBriefExecutiveSummary'
     )

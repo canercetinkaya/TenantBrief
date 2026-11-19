@@ -149,6 +149,8 @@
       <div class="cards" id="copilotSummaryCards"></div>
       <div class="card" id="copilotWarningsBox" style="margin-bottom:16px;"></div>
       <div class="card" id="copilotChecksBox" style="margin-bottom:16px;"></div>
+      <div class="card" id="sharePointRiskBox" style="margin-bottom:16px;"></div>
+      <div class="card" id="ppAgentsBox" style="margin-bottom:16px;"></div>
       <div class="card" id="copilotCalcBox"></div>
     </section>
 
@@ -702,49 +704,138 @@
         <table class="md-table"><thead><tr><th>${isTr ? 'Durum' : 'Status'}</th><th>${isTr ? 'Kontrol & Bulgu' : 'Check & Detail'}</th><th>${isTr ? 'Açıklama ve Uyarı' : 'Explanation & Warning'}</th></tr></thead><tbody>${crRows}</tbody></table>
       `;
     }
+    // FastTrack SharePoint Oversharing Risk Analysis (Analyze-SharePointRisk model)
+    const spr = DATA.SharePointRisk;
+    if (spr && spr.TotalSites > 0) {
+      const spRows = (spr.TopRiskySites || []).slice(0, 15).map(site => {
+        const badgeCol = site.RiskLevel === 'Critical' ? 'var(--fail)' : (site.RiskLevel === 'High' ? 'var(--warn)' : 'var(--accent)');
+        return `<tr>
+          <td><strong>${esc(site.SiteName)}</strong><div style="font-size:11px;color:var(--muted);">${esc(site.SiteUrl || '')}</div></td>
+          <td>${esc(site.Privacy)}</td>
+          <td>${esc(site.SensitivityLabel)}</td>
+          <td style="color:${site.EEEUCount > 0 ? 'var(--fail)' : 'var(--muted)'}">${site.EEEUCount}</td>
+          <td style="color:${site.AnyoneLinks > 0 ? 'var(--fail)' : 'var(--muted)'}">${site.AnyoneLinks}</td>
+          <td><span class="tag" style="color:${badgeCol};border-color:${badgeCol};">${esc(site.RiskLevel)} (${site.RiskScore})</span></td>
+          <td style="font-size:11.5px;color:var(--muted);">${esc(site.Reasons || '-')}</td>
+        </tr>`;
+      }).join('');
+      document.getElementById('sharePointRiskBox').innerHTML = `
+        <h3 style="margin-bottom:6px;">${isTr ? 'SharePoint Site Bazlı Aşırı Paylaşım Riski (Microsoft FastTrack Analyze-SharePointRisk)' : 'SharePoint Site-Level Oversharing Risk (Microsoft FastTrack Analyze-SharePointRisk)'}</h3>
+        <p style="font-size:12.5px;color:var(--muted);margin-bottom:12px;">${isTr ? 'SAM / Data Access Governance izin CSV çıktısı üzerinden EEEU, Anyone bağlantıları, Everyone izinleri, etiketsiz siteler ve yüksek benzersiz izinler (>50) FastTrack ağırlıklarıyla puanlanır.' : 'Scored via Microsoft FastTrack Analyze-SharePointRisk weights across EEEU grants, Anyone links, Everyone permissions, unlabeled sites, and unique permission sprawl (>50).'}</p>
+        <div class="cards" style="margin-bottom:12px;">
+          <div class="card"><div class="lbl">${isTr ? 'İncelenen Site' : 'Sites Analyzed'}</div><div class="val">${spr.TotalSites}</div></div>
+          <div class="card"><div class="lbl">${isTr ? 'Kritik / Yüksek Riskli' : 'Critical / High Risk'}</div><div class="val" style="color:var(--fail)">${(spr.CriticalSites || 0) + (spr.HighRiskSites || 0)}</div></div>
+          <div class="card"><div class="lbl">${isTr ? 'Yüksek EEEU / Özel+EEEU' : 'High EEEU / Private+EEEU'}</div><div class="val" style="color:var(--warn)">${spr.EEEUHighSites || 0} / ${spr.PrivateEEEUSites || 0}</div></div>
+          <div class="card"><div class="lbl">${isTr ? 'Anyone Bağlantısı Olan' : 'With Anyone Links'}</div><div class="val" style="color:var(--fail)">${spr.AnyoneLinkSites || 0}</div></div>
+          <div class="card"><div class="lbl">${isTr ? 'Etiketsiz Site' : 'Unlabeled Sites'}</div><div class="val" style="color:var(--skip)">${spr.UnlabeledSites || 0}</div></div>
+        </div>
+        ${spRows ? `<table class="md-table"><thead><tr><th>${isTr ? 'Site' : 'Site'}</th><th>${isTr ? 'Gizlilik' : 'Privacy'}</th><th>${isTr ? 'Etiket' : 'Label'}</th><th>EEEU</th><th>Anyone</th><th>${isTr ? 'Risk' : 'Risk'}</th><th>${isTr ? 'Gerekçe' : 'Drivers'}</th></tr></thead><tbody>${spRows}</tbody></table>` : ''}
+      `;
+    } else {
+      document.getElementById('sharePointRiskBox').innerHTML = `<h3 style="margin-bottom:6px;">${isTr ? 'SharePoint Site Bazlı Aşırı Paylaşım Riski (FastTrack Analyze-SharePointRisk)' : 'SharePoint Site-Level Oversharing Risk (FastTrack Analyze-SharePointRisk)'}</h3><p style="font-size:12.5px;color:var(--muted);">${isTr ? 'SharePoint Yönetim Merkezi (SAM Data Access Governance) izin CSV dosyasını <code>-InputSharePointRiskCsvPath</code> ile verdiğinizde EEEU, Anyone bağlantıları, etiketsiz siteler ve en riskli siteler otomatik puanlanıp <strong>Data + AI</strong> sütunlarına işlenir.' : 'Supply a SharePoint Admin Center (SAM DAG) permissions CSV via <code>-InputSharePointRiskCsvPath</code> to score EEEU, Anyone links, unlabeled sites, and populate <strong>Data + AI</strong> findings.'}</p>`;
+    }
+
+    // FastTrack Power Platform & Agent Builder Inventory (Inventory-PowerPlatformAgents model)
+    const ppa = DATA.PowerPlatformAgents;
+    if (ppa && ppa.TotalAgents > 0) {
+      const agRows = (ppa.Agents || []).slice(0, 15).map(a => `<tr>
+        <td><strong>${esc(a.AgentName)}</strong><div style="font-size:11px;color:var(--muted);">${esc(a.AgentId || '')}</div></td>
+        <td>${esc(a.CreatedIn)}</td>
+        <td>${esc(a.EnvironmentName)}</td>
+        <td>${esc(a.Owner)}</td>
+        <td>${a.IsMicrosoftManaged ? (isTr ? 'Microsoft Yönetimli' : 'Microsoft-managed') : (isTr ? 'Özel (Custom)' : 'Custom')}</td>
+        <td style="color:${a.IsStale ? 'var(--fail)' : 'var(--muted)'}">${esc(a.LastUsedAt || '-')}</td>
+      </tr>`).join('');
+      document.getElementById('ppAgentsBox').innerHTML = `
+        <h3 style="margin-bottom:6px;">${isTr ? 'Power Platform & Agent Builder Gölge AI Envanteri (Microsoft FastTrack)' : 'Power Platform & Agent Builder Shadow AI Inventory (Microsoft FastTrack)'}</h3>
+        <div class="cards" style="margin-bottom:12px;">
+          <div class="card"><div class="lbl">${isTr ? 'Toplam AI Ajanı' : 'Total AI Agents'}</div><div class="val">${ppa.TotalAgents}</div></div>
+          <div class="card"><div class="lbl">Copilot Studio / Agent Builder</div><div class="val" style="font-size:20px;">${ppa.CopilotStudioCount || 0} / ${ppa.AgentBuilderCount || 0}</div></div>
+          <div class="card"><div class="lbl">${isTr ? 'Varsayılan Ortamda Özel' : 'Custom in Default Env'}</div><div class="val" style="color:${(ppa.CustomDefaultEnvCount || 0) > 0 ? 'var(--fail)' : 'var(--ok)'}">${ppa.CustomDefaultEnvCount || 0}</div></div>
+          <div class="card"><div class="lbl">${isTr ? 'Sahipsiz / 90g Atıl' : 'Unowned / 90d Stale'}</div><div class="val" style="color:${((ppa.UnownedCount || 0) + (ppa.Stale90dCount || 0)) > 0 ? 'var(--warn)' : 'var(--ok)'}">${ppa.UnownedCount || 0} / ${ppa.Stale90dCount || 0}</div></div>
+        </div>
+        ${agRows ? `<table class="md-table"><thead><tr><th>${isTr ? 'Ajan' : 'Agent'}</th><th>${isTr ? 'Kaynak' : 'Created In'}</th><th>${isTr ? 'Ortam' : 'Environment'}</th><th>${isTr ? 'Sahip' : 'Owner'}</th><th>${isTr ? 'Yönetim' : 'Ownership'}</th><th>${isTr ? 'Son Kullanım' : 'Last Used'}</th></tr></thead><tbody>${agRows}</tbody></table>` : ''}
+      `;
+    } else {
+      document.getElementById('ppAgentsBox').innerHTML = `<h3 style="margin-bottom:6px;">${isTr ? 'Power Platform & Agent Builder Gölge AI Envanteri (Microsoft FastTrack)' : 'Power Platform & Agent Builder Shadow AI Inventory (Microsoft FastTrack)'}</h3><p style="font-size:12.5px;color:var(--muted);">${isTr ? 'Microsoft FastTrack <code>Inventory-PowerPlatformAgents.ps1</code> JSON veya CSV çıktısını <code>-InputPowerPlatformAgentsPath</code> ile verdiğinizde varsayılan ortamda biriken özel ajanlar, sahipsiz ve 90+ gün atıl ajanlar <strong>AI</strong> sütununa otomatik işlenir.' : 'Pass a Microsoft FastTrack <code>Inventory-PowerPlatformAgents.ps1</code> JSON/CSV export via <code>-InputPowerPlatformAgentsPath</code> to surface custom Default-environment sprawl, unowned, and 90+ day stale agents in the <strong>AI</strong> pillar.'}</p>`;
+    }
+
+    // Microsoft FastTrack Agents Cost Calculator (v2 Credit & Foundry Planning Model — Browser-Local)
     const defUsers = Math.max(10, Math.min(500, cr?.EligibleBaseSeats || ti?.UserCount || 50));
     const reclaimYr = Number(DATA.LicenseROI?.WasteAnalysis?.TotalRecoverableUsdYr ?? DATA.LicenseROI?.TotalIdleUsdYr ?? 0);
     document.getElementById('copilotCalcBox').innerHTML = `
-      <h3 style="margin-bottom:6px;">${isTr ? 'Etkileşimli Microsoft 365 Copilot & Agent Studio ROI Hesaplayıcı (Çevrimdışı)' : 'Interactive Microsoft 365 Copilot & Agent Studio ROI Calculator (Offline)'}</h3>
-      <p style="font-size:12.5px;color:var(--muted);margin-bottom:12px;">${isTr ? 'Hesaplamalar tamamen tarayıcı içinde yapılır; hiçbir finansal veri dışarı gönderilmez. Birim fiyatlar liste fiyatı ($30/koltuk/ay Copilot + $200/kiracı/ay Studio + $0.008/mesaj PAYG) referansıdır.' : 'All math runs locally in browser using Microsoft reference pricing ($30/seat/mo Copilot + $200/tenant/mo Studio + $0.008/msg PAYG).'}</p>
-      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:10px;margin-bottom:14px;">
-        <div><label style="font-size:12px;color:var(--muted);display:block;margin-bottom:4px;">${isTr ? 'Birim Şablonu' : 'Department Preset'}</label><select id="cPreset" onchange="applyCopilotPreset()" style="width:100%;background:#0b1120;color:var(--text);border:1px solid var(--border);border-radius:6px;padding:7px;"><option value="custom">${isTr ? 'Kiracı Mevcut Kullanıcı' : 'Tenant Baseline'}</option><option value="it">IT (200 users, 3.5h/wk)</option><option value="sales">${isTr ? 'Satış (50, 3.0h/wk)' : 'Sales (50, 3.0h/wk)'}</option><option value="fin">${isTr ? 'Finans (20, 2.5h/wk)' : 'Finance (20, 2.5h/wk)'}</option><option value="cs">${isTr ? 'Müşteri Hizm. (10, 4.0h/wk)' : 'Customer Service (10, 4.0h/wk)'}</option></select></div>
-        <div><label style="font-size:12px;color:var(--muted);display:block;margin-bottom:4px;">${isTr ? 'Copilot Koltuk ($30/ay)' : 'Copilot Seats ($30/mo)'}</label><input id="cSeats" type="number" min="1" value="${defUsers}" oninput="calcCopilotRoi()" style="width:100%;background:#0b1120;color:var(--text);border:1px solid var(--border);border-radius:6px;padding:7px;" /></div>
-        <div><label style="font-size:12px;color:var(--muted);display:block;margin-bottom:4px;">${isTr ? 'Yıllık Çalışan Maliyeti ($)' : 'Avg Annual Salary ($)'}</label><input id="cSalary" type="number" min="10000" step="1000" value="48000" oninput="calcCopilotRoi()" style="width:100%;background:#0b1120;color:var(--text);border:1px solid var(--border);border-radius:6px;padding:7px;" /></div>
-        <div><label style="font-size:12px;color:var(--muted);display:block;margin-bottom:4px;">${isTr ? 'Haftalık Tasarruf (Saat)' : 'Hours Saved / Week'}</label><input id="cHours" type="number" min="0.5" max="15" step="0.5" value="2.5" oninput="calcCopilotRoi()" style="width:100%;background:#0b1120;color:var(--text);border:1px solid var(--border);border-radius:6px;padding:7px;" /></div>
-        <div><label style="font-size:12px;color:var(--muted);display:block;margin-bottom:4px;">${isTr ? 'Gerçekleşme Oranı (%)' : 'Value Realization (%)'}</label><input id="cRealize" type="number" min="10" max="100" step="5" value="65" oninput="calcCopilotRoi()" style="width:100%;background:#0b1120;color:var(--text);border:1px solid var(--border);border-radius:6px;padding:7px;" /></div>
-        <div><label style="font-size:12px;color:var(--muted);display:block;margin-bottom:4px;">${isTr ? 'Aylık PAYG Ajan Mesajı' : 'Monthly PAYG Agent Msgs'}</label><input id="cMsgs" type="number" min="0" step="5000" value="25000" oninput="calcCopilotRoi()" style="width:100%;background:#0b1120;color:var(--text);border:1px solid var(--border);border-radius:6px;padding:7px;" /></div>
+      <h3 style="margin-bottom:6px;">${isTr ? 'Microsoft FastTrack Ajan Maliyet Planlayıcısı (Copilot Credits & Foundry — Çevrimdışı)' : 'Microsoft FastTrack Agents Cost Calculator (Copilot Credits & Foundry — Offline)'}</h3>
+      <p style="font-size:12.5px;color:var(--muted);margin-bottom:12px;">${isTr ? 'Resmi <strong>Microsoft FastTrack Agents Cost Calculator</strong> yaklaşımına dayalı planlama aracıdır (kullanıcı turu yerine <strong>faturalanabilir işlem / Copilot Credit</strong> hesabı yapar). Referans liste fiyatları: $30/koltuk/ay M365 Copilot, $200/paket (25.000 Copilot Credit) veya $0.01/kredi PAYG. Tüm hesaplama tarayıcı içinde çalışır.' : 'Planning model aligned with the official <strong>Microsoft FastTrack Agents Cost Calculator</strong> (counts <strong>billable operations / Copilot Credits</strong> per run). Reference list pricing: $30/seat/mo M365 Copilot, $200/pack (25,000 Copilot Credits), or $0.01/credit PAYG. Runs strictly locally in browser.'}</p>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(195px,1fr));gap:10px;margin-bottom:14px;">
+        <div><label style="font-size:12px;color:var(--muted);display:block;margin-bottom:4px;">${isTr ? 'Ajan & Faturalama Kapsamı' : 'Agent & Billing Scope'}</label><select id="ftScope" onchange="calcFastTrackCost()" style="width:100%;background:#0b1120;color:var(--text);border:1px solid var(--border);border-radius:6px;padding:7px;"><option value="standard">${isTr ? 'Copilot Studio – Standart (Kredi/İşlem)' : 'Copilot Studio – Standard Harness'}</option><option value="builder">${isTr ? 'Agent Builder – Copilot Chat (Graph=2 kr)' : 'Agent Builder – Copilot Chat Harness'}</option><option value="sharepoint">${isTr ? 'SharePoint Ajanı (Graph Mesaj)' : 'SharePoint Agent'}</option><option value="ghcp">${isTr ? 'Copilot Studio – GitHub Copilot Harness' : 'Copilot Studio – GitHub Copilot Harness'}</option><option value="foundry">${isTr ? 'Microsoft Foundry Ajanı (Azure USD)' : 'Microsoft Foundry Agent (Azure USD)'}</option></select></div>
+        <div><label style="font-size:12px;color:var(--muted);display:block;margin-bottom:4px;">${isTr ? 'FastTrack Hızlı Şablon' : 'FastTrack Quick Start Template'}</label><select id="ftPreset" onchange="applyFastTrackPreset()" style="width:100%;background:#0b1120;color:var(--text);border:1px solid var(--border);border-radius:6px;padding:7px;"><option value="custom">${isTr ? 'Kiracı Mevcut Kullanıcı' : 'Tenant Baseline'}</option><option value="faq">${isTr ? 'Kurumsal SSS Ajanı (Graph FAQ)' : 'Enterprise FAQ Agent'}</option><option value="hr">${isTr ? 'İK Politika Ajanı (HR Policy)' : 'HR Policy Agent'}</option><option value="it">${isTr ? 'BT Yardım Masası (Araç + Akış)' : 'IT Helpdesk (Tools + Flows)'}</option><option value="ess">${isTr ? 'Çalışan Self-Servis (ITSM/HRSD)' : 'Employee Self-Service (ITSM/HRSD)'}</option><option value="foundry">${isTr ? 'Foundry Asistanı (GPT-4o / File Search)' : 'Foundry General Assistant'}</option></select></div>
+        <div><label style="font-size:12px;color:var(--muted);display:block;margin-bottom:4px;">${isTr ? 'Aktif Kullanıcı / Koltuk' : 'Active Users'}</label><input id="ftUsers" type="number" min="1" value="${defUsers}" oninput="calcFastTrackCost()" style="width:100%;background:#0b1120;color:var(--text);border:1px solid var(--border);border-radius:6px;padding:7px;" /></div>
+        <div><label style="font-size:12px;color:var(--muted);display:block;margin-bottom:4px;">${isTr ? 'Günlük Konuşma / Kullanıcı' : 'Conversations / User / Day'}</label><input id="ftConvDay" type="number" min="1" max="100" value="3" oninput="calcFastTrackCost()" style="width:100%;background:#0b1120;color:var(--text);border:1px solid var(--border);border-radius:6px;padding:7px;" /></div>
+        <div><label style="font-size:12px;color:var(--muted);display:block;margin-bottom:4px;">${isTr ? 'Aylık Aktif Gün' : 'Active Days / Month'}</label><input id="ftDays" type="number" min="1" max="31" value="20" oninput="calcFastTrackCost()" style="width:100%;background:#0b1120;color:var(--text);border:1px solid var(--border);border-radius:6px;padding:7px;" /></div>
+        <div><label style="font-size:12px;color:var(--muted);display:block;margin-bottom:4px;">${isTr ? 'Ek Otonom Çalıştırma / Ay' : 'Autonomous Runs / Month'}</label><input id="ftAutoRuns" type="number" min="0" step="500" value="1000" oninput="calcFastTrackCost()" style="width:100%;background:#0b1120;color:var(--text);border:1px solid var(--border);border-radius:6px;padding:7px;" /></div>
+        <div><label style="font-size:12px;color:var(--muted);display:block;margin-bottom:4px;" id="ftUnitLbl">${isTr ? 'Çalıştırma Başına Kredi (Graph=2, Araç=5)' : 'Billable Credits / Run (Graph=2, Tool=5)'}</label><input id="ftCreditsPerRun" type="number" min="0.01" step="0.5" value="4" oninput="calcFastTrackCost()" style="width:100%;background:#0b1120;color:var(--text);border:1px solid var(--border);border-radius:6px;padding:7px;" /></div>
+        <div><label style="font-size:12px;color:var(--muted);display:block;margin-bottom:4px;">${isTr ? 'M365 Copilot Lisansı ($30/ay)' : 'M365 Copilot Seats ($30/mo)'}</label><input id="ftCopilotSeats" type="number" min="0" value="${cr?.CopilotSeats || 0}" oninput="calcFastTrackCost()" style="width:100%;background:#0b1120;color:var(--text);border:1px solid var(--border);border-radius:6px;padding:7px;" /></div>
       </div>
       <div id="copilotRoiOutput"></div>
+      <p style="font-size:11.5px;color:var(--muted);margin-top:10px;">⚠ ${isTr ? 'Planlama tahmini amaçlıdır; sözleşmesel fiyat teklifi veya fatura taahhüdü değildir. Kaynak metodoloji: Microsoft FastTrack Agents Cost Calculator (microsoft.github.io/FastTrack).' : 'Planning estimate only; not a quote or billing commitment. Methodology: Microsoft FastTrack Agents Cost Calculator (microsoft.github.io/FastTrack).'}</p>
     `;
-    window.applyCopilotPreset = function() {
-      const p = document.getElementById('cPreset').value;
-      const map = { it:[200,3.5,65000], sales:[50,3.0,60000], fin:[20,2.5,58000], cs:[10,4.0,42000] };
-      if (map[p]) { document.getElementById('cSeats').value = map[p][0]; document.getElementById('cHours').value = map[p][1]; document.getElementById('cSalary').value = map[p][2]; }
-      calcCopilotRoi();
+    window.applyFastTrackPreset = function() {
+      const p = document.getElementById('ftPreset').value;
+      const presets = {
+        faq:     { scope:'sharepoint', users:150, conv:2, days:20, auto:0,    cpr:2 },
+        hr:      { scope:'builder',    users:100, conv:2, days:18, auto:200,  cpr:2 },
+        it:      { scope:'standard',   users:200, conv:4, days:22, auto:2500, cpr:9 },
+        ess:     { scope:'standard',   users:250, conv:3, days:20, auto:4000, cpr:12 },
+        foundry: { scope:'foundry',    users:50,  conv:5, days:20, auto:1500, cpr:0.04 }
+      };
+      if (presets[p]) {
+        document.getElementById('ftScope').value = presets[p].scope;
+        document.getElementById('ftUsers').value = presets[p].users;
+        document.getElementById('ftConvDay').value = presets[p].conv;
+        document.getElementById('ftDays').value = presets[p].days;
+        document.getElementById('ftAutoRuns').value = presets[p].auto;
+        document.getElementById('ftCreditsPerRun').value = presets[p].cpr;
+      }
+      calcFastTrackCost();
     };
-    window.calcCopilotRoi = function() {
-      const seats = Math.max(1, Number(document.getElementById('cSeats').value) || 1);
-      const sal = Math.max(1000, Number(document.getElementById('cSalary').value) || 48000);
-      const hrs = Math.max(0.1, Number(document.getElementById('cHours').value) || 2.5);
-      const realPct = Math.min(1, Math.max(0.05, (Number(document.getElementById('cRealize').value) || 65) / 100));
-      const msgs = Math.max(0, Number(document.getElementById('cMsgs').value) || 0);
-      const annualCost = Math.round((seats * 30 * 12) + (200 * 12) + (msgs * 0.008 * 12));
-      const hourlyRate = sal / 2080;
-      const annualGain = Math.round(seats * hrs * 48 * hourlyRate * realPct);
-      const netYr = annualGain - annualCost;
-      const roiPct = annualCost > 0 ? Math.round((netYr / annualCost) * 100) : 0;
-      const breakevenDays = annualGain > 0 ? Math.min(999, Math.round((annualCost / annualGain) * 365)) : 999;
-      const fundedPct = annualCost > 0 ? Math.min(100, Math.round((reclaimYr / annualCost) * 100)) : 0;
+    window.calcFastTrackCost = function() {
+      const scope = document.getElementById('ftScope').value;
+      const isFoundry = (scope === 'foundry');
+      document.getElementById('ftUnitLbl').textContent = isFoundry
+        ? (isTr ? 'Çalıştırma Başına Azure USD (Token+Araç)' : 'Est. Azure USD / Run (Tokens+Tools)')
+        : (isTr ? 'Çalıştırma Başına Kredi (Graph=2, Araç=5)' : 'Billable Credits / Run (Graph=2, Tool=5)');
+      const users = Math.max(1, Number(document.getElementById('ftUsers').value) || 1);
+      const convDay = Math.max(1, Number(document.getElementById('ftConvDay').value) || 1);
+      const days = Math.max(1, Number(document.getElementById('ftDays').value) || 20);
+      const autoRuns = Math.max(0, Number(document.getElementById('ftAutoRuns').value) || 0);
+      const cpr = Math.max(0.001, Number(document.getElementById('ftCreditsPerRun').value) || (isFoundry ? 0.04 : 4));
+      const copSeats = Math.max(0, Number(document.getElementById('ftCopilotSeats').value) || 0);
+
+      const monthlyRuns = (users * convDay * days) + autoRuns;
+      const copilotMoUsd = copSeats * 30;
+      let agentPaygMoUsd = 0, packCount = 0, packMoUsd = 0, billableCredits = 0;
+      if (isFoundry) {
+        agentPaygMoUsd = Math.round(monthlyRuns * cpr);
+        packMoUsd = agentPaygMoUsd;
+      } else {
+        billableCredits = Math.round(monthlyRuns * cpr);
+        agentPaygMoUsd = Math.round(billableCredits * 0.01);
+        packCount = Math.max(0, Math.ceil(billableCredits / 25000));
+        packMoUsd = packCount * 200;
+      }
+      const bestAgentMo = isFoundry ? agentPaygMoUsd : Math.min(agentPaygMoUsd, packMoUsd || agentPaygMoUsd);
+      const totalAnnualUsd = (copilotMoUsd + bestAgentMo) * 12;
+      const fundedPct = totalAnnualUsd > 0 ? Math.min(100, Math.round((reclaimYr / totalAnnualUsd) * 100)) : 0;
+
       document.getElementById('copilotRoiOutput').innerHTML = `<div class="cards" style="margin-bottom:0;">
-        <div class="card"><div class="lbl">${isTr ? 'Yıllık Copilot + Studio Yatırımı' : 'Annual Investment'}</div><div class="val">$${annualCost.toLocaleString()}</div></div>
-        <div class="card"><div class="lbl">${isTr ? 'Yıllık Verimlilik Değeri' : 'Annual Productivity Value'}</div><div class="val" style="color:var(--ok)">$${annualGain.toLocaleString()}</div></div>
-        <div class="card"><div class="lbl">${isTr ? 'Net Yıllık ROI' : 'Net Annual ROI'}</div><div class="val" style="color:${netYr >= 0 ? 'var(--ok)' : 'var(--fail)'}">$${netYr.toLocaleString()} (${roiPct}%)</div></div>
-        <div class="card"><div class="lbl">${isTr ? 'Başabaş Süresi (Gün)' : 'Breakeven (Days)'}</div><div class="val">${breakevenDays} ${isTr ? 'gün' : 'days'}</div></div>
-        <div class="card"><div class="lbl">${isTr ? 'Atıl Lisanstan Finansman' : 'Self-Funded via Idle SKUs'}</div><div class="val" style="color:var(--accent)">${fundedPct}%</div></div>
+        <div class="card"><div class="lbl">${isTr ? 'Aylık Toplam Çalıştırma' : 'Monthly Total Runs'}</div><div class="val">${monthlyRuns.toLocaleString()}</div></div>
+        <div class="card"><div class="lbl">${isFoundry ? (isTr ? 'Aylık Azure Foundry Tahmini' : 'Est. Azure Foundry / Mo') : (isTr ? 'Aylık Faturalanabilir Kredi' : 'Monthly Billable Credits')}</div><div class="val" style="color:var(--accent)">${isFoundry ? ('$' + agentPaygMoUsd.toLocaleString()) : billableCredits.toLocaleString()}</div></div>
+        <div class="card"><div class="lbl">${isFoundry ? (isTr ? 'Yıllık Foundry Ajan Maliyeti' : 'Annual Foundry Cost') : (isTr ? 'Aylık PAYG / Kredi Paketi' : 'Monthly PAYG / Credit Packs')}</div><div class="val" style="font-size:18px;">${isFoundry ? ('$' + (agentPaygMoUsd * 12).toLocaleString()) : ('$' + agentPaygMoUsd.toLocaleString() + ' · ' + packCount + 'x ($' + packMoUsd.toLocaleString() + ')')}</div></div>
+        <div class="card"><div class="lbl">${isTr ? 'Yıllık Toplam (Copilot + Ajan)' : 'Annual Total (Copilot + Agent)'}</div><div class="val">$${totalAnnualUsd.toLocaleString()}</div></div>
+        <div class="card"><div class="lbl">${isTr ? 'Atıl Lisanstan Finansman' : 'Self-Funded via Idle SKUs'}</div><div class="val" style="color:var(--ok)">${fundedPct}%</div></div>
       </div>`;
     };
-    calcCopilotRoi();
+    calcFastTrackCost();
 
     // Offline Deterministic Executive Remediation Digest (Zero external AI data sharing)
     const costOrder = { Low: 0, Medium: 1, High: 2, Unknown: 3 };

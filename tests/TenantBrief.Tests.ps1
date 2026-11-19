@@ -11,15 +11,18 @@ Describe 'TenantBrief Module' {
         $cmds | Should -Contain 'Get-TenantBriefLicenseRoi'
         $cmds | Should -Contain 'Get-TenantBriefLicenseWaste'
         $cmds | Should -Contain 'Get-TenantBriefCopilotReadiness'
+        $cmds | Should -Contain 'Import-TenantBriefSharePointRisk'
+        $cmds | Should -Contain 'Import-TenantBriefPowerPlatformAgents'
         $cmds | Should -Contain 'Compare-TenantBriefReports'
         $cmds | Should -Contain 'Export-TenantBriefExecutiveSummary'
     }
 
-    It 'Lists 7 verified benchmark and engine definitions' {
+    It 'Lists 8 verified benchmark and engine definitions' {
         $fws = Get-TenantBriefFrameworks
-        $fws.Count | Should -Be 7
+        $fws.Count | Should -Be 8
         ($fws | ForEach-Object { $_.Id }) | Should -Contain 'CISA_SCuBA'
         ($fws | ForEach-Object { $_.Id }) | Should -Contain 'EIDSCA'
+        ($fws | ForEach-Object { $_.Id }) | Should -Contain 'FastTrack'
     }
 
     It 'Calculates License ROI from SKU payload' {
@@ -418,6 +421,84 @@ Describe 'TenantBrief Module' {
             } finally {
                 Remove-Item function:Get-MgContext, function:Get-SPOTenant, function:Invoke-MgGraphRequest -ErrorAction SilentlyContinue
             }
+        }
+    }
+
+    It 'scores SharePoint oversharing risks via Import-TenantBriefSharePointRisk (FastTrack Analyze-SharePointRisk)' {
+        $tmpCsv = Join-Path ([System.IO.Path]::GetTempPath()) "tb-sprisk-$([guid]::NewGuid().ToString('N').Substring(0,8)).csv"
+        try {
+            @(
+                '"Site name","Site URL","Site privacy","Site sensitivity","Number of users having access","Items with unique permissions count","Anyone link count","EEEU permission count","Everyone permission count"',
+                '"HR Payroll Vault","https://contoso.sharepoint.com/sites/hr","Private","","500","65","2","14","1"',
+                '"Finance Public Board","https://contoso.sharepoint.com/sites/fin","Public","Confidential","1200","5","0","0","0"'
+            ) -join "`n" | Set-Content -Path $tmpCsv -Encoding UTF8
+
+            $res = Import-TenantBriefSharePointRisk -CsvPath $tmpCsv -Language tr
+            $res | Should -Not -BeNullOrEmpty
+            $res.Summary.TotalSites | Should -Be 2
+            $res.Summary.CriticalSites | Should -Be 1
+            $res.Summary.EEEUHighSites | Should -Be 1
+            $res.Summary.PrivateEEEUSites | Should -Be 1
+            $res.Summary.AnyoneLinkSites | Should -Be 1
+            $res.Summary.PublicSensitiveSites | Should -Be 1
+            $res.Findings.Count | Should -Be 3
+            ($res.Findings | Where-Object { $_.TestId -eq 'FT.SPO.001' }).TestStatus | Should -Be 'Failed'
+            ($res.Findings | Where-Object { $_.TestId -eq 'FT.SPO.001' }).TestDomainPillars | Should -Contain 'Data'
+            ($res.Findings | Where-Object { $_.TestId -eq 'FT.SPO.001' }).TestDomainPillars | Should -Contain 'AI'
+        } finally {
+            Remove-Item -Path $tmpCsv -Force -ErrorAction SilentlyContinue
+        }
+    }
+
+    It 'inventories Copilot Studio & Agent Builder agents via Import-TenantBriefPowerPlatformAgents' {
+        $tmpJson = Join-Path ([System.IO.Path]::GetTempPath()) "tb-agents-$([guid]::NewGuid().ToString('N').Substring(0,8)).json"
+        try {
+            @(
+                [PSCustomObject]@{ agentId = 'a1'; agentName = 'HR Shadow Bot'; createdIn = 'Copilot Studio'; environmentName = 'Contoso (default)'; ownerUpn = ''; isMicrosoftManaged = $false; lastUsedAt = '2025-01-10T00:00:00Z' },
+                [PSCustomObject]@{ agentId = 'a2'; agentName = 'FAQ Helper'; createdIn = 'Copilot Studio Lite'; environmentName = 'Prod Managed'; ownerUpn = 'user@contoso.com'; isMicrosoftManaged = $false; lastUsedAt = (Get-Date).ToString('o') },
+                [PSCustomObject]@{ agentId = 'a3'; agentName = 'Finance in M365 Copilot'; createdIn = 'Copilot Studio'; environmentName = 'Contoso (default)'; ownerUpn = ''; isMicrosoftManaged = $true; lastUsedAt = '' }
+            ) | ConvertTo-Json -Depth 4 | Set-Content -Path $tmpJson -Encoding UTF8
+
+            $res = Import-TenantBriefPowerPlatformAgents -Path $tmpJson -Language en
+            $res | Should -Not -BeNullOrEmpty
+            $res.Summary.TotalAgents | Should -Be 3
+            $res.Summary.CopilotStudioCount | Should -Be 2
+            $res.Summary.AgentBuilderCount | Should -Be 1
+            $res.Summary.MicrosoftManagedCount | Should -Be 1
+            $res.Summary.CustomDefaultEnvCount | Should -Be 1
+            $res.Summary.UnownedCount | Should -Be 1
+            $res.Summary.Stale90dCount | Should -Be 1
+            ($res.Findings | Where-Object { $_.TestId -eq 'FT.AGT.001' }).TestStatus | Should -Be 'Failed'
+            ($res.Findings | Where-Object { $_.TestId -eq 'FT.AGT.002' }).TestStatus | Should -Be 'Failed'
+        } finally {
+            Remove-Item -Path $tmpJson -Force -ErrorAction SilentlyContinue
+        }
+    }
+
+    It 'parses extended FastTrack Get-M365CopilotReadiness signals (EXO, OneDrive, Teams, ManualChecks)' {
+        $tmpFt = Join-Path ([System.IO.Path]::GetTempPath()) "tb-ft-$([guid]::NewGuid().ToString('N').Substring(0,8)).json"
+        try {
+            [PSCustomObject]@{
+                Licensing = [PSCustomObject]@{ EligibleBaseLicenses = @('SPE_E5') }
+                SharePoint = [PSCustomObject]@{ RacPolicySites = @('s1'); RestrictedSites = @() }
+                Readiness = [PSCustomObject]@{
+                    EXO_PrimaryMailboxHostedInEXO = 'Pass'
+                    OneDrive_Provisioned          = 'Pass'
+                    Teams_ServiceConnected        = 'Pass'
+                    ManualChecks                  = @(
+                        [PSCustomObject]@{ Name = 'Microsoft 365 Apps (channel/version) & network endpoints'; Status = 'Manual' }
+                    )
+                }
+            } | ConvertTo-Json -Depth 5 | Set-Content -Path $tmpFt -Encoding UTF8
+
+            $cr = Get-TenantBriefCopilotReadiness -InputFastTrackJsonPath $tmpFt -OfflineOnly -Language tr
+            $cr.FastTrackImported | Should -BeTrue
+            ($cr.Checks | Where-Object { $_.Id -eq 'COP-EXO-FT' }).Status | Should -Be 'Pass'
+            ($cr.Checks | Where-Object { $_.Id -eq 'COP-OD-FT' }).Status | Should -Be 'Pass'
+            ($cr.Checks | Where-Object { $_.Id -eq 'COP-TEAMS-FT' }).Status | Should -Be 'Pass'
+            ($cr.Checks | Where-Object { $_.Id -eq 'COP-MANUAL-FT' }).Status | Should -Be 'Warning'
+        } finally {
+            Remove-Item -Path $tmpFt -Force -ErrorAction SilentlyContinue
         }
     }
 }

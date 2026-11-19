@@ -18,10 +18,12 @@ We gratefully acknowledge the maintainers and contributors of the following upst
 
 | Reference | Source | Inspiration / Adaptation in TenantBrief |
 | --- | --- | --- |
-| **Microsoft FastTrack Copilot Readiness** | [microsoft.github.io/FastTrack](https://microsoft.github.io/FastTrack/#get-m365copilotreadiness) | Copilot eligibility, SharePoint RAC/RCD posture alignment, and optional `-InputFastTrackJsonPath` ingestion |
+| **Microsoft FastTrack (`Get-M365CopilotReadiness`)** | [microsoft.github.io/FastTrack](https://microsoft.github.io/FastTrack/#get-m365copilotreadiness) | Copilot eligibility, Exchange/OneDrive/Teams readiness, SharePoint RAC/RCD posture, manual prerequisites, and optional `-InputFastTrackJsonPath` ingestion |
+| **Microsoft FastTrack (`Analyze-SharePointRisk`)** | [microsoft.github.io/FastTrack](https://microsoft.github.io/FastTrack/#analyze-sharepointrisk) | Deterministic site-level SharePoint oversharing risk weights (EEEU, Private+EEEU, Public sensitive titles, Anyone links, Everyone grants, unique permissions, unlabeled sites) via `Import-TenantBriefSharePointRisk` |
+| **Microsoft FastTrack (`Inventory-PowerPlatformAgents`)** | [microsoft.github.io/FastTrack](https://microsoft.github.io/FastTrack/#migrate-copilotstudioagents) | Read-only Copilot Studio & Agent Builder (`Copilot Studio Lite`) inventory parsing for Default-environment sprawl, unowned, and 90+ day stale agents via `Import-TenantBriefPowerPlatformAgents` |
+| **Microsoft FastTrack (`Agents Cost Calculator`)** | [microsoft.github.io/FastTrack](https://microsoft.github.io/FastTrack/#agents-cost-calculator) | Browser-local Copilot Credits & Microsoft Foundry agent cost planning model (replacing earlier third-party ROI calculators) |
 | **M365 Copilot Automated Readiness** | [github.com/microsoft/m365-copilot-automated-readiness-assessment](https://github.com/microsoft/m365-copilot-automated-readiness-assessment) | Graph-based readiness checks adapted to preserve active MSAL context without calling `Disconnect-MgGraph` |
 | **M365 License Review** | [github.com/samuelgtetteh/m365-license-review](https://github.com/samuelgtetteh/m365-license-review) | R1–R7 enterprise license waste categories (disabled accounts, 90+ day inactive seats, unassigned licenses, redundant overlaps, and licensed guests) |
-| **Copilot ROI Calculator** | [github.com/amitlals/copilot-roi-calculator](https://github.com/amitlals/copilot-roi-calculator) | Offline, browser-local Microsoft 365 Copilot & Agent Studio ROI & breakeven model |
 
 ---
 

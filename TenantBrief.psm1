@@ -603,6 +603,7 @@ function Resolve-TenantBriefSourceTag {
     if ((@($allIds | Where-Object { $_ -like 'SCUBA-*' }).Count -gt 0) -or ($pillars -contains 'CISA SCuBA')) { & $addTag 'CISA SCuBA' }
     if ((@($allIds | Where-Object { $_ -like 'ORCA-*' }).Count -gt 0) -or ($pillars -contains 'Defender for Office 365 (ORCA)')) { & $addTag 'MDO / ORCA' }
     if ((@($allIds | Where-Object { $_ -like 'EF-*' }).Count -gt 0) -or ($pillars -contains 'EntraFalcon')) { & $addTag 'EntraFalcon' }
+    if ((@($allIds | Where-Object { $_ -like 'FT.*' }).Count -gt 0) -or ($pillars -contains 'FastTrack')) { & $addTag 'FastTrack' }
     if (@($allIds | Where-Object { $_ -like 'CIS.M365.*' }).Count -gt 0) { & $addTag 'CIS M365' }
     if (@($allIds | Where-Object { $_ -like 'EIDSCA.*' }).Count -gt 0) { & $addTag 'EIDSCA' }
     if (($pillars -contains 'Maester (EIDSCA / CIS)') -and -not $explicit -and -not ($seen.Contains('CIS M365') -or $seen.Contains('EIDSCA'))) {
@@ -1553,7 +1554,7 @@ function Invoke-TenantBriefAssessment {
         [string]$Language = 'tr',
 
         [Parameter()]
-        [ValidateSet('All', 'ZeroTrust', 'CIS_M365', 'CISA_SCuBA', 'MDO_ORCA', 'EIDSCA', 'Maester', 'EntraFalcon')]
+        [ValidateSet('All', 'ZeroTrust', 'CIS_M365', 'CISA_SCuBA', 'MDO_ORCA', 'EIDSCA', 'Maester', 'EntraFalcon', 'FastTrack')]
         [string]$Framework = 'All',
 
         [Parameter()]
@@ -1567,6 +1568,12 @@ function Invoke-TenantBriefAssessment {
 
         [Parameter()]
         [string]$InputFastTrackJsonPath,
+
+        [Parameter()]
+        [string]$InputSharePointRiskCsvPath,
+
+        [Parameter()]
+        [string]$InputPowerPlatformAgentsPath,
 
         [Parameter()]
         [string]$InputMaesterJsonPath,
@@ -1798,6 +1805,30 @@ function Invoke-TenantBriefAssessment {
             Sort-Object LastWriteTime -Descending | Select-Object -First 1
         if ($efAuto) {
             $collectedTests += @(Import-TenantBriefEntraFalconFindings -JsonPath $efAuto.FullName | Where-Object { $null -ne $_ })
+        }
+    }
+    $sharePointRiskSummary = $null
+    if ($InputSharePointRiskCsvPath) {
+        if (Test-Path $InputSharePointRiskCsvPath) {
+            $spRiskRes = Import-TenantBriefSharePointRisk -CsvPath $InputSharePointRiskCsvPath -Language $Language
+            if ($spRiskRes) {
+                $sharePointRiskSummary = $spRiskRes.Summary
+                if ($spRiskRes.Findings) { $collectedTests += @($spRiskRes.Findings | Where-Object { $null -ne $_ }) }
+            }
+        } else {
+            Add-TenantBriefDiagnostic -Diagnostics $diagnostics -Stage 3 -Component 'FastTrackSharePointRisk' -Message "Belirtilen SharePoint Risk CSV bulunamadi: $InputSharePointRiskCsvPath"
+        }
+    }
+    $ppAgentsSummary = $null
+    if ($InputPowerPlatformAgentsPath) {
+        if (Test-Path $InputPowerPlatformAgentsPath) {
+            $ppRes = Import-TenantBriefPowerPlatformAgents -Path $InputPowerPlatformAgentsPath -Language $Language
+            if ($ppRes) {
+                $ppAgentsSummary = $ppRes.Summary
+                if ($ppRes.Findings) { $collectedTests += @($ppRes.Findings | Where-Object { $null -ne $_ }) }
+            }
+        } else {
+            Add-TenantBriefDiagnostic -Diagnostics $diagnostics -Stage 3 -Component 'FastTrackPowerPlatformAgents' -Message "Belirtilen Power Platform ajan envanteri bulunamadi: $InputPowerPlatformAgentsPath"
         }
     }
     $tests = New-TenantBriefCorrelatedTests -Tests @((@($ztTests) + @($collectedTests)) | Where-Object { $null -ne $_ })
@@ -2149,11 +2180,17 @@ function Invoke-TenantBriefAssessment {
     $degraded = @($diagnostics | Where-Object { $_.Component -ne 'Resume' })
     $runStatus = if ($degraded.Count -gt 0) { 'partial' } else { 'completed' }
 
+    if ($ppAgentsSummary -and $ppAgentsSummary.TotalAgents -gt [int]$tenantInsightObj.TotalAgents) {
+        $tenantInsightObj.TotalAgents = [int]$ppAgentsSummary.TotalAgents
+    }
+
     $reportObj = [PSCustomObject]@{
-        Tenant           = $tenantDisplay
-        Language         = $Language
-        Framework        = $Framework
-        TenantInsights   = $tenantInsightObj
+        Tenant              = $tenantDisplay
+        Language            = $Language
+        Framework           = $Framework
+        TenantInsights      = $tenantInsightObj
+        SharePointRisk      = $sharePointRiskSummary
+        PowerPlatformAgents = $ppAgentsSummary
         Summary          = [PSCustomObject]@{
             Total          = $tests.Count
             Passed         = $passedCount
@@ -3023,6 +3060,44 @@ function Get-TenantBriefCopilotReadiness {
         }
     }
 
+    # 3b. Extended FastTrack Get-M365CopilotReadiness signals (EXO, OneDrive, Teams, ManualChecks)
+    if ($ftData -and $ftData.PSObject.Properties['Readiness'] -and $ftData.Readiness) {
+        $rd = $ftData.Readiness
+        $ftChecks = @(
+            @{ Prop = 'EXO_PrimaryMailboxHostedInEXO'; Id = 'COP-EXO-FT'; CatTr = 'Exchange Online Hazırlığı (FastTrack)'; CatEn = 'Exchange Online Readiness (FastTrack)'; TitleTr = 'Birincil Posta Kutularının Exchange Online Barındırması'; TitleEn = 'Primary Mailboxes Hosted in Exchange Online'; ExpTr = 'Copilot Outlook ve takvim entegrasyonu için birincil posta kutularının Exchange Online üzerinde barındırılması gerekir.'; ExpEn = 'Copilot for Outlook and calendar requires primary mailboxes hosted in Exchange Online.' },
+            @{ Prop = 'OneDrive_Provisioned'; Id = 'COP-OD-FT'; CatTr = 'OneDrive Hazırlığı (FastTrack)'; CatEn = 'OneDrive Readiness (FastTrack)'; TitleTr = 'OneDrive for Business Sağlama Durumu'; TitleEn = 'OneDrive for Business Provisioning'; ExpTr = 'Copilot dosya özetleme, Word/PowerPoint taslakları ve kullanıcı bazlı çalışma alanları OneDrive gerektirir.'; ExpEn = 'Copilot document grounding and creation workflows require provisioned OneDrive storage.' },
+            @{ Prop = 'Teams_ServiceConnected'; Id = 'COP-TEAMS-FT'; CatTr = 'Microsoft Teams Hazırlığı (FastTrack)'; CatEn = 'Microsoft Teams Readiness (FastTrack)'; TitleTr = 'Microsoft Teams Servis & Transkripsiyon Hazırlığı'; TitleEn = 'Microsoft Teams Service Readiness'; ExpTr = 'Teams toplantı özetleri ve sohbet zekâsı için Teams bulut servis bağlantısı ve transkripsiyon politikaları gereklidir.'; ExpEn = 'Teams meeting recap and chat grounding require Teams cloud service readiness.' }
+        )
+        foreach ($fc in $ftChecks) {
+            $val = [string](Get-TenantBriefPropertyValue -Object $rd -Name $fc.Prop)
+            if ($val) {
+                $st = if ($val -match '^Pass|^Success|^Enabled') { 'Pass' } elseif ($val -match '^Fail|^Error') { 'Fail' } else { 'Warning' }
+                $checks += [PSCustomObject]@{
+                    Id          = $fc.Id
+                    Category    = if ($isTr) { $fc.CatTr } else { $fc.CatEn }
+                    Status      = $st
+                    Title       = if ($isTr) { $fc.TitleTr } else { $fc.TitleEn }
+                    Detail      = "FastTrack Readiness.$($fc.Prop) = $val"
+                    Explanation = if ($isTr) { $fc.ExpTr } else { $fc.ExpEn }
+                    Warning     = if ($st -ne 'Pass') { if ($isTr) { "UYARI: FastTrack $($fc.Prop) durumu '$val'." } else { "WARNING: FastTrack $($fc.Prop) status is '$val'." } } else { '' }
+                }
+            }
+        }
+        $manList = @(Get-TenantBriefPropertyValue -Object $rd -Name 'ManualChecks' | Where-Object { $null -ne $_ })
+        if ($manList.Count -gt 0) {
+            $manNames = @($manList | ForEach-Object { [string](Get-TenantBriefPropertyValue -Object $_ -Name 'Name') } | Where-Object { $_ }) -join ' · '
+            $checks += [PSCustomObject]@{
+                Id          = 'COP-MANUAL-FT'
+                Category    = if ($isTr) { 'İstemci & Ağ Önkoşulları (FastTrack)' } else { 'Client & Network Prerequisites (FastTrack)' }
+                Status      = 'Warning'
+                Title       = if ($isTr) { 'FastTrack Manuel Doğrulama Gerektiren Copilot Önkoşulları' } else { 'FastTrack Manual Verification Prerequisites' }
+                Detail      = if ($isTr) { "$($manList.Count) manuel madde: $manNames" } else { "$($manList.Count) manual checks: $manNames" }
+                Explanation = if ($isTr) { 'M365 Apps güncelleme kanalı (Current / Monthly Enterprise), web üçüncü taraf çerez/gizlilik ayarları ve cihaz bazlı lisanslama kısıtları elle doğrulanmalıdır.' } else { 'Verify M365 Apps update channel (Current/Monthly Enterprise), web third-party cookies/privacy controls, and device-based licensing exclusions.' }
+                Warning     = if ($isTr) { 'BİLGİ: Bu maddeler Graph API üzerinden otomatik okunamadığından dağıtım öncesi manuel kontrol gerektirir.' } else { 'NOTICE: These prerequisites require manual confirmation prior to Copilot rollout.' }
+            }
+        }
+    }
+
     # 4. AI Agents & Guest Ratios from TenantInsights
     if ($TenantInsights) {
         $uCnt = [int]$TenantInsights.UserCount
@@ -3060,5 +3135,320 @@ function Get-TenantBriefCopilotReadiness {
     }
 }
 
+function Import-TenantBriefSharePointRisk {
+    <#
+    .SYNOPSIS
+    Read-only parser & risk scorer for SharePoint permissions CSV exports (Microsoft SAM DAG / FastTrack Analyze-SharePointRisk).
+    #>
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory = $true)]
+        [string]$CsvPath,
+
+        [Parameter()]
+        [ValidateSet('tr', 'en')]
+        [string]$Language = 'tr'
+    )
+
+    if (-not (Test-Path $CsvPath)) { return $null }
+    $isTr = ($Language -eq 'tr')
+    try {
+        $rows = @(Import-Csv -Path $CsvPath -Encoding UTF8)
+    } catch {
+        Write-Warning "[TenantBrief] Failed to parse SharePoint Risk CSV '$CsvPath': $($_.Exception.Message)"
+        return $null
+    }
+    if ($rows.Count -eq 0) { return $null }
+
+    $getCol = {
+        param($Row, [string[]]$Candidates)
+        foreach ($c in $Candidates) {
+            foreach ($p in $Row.PSObject.Properties) {
+                if ($p.Name -and $p.Name.Trim().ToLowerInvariant() -eq $c.ToLowerInvariant()) {
+                    return [string]$p.Value
+                }
+            }
+        }
+        return ''
+    }
+    $toInt = {
+        param([string]$Val)
+        $n = 0
+        if ([int]::TryParse(($Val -replace '[^\d-]', ''), [ref]$n)) { return $n }
+        return 0
+    }
+
+    $sensitiveRx = '(?i)\b(hr|human.?resources|payroll|finance|legal|board|exec|executive|confidential|secret|salary|m&a|merger|ik|insan.?kaynak|finans|hukuk|yonetim|bordro|gizli)\b'
+    $scoredSites = @()
+    $eeeuHighSites = 0
+    $privateEeeuSites = 0
+    $everyoneSites = 0
+    $anyoneSites = 0
+    $noLabelSites = 0
+    $highUniqueSites = 0
+    $publicSensitiveSites = 0
+
+    foreach ($r in $rows) {
+        $name = & $getCol $r @('Site name', 'SiteName', 'Title')
+        $url  = & $getCol $r @('Site URL', 'SiteUrl', 'Url')
+        $priv = & $getCol $r @('Site privacy', 'Privacy')
+        $sens = & $getCol $r @('Site sensitivity', 'SensitivityLabel', 'Sensitivity')
+        $eeeu = & $toInt (& $getCol $r @('EEEU permission count', 'EEEUCount', 'EEEU'))
+        $evry = & $toInt (& $getCol $r @('Everyone permission count', 'EveryoneCount', 'Everyone'))
+        $any  = & $toInt (& $getCol $r @('Anyone link count', 'AnyoneLinks', 'Anyone'))
+        $uniq = & $toInt (& $getCol $r @('Items with unique permissions count', 'UniquePermissionsCount'))
+        $users = & $toInt (& $getCol $r @('Number of users having access', 'UserCount'))
+
+        # Official Microsoft FastTrack Analyze-SharePointRisk.ps1 default weights
+        $score = 0
+        $reasons = @()
+        if ($eeeu -ge 10) { $score += 4; $eeeuHighSites++; $reasons += "EEEU($eeeu)" }
+        if ($priv -match '(?i)^private$' -and $eeeu -gt 0) { $score += 3; $privateEeeuSites++; $reasons += 'Private+EEEU' }
+        if ($priv -match '(?i)^public$' -and $name -match $sensitiveRx) { $score += 5; $publicSensitiveSites++; $reasons += 'Public+SensitiveTitle' }
+        if ($evry -gt 0) { $score += 3; $everyoneSites++; $reasons += "Everyone($evry)" }
+        if ($any -gt 0) { $score += 2; $anyoneSites++; $reasons += "Anyone($any)" }
+        if ($uniq -ge 50) { $score += 3; $highUniqueSites++; $reasons += "Unique($uniq)" }
+        if ([string]::IsNullOrWhiteSpace($sens)) { $score += 1; $noLabelSites++; $reasons += 'NoLabel' }
+
+        $level = if ($score -ge 10) { 'Critical' } elseif ($score -ge 7) { 'High' } elseif ($score -ge 4) { 'Medium' } elseif ($score -ge 1) { 'Low' } else { 'Minimal' }
+        $scoredSites += [PSCustomObject]@{
+            SiteName          = if ($name) { $name } else { $url }
+            SiteUrl           = $url
+            Privacy           = if ($priv) { $priv } else { '-' }
+            SensitivityLabel  = if ($sens) { $sens } else { '-' }
+            UsersWithAccess   = $users
+            EEEUCount         = $eeeu
+            EveryoneCount     = $evry
+            AnyoneLinks       = $any
+            UniquePermissions = $uniq
+            RiskScore         = $score
+            RiskLevel         = $level
+            Reasons           = ($reasons -join ', ')
+        }
+    }
+
+    $criticalCount = @($scoredSites | Where-Object { $_.RiskLevel -eq 'Critical' }).Count
+    $highCount     = @($scoredSites | Where-Object { $_.RiskLevel -eq 'High' }).Count
+    $mediumCount   = @($scoredSites | Where-Object { $_.RiskLevel -eq 'Medium' }).Count
+    $topSites      = @($scoredSites | Sort-Object RiskScore, EEEUCount, AnyoneLinks -Descending | Select-Object -First 25)
+
+    $findings = @()
+    $eeeuTotalAffected = @($scoredSites | Where-Object { $_.EEEUCount -ge 10 -or ($_.Privacy -match '(?i)^private$' -and $_.EEEUCount -gt 0) }).Count
+    $findings += [PSCustomObject]@{
+        TestId                 = 'FT.SPO.001'
+        TestTitle              = if ($isTr) { 'SharePoint EEEU (Everyone Except External Users) Aşırı Paylaşım Riski' } else { 'SharePoint EEEU (Everyone Except External Users) Oversharing Risk' }
+        TestStatus             = if ($eeeuTotalAffected -gt 0) { 'Failed' } else { 'Passed' }
+        TestRisk               = 'High'
+        TestPillar             = 'FastTrack'
+        TestDomainPillars      = @('Data', 'AI')
+        TestSource             = 'FastTrack'
+        TestCategory           = 'SharePoint Oversharing (FastTrack)'
+        TestSfiPillar          = 'Protect tenants and isolate production systems'
+        TestImplementationCost = 'Medium'
+        TestMinimumLicense     = 'Microsoft_365_Copilot'
+        TestResult             = if ($isTr) { "İncelenen $($scoredSites.Count) siteden $eeeuHighSites sitede yüksek EEEU (>=10), $privateEeeuSites özel sitede EEEU erişimi tespit edildi." } else { "Out of $($scoredSites.Count) sites, $eeeuHighSites have high EEEU (>=10) and $privateEeeuSites private sites expose EEEU access." }
+        TestDescription        = if ($isTr) { 'Microsoft FastTrack Analyze-SharePointRisk modeline göre EEEU izinleri kurumdaki tüm kullanıcıların ve Microsoft 365 Copilot indekslemesinin hassas site içeriğine erişmesine yol açar.' } else { 'Per Microsoft FastTrack Analyze-SharePointRisk scoring, EEEU permissions expose site documents to every internal user and Microsoft 365 Copilot grounding.' }
+        TestImpact             = if ($isTr) { 'Copilot yanıtlarında yetkisiz iç veri sızıntısı ve aşırı paylaşım riski.' } else { 'Internal oversharing and unintended sensitive data surfacing in Copilot responses.' }
+        SkippedReason          = ''
+    }
+
+    $extBroadCount = @($scoredSites | Where-Object { $_.AnyoneLinks -gt 0 -or $_.EveryoneCount -gt 0 -or ($_.Privacy -match '(?i)^public$' -and $_.SiteName -match $sensitiveRx) }).Count
+    $findings += [PSCustomObject]@{
+        TestId                 = 'FT.SPO.002'
+        TestTitle              = if ($isTr) { 'SharePoint Anonim Bağlantılar (Anyone), Everyone İzinleri ve Hassas Açık Siteler' } else { 'SharePoint Anyone Links, Everyone Permissions & Sensitive Public Sites' }
+        TestStatus             = if ($extBroadCount -gt 0) { 'Failed' } else { 'Passed' }
+        TestRisk               = 'High'
+        TestPillar             = 'FastTrack'
+        TestDomainPillars      = @('Data', 'AI')
+        TestSource             = 'FastTrack'
+        TestCategory           = 'SharePoint Oversharing (FastTrack)'
+        TestSfiPillar          = 'Protect tenants and isolate production systems'
+        TestImplementationCost = 'Low'
+        TestMinimumLicense     = 'Microsoft_365_Copilot'
+        TestResult             = if ($isTr) { "Anyone bağlantısı olan site: $anyoneSites · Everyone izni olan site: $everyoneSites · Hassas başlıklı açık site: $publicSensitiveSites." } else { "Sites with Anyone links: $anyoneSites · Everyone permissions: $everyoneSites · Public sites with sensitive titles: $publicSensitiveSites." }
+        TestDescription        = if ($isTr) { 'Anonim paylaşım bağlantıları (Anyone) ve hassas içerikli açık siteler hem dış sızıntı hem de Copilot aşırı paylaşımı açısından en yüksek riskli yüzeydir.' } else { 'Anonymous Anyone links, Everyone grants, and public sites with sensitive names represent critical external and Copilot oversharing exposure.' }
+        TestImpact             = if ($isTr) { 'Kimlik doğrulamasız dış erişim ve hassas dokümanların kontrolsüz paylaşımı.' } else { 'Unauthenticated external exposure and broad discovery of sensitive corporate content.' }
+        SkippedReason          = ''
+    }
+
+    $findings += [PSCustomObject]@{
+        TestId                 = 'FT.SPO.003'
+        TestTitle              = if ($isTr) { 'Hassasiyet Etiketi Eksik ve Yüksek Benzersiz İzinli SharePoint Siteleri' } else { 'Unlabeled SharePoint Sites & High Unique Permission Sprawl' }
+        TestStatus             = if ($highUniqueSites -gt 0 -or ($noLabelSites -gt 0 -and $noLabelSites -eq $scoredSites.Count)) { 'Failed' } elseif ($noLabelSites -gt 0) { 'Investigate' } else { 'Passed' }
+        TestRisk               = if ($highUniqueSites -gt 0) { 'Medium' } else { 'Low' }
+        TestPillar             = 'FastTrack'
+        TestDomainPillars      = @('Data', 'AI')
+        TestSource             = 'FastTrack'
+        TestCategory           = 'SharePoint Governance (FastTrack)'
+        TestSfiPillar          = 'Protect tenants and isolate production systems'
+        TestImplementationCost = 'Medium'
+        TestMinimumLicense     = 'RMS_S_PREMIUM'
+        TestResult             = if ($isTr) { "Etiketsiz site: $noLabelSites / $($scoredSites.Count) · Yüksek benzersiz izinli (>=50) site: $highUniqueSites." } else { "Unlabeled sites: $noLabelSites / $($scoredSites.Count) · High unique permissions (>=50): $highUniqueSites." }
+        TestDescription        = if ($isTr) { 'Purview hassasiyet etiketi bulunmayan ve 50+ kırık/benzersiz izin barındıran sitelerde erişim yönetişimi zorlaşır; RAC/RCD ve Site Access Review önerilir.' } else { 'Unlabeled sites and extensive unique permission sprawl (>=50 items) hinder governance; enforce Purview labels and Site Access Reviews.' }
+        TestImpact             = if ($isTr) { 'Erişim denetimi kör noktası ve etiket bazlı Copilot/DLP kurallarının atlanması.' } else { 'Governance blind spots and inability to enforce label-based Copilot/DLP protections.' }
+        SkippedReason          = ''
+    }
+
+    return [PSCustomObject]@{
+        Summary = [PSCustomObject]@{
+            TotalSites           = $scoredSites.Count
+            CriticalSites        = $criticalCount
+            HighRiskSites        = $highCount
+            MediumRiskSites      = $mediumCount
+            EEEUHighSites        = $eeeuHighSites
+            PrivateEEEUSites     = $privateEeeuSites
+            EveryoneSites        = $everyoneSites
+            AnyoneLinkSites      = $anyoneSites
+            PublicSensitiveSites = $publicSensitiveSites
+            UnlabeledSites       = $noLabelSites
+            HighUniquePermSites  = $highUniqueSites
+            TopRiskySites        = @($topSites)
+        }
+        Findings = @($findings)
+    }
+}
+
+function Import-TenantBriefPowerPlatformAgents {
+    <#
+    .SYNOPSIS
+    Read-only parser for Microsoft FastTrack Inventory-PowerPlatformAgents.ps1 JSON or CSV exports.
+    Detects Copilot Studio, Agent Builder (Copilot Studio Lite), default-environment sprawl, and stale/unowned agents.
+    #>
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory = $true)]
+        [string]$Path,
+
+        [Parameter()]
+        [ValidateSet('tr', 'en')]
+        [string]$Language = 'tr'
+    )
+
+    if (-not (Test-Path $Path)) { return $null }
+    $isTr = ($Language -eq 'tr')
+    $rawItems = @()
+    try {
+        if ($Path -match '\.json$') {
+            $parsed = Get-Content -Path $Path -Raw -Encoding UTF8 | ConvertFrom-Json
+            if ($parsed -is [System.Array]) { $rawItems = @($parsed) }
+            elseif ($parsed.PSObject.Properties['agents']) { $rawItems = @($parsed.agents) }
+            elseif ($parsed.PSObject.Properties['Agents']) { $rawItems = @($parsed.Agents) }
+            elseif ($parsed.PSObject.Properties['value']) { $rawItems = @($parsed.value) }
+            else { $rawItems = @($parsed) }
+        } else {
+            $rawItems = @(Import-Csv -Path $Path -Encoding UTF8)
+        }
+    } catch {
+        Write-Warning "[TenantBrief] Failed to parse Power Platform Agents inventory '$Path': $($_.Exception.Message)"
+        return $null
+    }
+
+    $agents = @()
+    $cutoff = (Get-Date).AddDays(-90)
+    $studioCount = 0
+    $builderCount = 0
+    $msManagedCount = 0
+    $customDefaultEnvCount = 0
+    $unownedCount = 0
+    $staleCount = 0
+
+    foreach ($a in $rawItems) {
+        if ($null -eq $a) { continue }
+        $name = [string](Get-TenantBriefPropertyValue -Object $a -Name 'agentName')
+        if (-not $name) { $name = [string](Get-TenantBriefPropertyValue -Object $a -Name 'displayName') }
+        if (-not $name) { $name = [string](Get-TenantBriefPropertyValue -Object $a -Name 'Name') }
+        $id = [string](Get-TenantBriefPropertyValue -Object $a -Name 'agentId')
+        if (-not $id) { $id = [string](Get-TenantBriefPropertyValue -Object $a -Name 'id') }
+        $createdIn = [string](Get-TenantBriefPropertyValue -Object $a -Name 'createdIn')
+        if (-not $createdIn) { $createdIn = 'Copilot Studio' }
+        $envName = [string](Get-TenantBriefPropertyValue -Object $a -Name 'environmentName')
+        $owner = [string](Get-TenantBriefPropertyValue -Object $a -Name 'ownerUpn')
+        if (-not $owner) { $owner = [string](Get-TenantBriefPropertyValue -Object $a -Name 'ownerDisplayName') }
+        if (-not $owner) { $owner = [string](Get-TenantBriefPropertyValue -Object $a -Name 'Owner') }
+        $msRaw = [string](Get-TenantBriefPropertyValue -Object $a -Name 'isMicrosoftManaged')
+        $isMs = ($msRaw -match '^(?i:true|1|yes)$')
+        $lastUsedStr = [string](Get-TenantBriefPropertyValue -Object $a -Name 'lastUsedAt')
+
+        $isBuilder = ($createdIn -match '(?i)Lite|Agent Builder')
+        if ($isBuilder) { $builderCount++ } else { $studioCount++ }
+        if ($isMs) { $msManagedCount++ }
+        $isDefaultEnv = ($envName -match '(?i)\(default\)|^default')
+        if (-not $isMs -and $isDefaultEnv) { $customDefaultEnvCount++ }
+        $ownerMissing = ([string]::IsNullOrWhiteSpace($owner) -or $owner -match '(?i)^(notfound|unknown|n/a)$')
+        if (-not $isMs -and $ownerMissing) { $unownedCount++ }
+        $isStale = $false
+        if ($lastUsedStr) {
+            try {
+                $dt = [datetime]::Parse($lastUsedStr)
+                if ($dt -lt $cutoff) { $isStale = $true; $staleCount++ }
+            } catch {}
+        }
+
+        $agents += [PSCustomObject]@{
+            AgentId            = $id
+            AgentName          = if ($name) { $name } else { $id }
+            CreatedIn          = if ($isBuilder) { 'Agent Builder (Copilot Studio Lite)' } else { $createdIn }
+            EnvironmentName    = if ($envName) { $envName } else { '-' }
+            Owner              = if ($ownerMissing) { if ($isTr) { 'Sahipsiz / Çözümlenemedi' } else { 'Unowned / NotFound' } } else { $owner }
+            IsMicrosoftManaged = $isMs
+            LastUsedAt         = if ($lastUsedStr) { $lastUsedStr } else { '-' }
+            IsStale            = $isStale
+        }
+    }
+
+    $customCount = $agents.Count - $msManagedCount
+    $findings = @()
+    $findings += [PSCustomObject]@{
+        TestId                 = 'FT.AGT.001'
+        TestTitle              = if ($isTr) { 'Varsayılan Ortamda (Default) Özel Copilot Studio & Agent Builder Gölge Ajanları' } else { 'Custom Copilot Studio & Agent Builder Sprawl in Default Environment' }
+        TestStatus             = if ($customDefaultEnvCount -gt 0) { 'Failed' } elseif ($customCount -gt 0) { 'Investigate' } else { 'Passed' }
+        TestRisk               = if ($customDefaultEnvCount -gt 0) { 'High' } else { 'Medium' }
+        TestPillar             = 'FastTrack'
+        TestDomainPillars      = @('AI')
+        TestSource             = 'FastTrack'
+        TestCategory           = 'Agent 365 & Power Platform Governance (FastTrack)'
+        TestSfiPillar          = 'Protect tenants and isolate production systems'
+        TestImplementationCost = 'Medium'
+        TestMinimumLicense     = 'AGENT_365'
+        TestResult             = if ($isTr) { "Toplam $($agents.Count) ajan (Copilot Studio: $studioCount, Agent Builder: $builderCount, Microsoft Yönetimli: $msManagedCount). Varsayılan ortamda $customDefaultEnvCount özel ajan tespit edildi." } else { "Total $($agents.Count) agents (Copilot Studio: $studioCount, Agent Builder: $builderCount, Microsoft-managed: $msManagedCount). $customDefaultEnvCount custom agents reside in the Default environment." }
+        TestDescription        = if ($isTr) { 'Microsoft FastTrack Inventory-PowerPlatformAgents yaklaşımına göre varsayılan ortamda biriken özel ajanlar DLP ve ortam izolasyonu dışına çıkabilir; özel yönetilen ortamlara (Managed Environments) taşınmalıdır.' } else { 'Per Microsoft FastTrack Inventory-PowerPlatformAgents guidance, custom agents accumulating in the Default environment bypass dedicated DLP boundaries and should be migrated to governed Managed Environments.' }
+        TestImpact             = if ($isTr) { 'Kontrolsüz gölge AI ajanları, aşırı bağlayıcı izinleri ve kurumsal veri sızıntısı riski.' } else { 'Shadow AI agent sprawl, unvetted connectors, and uncontrolled enterprise data exposure.' }
+        SkippedReason          = ''
+    }
+
+    $findings += [PSCustomObject]@{
+        TestId                 = 'FT.AGT.002'
+        TestTitle              = if ($isTr) { 'Sahipsiz veya 90+ Gün Atıl Power Platform / Copilot Ajanları' } else { 'Unowned or 90+ Day Stale Power Platform / Copilot Agents' }
+        TestStatus             = if ($unownedCount -gt 0 -or $staleCount -gt 0) { 'Failed' } else { 'Passed' }
+        TestRisk               = if ($unownedCount -gt 0) { 'High' } else { 'Medium' }
+        TestPillar             = 'FastTrack'
+        TestDomainPillars      = @('AI', 'Identity')
+        TestSource             = 'FastTrack'
+        TestCategory           = 'Agent Lifecycle Hygiene (FastTrack)'
+        TestSfiPillar          = 'Protect identities and secrets'
+        TestImplementationCost = 'Low'
+        TestMinimumLicense     = 'AGENT_365'
+        TestResult             = if ($isTr) { "Sahipsiz özel ajan: $unownedCount · 90+ gün kullanılmayan atıl ajan: $staleCount." } else { "Unowned custom agents: $unownedCount · 90+ day stale agents: $staleCount." }
+        TestDescription        = if ($isTr) { 'Sahibi ayrılmış veya çözümlenemeyen ajanlar yetim kimlik/bağlayıcı riski taşır; 90+ gün pasif ajanlar gözden geçirilip devre dışı bırakılmalıdır.' } else { 'Orphaned agents without active owners create credential and connector risk; agents inactive for 90+ days should be reviewed and retired.' }
+        TestImpact             = if ($isTr) { 'Yetim otomasyon kimlikleri ve gereksiz saldırı yüzeyi.' } else { 'Orphaned automation identities and unnecessary AI attack surface.' }
+        SkippedReason          = ''
+    }
+
+    return [PSCustomObject]@{
+        Summary = [PSCustomObject]@{
+            TotalAgents           = $agents.Count
+            CopilotStudioCount    = $studioCount
+            AgentBuilderCount     = $builderCount
+            MicrosoftManagedCount = $msManagedCount
+            CustomAgentCount      = $customCount
+            CustomDefaultEnvCount = $customDefaultEnvCount
+            UnownedCount          = $unownedCount
+            Stale90dCount         = $staleCount
+            Agents                = @($agents | Select-Object -First 30)
+        }
+        Findings = @($findings)
+    }
+}
+
 Export-ModuleMember `
-    -Function Connect-TenantBrief, Invoke-TenantBriefAssessment, Get-TenantBriefFrameworks, Get-TenantBriefLicenseRoi, Get-TenantBriefLicenseWaste, Get-TenantBriefCopilotReadiness, Compare-TenantBriefReports, Export-TenantBriefExecutiveSummary
+    -Function Connect-TenantBrief, Invoke-TenantBriefAssessment, Get-TenantBriefFrameworks, Get-TenantBriefLicenseRoi, Get-TenantBriefLicenseWaste, Get-TenantBriefCopilotReadiness, Import-TenantBriefSharePointRisk, Import-TenantBriefPowerPlatformAgents, Compare-TenantBriefReports, Export-TenantBriefExecutiveSummary
