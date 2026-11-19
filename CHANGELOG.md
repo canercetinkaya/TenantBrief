@@ -34,6 +34,11 @@ All notable changes to **TenantBrief** are documented in this file.
   - Dynamic 30-60-90 Roadmap phases with `PriorityScore`-ordered `FindingIds[]` and category-driven `Focus` text.
   - Enhanced `Export-TenantBriefExecutiveSummary`: Test/Lab tenant banner (`UserCount < 25`), `N/A`/`Uygulanamaz` ROI when no SKUs are present, Secure Score, active high-severity SecOps incidents, and Copilot maturity cards.
   - Documented pre-correlation per-source framework scoring rule in `README.md`.
+- **Sprint 5 Application Security, Privacy & Release Hygiene (`S5.1–S5.5`):**
+  - Strict offline `Content-Security-Policy` meta tags added to `assets/report-template.html` and `Export-TenantBriefExecutiveSummary`.
+  - Deep `-Anonymize` masking via `Protect-TenantBriefSensitiveText` across finding fields (`Title`, `Result`, `Description`, `SkippedReason`, `Remediation`, `RemediationTr`, `ErrorRemedy`), `PlannedFindings`, and `MfaCoverageDesc` (stripping UPNs/emails, GUIDs, and tenant domains).
+  - `-TranslatorKey` now accepts `[SecureString]` (with `[string]` backward compatibility), never logs or persists keys, and strips UPNs/GUIDs/tenant domains via `Protect-TenantBriefSensitiveText` before calling Azure AI Translator.
+  - Added `SECURITY.md` and documented Translator data flow and privacy guarantees in `README.md`.
 
 ### Deprecated
 - **`Finding.Impact`:** Retained for one release for backward compatibility; use `Finding.UserImpact` instead.

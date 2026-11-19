@@ -408,6 +408,36 @@ function Connect-TenantBrief {
     }
 }
 
+function Protect-TenantBriefSensitiveText {
+    [CmdletBinding()]
+    param(
+        [AllowEmptyString()]
+        [string]$Text,
+        [string]$TenantDomain = ''
+    )
+    if ([string]::IsNullOrEmpty($Text)) { return $Text }
+    $out = $Text
+    # Mask email addresses / UPNs
+    $out = $out -replace '\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}\b', 'redacted-user@contoso.onmicrosoft.com'
+    # Mask GUIDs
+    $out = $out -replace '\b[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}\b', '00000000-0000-0000-0000-000000000000'
+    # Mask any tenant-specific *.onmicrosoft.com and *.sharepoint.com hostnames
+    $out = $out -replace '(?i)\b(?!contoso\b)[A-Za-z0-9-]+(?:\.mail)?\.onmicrosoft\.com\b', 'contoso.onmicrosoft.com'
+    $out = $out -replace '(?i)\b(?!contoso(?:-my|-admin)?\b)[A-Za-z0-9-]+(-my|-admin)?\.sharepoint\.com\b', 'contoso$1.sharepoint.com'
+    # Mask explicit tenant domain and tenant prefix derivatives (e.g. SharePoint/mail subdomains & rule names)
+    if ($TenantDomain -and $TenantDomain.Length -ge 4 -and $TenantDomain -notmatch '^contoso\.onmicrosoft\.com') {
+        $out = $out -replace [regex]::Escape($TenantDomain), 'contoso.onmicrosoft.com'
+        $tenantPrefix = ($TenantDomain -split '\.')[0]
+        if ($tenantPrefix -and $tenantPrefix.Length -ge 4 -and $tenantPrefix -notmatch '^(contoso|fabrikam|example|tenant|microsoft|azure|office|sharepoint|admin|mail|cloud|security)$') {
+            $escPrefix = [regex]::Escape($tenantPrefix)
+            $out = $out -replace "(?i)\b$escPrefix(-my|-admin)?\.sharepoint\.com\b", 'contoso$1.sharepoint.com'
+            $out = $out -replace "(?i)\b$escPrefix\.mail\.onmicrosoft\.com\b", 'contoso.mail.onmicrosoft.com'
+            $out = $out -replace "(?i)\b$escPrefix\b", 'contoso'
+        }
+    }
+    return $out
+}
+
 function ConvertTo-TenantBriefTurkish {
     [CmdletBinding()]
     param([string]$Text)
@@ -1873,7 +1903,7 @@ function Invoke-TenantBriefAssessment {
         [switch]$NoBrowser,
 
         [Parameter()]
-        [string]$TranslatorKey = $env:AZURE_TRANSLATOR_KEY,
+        [object]$TranslatorKey = $env:AZURE_TRANSLATOR_KEY,
 
         [Parameter()]
         [string]$InputFastTrackJsonPath,
@@ -2305,57 +2335,83 @@ function Invoke-TenantBriefAssessment {
     }
 
     if ($Language -eq 'tr' -and $TranslatorKey) {
-        $toTranslate = @()
-        foreach ($t in $tests) {
-            $k = [string]$t.TestId
-            if ($k -and -not $trCache.ContainsKey($k)) { $toTranslate += $t }
+        $plainTranslatorKey = ''
+        if ($TranslatorKey -is [System.Security.SecureString]) {
+            $plainTranslatorKey = [System.Net.NetworkCredential]::new('', $TranslatorKey).Password
+        } elseif ($null -ne $TranslatorKey) {
+            $plainTranslatorKey = [string]$TranslatorKey
         }
-        if ($toTranslate.Count -gt 0) {
-            Write-Host "[TenantBrief] Translating $($toTranslate.Count) controls via Azure AI Translator..." -ForegroundColor Cyan
-            for ($i = 0; $i -lt $toTranslate.Count; $i += 15) {
-                $chunk = $toTranslate[$i..([Math]::Min($i + 14, $toTranslate.Count - 1))]
-                $payload = @()
-                foreach ($item in $chunk) {
-                    $dText = [string]$item.TestDescription
-                    if ($dText.Length -gt 1000) { $dText = $dText.Substring(0, 1000) }
-                    $payload += @{ Text = [string]$item.TestTitle }
-                    $payload += @{ Text = $dText }
-                }
-                $jsonBody = $payload | ConvertTo-Json -Compress
-                $trResp = $null
-                for ($attempt = 1; $attempt -le 2; $attempt++) {
-                    try {
-                        $trResp = Invoke-RestMethod -Method Post -Uri 'https://api.cognitive.microsofttranslator.com/translate?api-version=3.0&from=en&to=tr' -Headers @{
-                            'Ocp-Apim-Subscription-Key'    = $TranslatorKey
-                            'Ocp-Apim-Subscription-Region' = 'global'
-                            'Content-Type'                 = 'application/json; charset=utf-8'
-                        } -Body ([System.Text.Encoding]::UTF8.GetBytes($jsonBody)) -ErrorAction Stop
-                        break
-                    } catch {
-                        if ($attempt -eq 1 -and $_.Exception.Message -match '429') {
-                            Start-Sleep -Seconds 25
-                        } else {
-                            Write-Warning "[TenantBrief] Translator batch skipped: $($_.Exception.Message)"
-                        }
-                    }
-                }
-                if ($trResp) {
-                    for ($j = 0; $j -lt $chunk.Count; $j++) {
-                        $tItem = $chunk[$j]
-                        $trCache[[string]$tItem.TestId] = [PSCustomObject]@{
-                            Title = [string]$trResp[$j * 2].translations[0].text
-                            Desc  = [string]$trResp[$j * 2 + 1].translations[0].text
-                        }
-                    }
-                }
-                Start-Sleep -Seconds 4
+        try {
+            $toTranslate = @()
+            foreach ($t in $tests) {
+                $k = [string]$t.TestId
+                if ($k -and -not $trCache.ContainsKey($k)) { $toTranslate += $t }
             }
-            try { $trCache | ConvertTo-Json -Depth 3 | Out-File -FilePath $trCachePath -Encoding UTF8 } catch {}
+            if ($plainTranslatorKey -and $toTranslate.Count -gt 0) {
+                $rawDomainForTr = if ($raw -and $raw.PSObject.Properties['Domain'] -and $raw.Domain) { [string]$raw.Domain } else { '' }
+                Write-Host "[TenantBrief] Translating $($toTranslate.Count) controls via Azure AI Translator..." -ForegroundColor Cyan
+                for ($i = 0; $i -lt $toTranslate.Count; $i += 15) {
+                    $chunk = $toTranslate[$i..([Math]::Min($i + 14, $toTranslate.Count - 1))]
+                    $payload = @()
+                    foreach ($item in $chunk) {
+                        $tTitle = Protect-TenantBriefSensitiveText -Text ([string]$item.TestTitle) -TenantDomain $rawDomainForTr
+                        $dText = [string]$item.TestDescription
+                        if ($dText.Length -gt 1000) { $dText = $dText.Substring(0, 1000) }
+                        $dText = Protect-TenantBriefSensitiveText -Text $dText -TenantDomain $rawDomainForTr
+                        $payload += @{ Text = $tTitle }
+                        $payload += @{ Text = $dText }
+                    }
+                    $jsonBody = $payload | ConvertTo-Json -Compress
+                    $trResp = $null
+                    for ($attempt = 1; $attempt -le 2; $attempt++) {
+                        try {
+                            $trResp = Invoke-RestMethod -Method Post -Uri 'https://api.cognitive.microsofttranslator.com/translate?api-version=3.0&from=en&to=tr' -Headers @{
+                                'Ocp-Apim-Subscription-Key'    = $plainTranslatorKey
+                                'Ocp-Apim-Subscription-Region' = 'global'
+                                'Content-Type'                 = 'application/json; charset=utf-8'
+                            } -Body ([System.Text.Encoding]::UTF8.GetBytes($jsonBody)) -ErrorAction Stop
+                            break
+                        } catch {
+                            if ($attempt -eq 1 -and $_.Exception.Message -match '429') {
+                                Start-Sleep -Seconds 25
+                            } else {
+                                Write-Warning "[TenantBrief] Translator batch skipped: $($_.Exception.Message)"
+                            }
+                        }
+                    }
+                    if ($trResp) {
+                        for ($j = 0; $j -lt $chunk.Count; $j++) {
+                            $tItem = $chunk[$j]
+                            $trCache[[string]$tItem.TestId] = [PSCustomObject]@{
+                                Title    = [string]$trResp[$j * 2].translations[0].text
+                                Desc     = [string]$trResp[$j * 2 + 1].translations[0].text
+                                Source   = 'azure'
+                                Reviewed = $false
+                            }
+                        }
+                    }
+                    Start-Sleep -Seconds 4
+                }
+                try { $trCache | ConvertTo-Json -Depth 3 | Out-File -FilePath $trCachePath -Encoding UTF8 } catch {}
+            }
+        } finally {
+            $plainTranslatorKey = $null
         }
     }
 
     $findings = @(New-TenantBriefFindings -Tests $tests -PillarMap $pillarMap -Language $Language -TranslationCache $trCache)
     $plannedFindings = @(New-TenantBriefFindings -Tests $plannedTests -PillarMap $pillarMap -Language $Language -TranslationCache $trCache)
+
+    if ($Anonymize) {
+        $rawDomainForMask = if ($raw -and $raw.PSObject.Properties['Domain'] -and $raw.Domain) { [string]$raw.Domain } else { '' }
+        foreach ($item in (@($findings) + @($plannedFindings))) {
+            foreach ($propName in @('Title', 'Result', 'Description', 'SkippedReason', 'Remediation', 'RemediationTr', 'ErrorRemedy')) {
+                if ($item.PSObject.Properties[$propName] -and $item.$propName) {
+                    $item.$propName = Protect-TenantBriefSensitiveText -Text ([string]$item.$propName) -TenantDomain $rawDomainForMask
+                }
+            }
+        }
+    }
 
     $buildPhaseFocus = {
         param([object[]]$Items, [string]$EmptyText)
@@ -2399,6 +2455,9 @@ function Invoke-TenantBriefAssessment {
     $mfaDesc = if ($ti -and $ti.PSObject.Properties['OverviewCaMfaAllUsers'].Value) { [string]$ti.OverviewCaMfaAllUsers.description } else { '' }
     if ($Language -eq 'tr' -and $mfaDesc -match 'Over the past (\d+) days,\s*([\d.,]+)%\s*of sign-ins were protected by conditional access policies enforcing multifactor') {
         $mfaDesc = "Son $($Matches[1]) günde oturum açmaların %$($Matches[2]) kadarı çok faktörlü kimlik doğrulama (MFA) zorunlu kılan Koşullu Erişim politikaları ile korundu."
+    }
+    if ($Anonymize -and $mfaDesc) {
+        $mfaDesc = Protect-TenantBriefSensitiveText -Text $mfaDesc -TenantDomain ([string]$raw.Domain)
     }
     $devComp = if ($ti -and $ti.PSObject.Properties['DeviceOverview'].Value -and $ti.DeviceOverview.PSObject.Properties['DeviceCompliance'].Value) { $ti.DeviceOverview.DeviceCompliance } else { $null }
     $agentOv = if ($ti -and $ti.PSObject.Properties['AgentOverview'].Value) { $ti.AgentOverview } else { $null }
@@ -2952,6 +3011,7 @@ function Export-TenantBriefExecutiveSummary {
 <html lang="$Language">
 <head>
 <meta charset="UTF-8" />
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; connect-src 'none'; img-src 'self' data:; style-src 'unsafe-inline'; script-src 'none'; font-src 'none'; base-uri 'none'; form-action 'none';" />
 <title>TenantBrief - $title</title>
 <style>
   body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; color: #0f172a; margin: 32px; }
