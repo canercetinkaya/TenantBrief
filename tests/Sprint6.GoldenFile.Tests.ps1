@@ -6,6 +6,7 @@ BeforeAll {
         param([Parameter(Mandatory = $true)][string]$JsonPath)
         $obj = Get-Content -LiteralPath $JsonPath -Raw -Encoding UTF8 | ConvertFrom-Json
         if ($obj.PSObject.Properties['GeneratedAt']) { $obj.GeneratedAt = '<NORMALIZED_TIMESTAMP>' }
+        if ($obj.PSObject.Properties['Prerequisites']) { $obj.Prerequisites = @('<NORMALIZED_PREREQS>') }
         if ($obj.PSObject.Properties['Metadata'] -and $obj.Metadata) {
             foreach ($k in @('GeneratedAt', 'ReportGeneratedAt', 'RunTimestamp', 'OutputPath')) {
                 if ($obj.Metadata.PSObject.Properties[$k]) { $obj.Metadata.$k = '<NORMALIZED>' }
