@@ -1403,8 +1403,8 @@ function New-TenantBriefCorrelatedTests {
                     $existing.$field = $incoming
                 }
             }
-            $distinctEvalStatuses = @($existing.SourceStatuses.Values | Where-Object { $_ -and $_ -notin @('Skipped', 'Planned') } | Select-Object -Unique)
-            $existing.StatusConflict = ($distinctEvalStatuses.Count -gt 1)
+            $distinctStatuses = @($existing.SourceStatuses.Values | Where-Object { $_ } | Select-Object -Unique)
+            $existing.StatusConflict = ($distinctStatuses.Count -gt 1)
         } else {
             $srcStatuses = [ordered]@{}
             foreach ($s in $sourceList) {
