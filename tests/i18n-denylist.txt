@@ -1,5 +1,3 @@
-# TenantBrief Turkish localization denylist (CI scanned, Q09 = 0)
+# TenantBrief Turkish localization denylist (bad machine-translation terms, Q09 = 0)
 tasdiqi
 tasdiği
-SHALL
-SHOULD

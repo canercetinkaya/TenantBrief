@@ -1712,12 +1712,12 @@ function New-TenantBriefFindings {
             if ($fDesc -match '(?is)(?:\*\*Düzeltme işlemi\*\*|####\s*Remediation action|\*\*Remediation action\*\*)(.+)$') {
                 $rawLines = @($Matches[1] -split '\r?\n' | Where-Object {
                     $ln = $_.Trim()
-                    $ln -and ($ln -notmatch '(?i)(Related links|İlgili bağlantılar|Learn more|Daha fazla bilgi|öğrenin|For more information|See also)')
+                    $ln -and ($ln -notmatch '(?i)(Related links|İlgili bağlantılar|Learn|Daha fazla bilgi|öğrenin|For more information|See also)')
                 })
                 $remBlock = (($rawLines -join ' ') -replace '```[\s\S]*?```', ' ' -replace '\[([^\]]+)\]\([^\)]+\)', '$1' -replace 'https?://\S+', ' ' -replace '[#*_`>|\[\]]', ' ' -replace '\.\.\.+', '.' -replace '\s+', ' ').Trim()
                 # Keep complete sentences up to 220 chars without mid-word ellipsis
                 $sentences = @($remBlock -split '(?<=[.!?])\s+' | Where-Object {
-                    $_ -and ($_ -notmatch '(?i)(Related links|İlgili bağlantılar|Learn more|Daha fazla bilgi|öğrenin|For more information)')
+                    $_ -and ($_ -notmatch '(?i)(Related links|İlgili bağlantılar|Learn|Daha fazla bilgi|öğrenin|For more information)')
                 })
                 $acc = ''
                 foreach ($sent in $sentences) {
