@@ -873,12 +873,22 @@ function Import-TenantBriefOrcaResults {
         $rec  = if ($item.PSObject.Properties['FailRecommendation']) { [string]$item.FailRecommendation } else { '' }
         $passTxt = if ($item.PSObject.Properties['PassText']) { [string]$item.PassText } else { '' }
         $imp  = if ($item.PSObject.Properties['Importance']) { [string]$item.Importance } else { '' }
+        $chiRaw = if ($item.PSObject.Properties['ChiValue']) { $item.ChiValue } else { $null }
+        $mappedRisk = if ($null -ne $chiRaw -and "$chiRaw" -ne '') {
+            switch ([string]$chiRaw) {
+                { $_ -in @('100', 'Critical') }       { 'Critical' }
+                { $_ -in @('20', 'VeryHigh', '15', 'High') } { 'High' }
+                { $_ -in @('10', 'Medium') }          { 'Medium' }
+                { $_ -in @('5', 'Low', '0', 'NotRated') } { 'Low' }
+                default                               { 'Medium' }
+            }
+        } else { 'Medium' }
         $mappedOrStatus = if ($st -in @('1', 'Pass', 'OK')) { 'Passed' } elseif ($st -in @('2', '0', 'Informational', 'Info', 'None')) { 'Investigate' } else { 'Failed' }
         $out += [PSCustomObject]@{
             TestId                 = if ($ctrl -like 'ORCA-*') { $ctrl } else { "ORCA-$ctrl" }
             TestTitle              = $cName
             TestStatus             = $mappedOrStatus
-            TestRisk               = 'Medium'
+            TestRisk               = $mappedRisk
             TestPillar             = 'Defender for Office 365 (ORCA)'
             TestSource             = 'MDO / ORCA'
             TestCategory           = $area
@@ -1644,6 +1654,7 @@ function New-TenantBriefFindings {
             Title              = $fTitle
             FrameworkRef       = $fwRef
             Result             = [string]$resultRaw
+            UserImpact         = $fImp
             Impact             = $fImp
             Description        = $fDesc
             SkippedReason      = [string]$skippedRaw
@@ -1990,7 +2001,7 @@ function Invoke-TenantBriefAssessment {
     $plannedCount = 0
     $plannedExcludedCount = $plannedTests.Count
     $errorCount = @($tests | Where-Object { $_.TestStatus -eq 'Error' }).Count
-    $highRiskFailed = @($tests | Where-Object { $_.TestStatus -eq 'Failed' -and $_.TestRisk -eq 'High' }).Count
+    $highRiskFailed = @($tests | Where-Object { $_.TestStatus -eq 'Failed' -and $_.TestRisk -in @('Critical', 'High') }).Count
     $medRiskFailed = @($tests | Where-Object { $_.TestStatus -eq 'Failed' -and $_.TestRisk -eq 'Medium' }).Count
     $lowRiskFailed = @($tests | Where-Object { $_.TestStatus -eq 'Failed' -and $_.TestRisk -eq 'Low' }).Count
 
@@ -2681,9 +2692,11 @@ function Export-TenantBriefExecutiveSummary {
     $isTr = ($Language -eq 'tr')
     $costRank = @{ 'Low' = 0; 'Medium' = 1; 'High' = 2; 'Unknown' = 3 }
     $costMap = @{ 'Low' = 'Düşük'; 'Medium' = 'Orta'; 'High' = 'Yüksek'; 'Unknown' = 'Bilinmiyor' }
+    $riskRankExec = @{ 'Critical' = 0; 'High' = 1 }
     $topHigh = @($data.Findings |
-        Where-Object { $_.Status -eq 'Failed' -and $_.Risk -eq 'High' } |
+        Where-Object { $_.Status -eq 'Failed' -and $_.Risk -in @('Critical', 'High') } |
         Sort-Object `
+            @{ Expression = { $rk = [string]$_.Risk; if ($riskRankExec.ContainsKey($rk)) { $riskRankExec[$rk] } else { 2 } } },
             @{ Expression = { $cost = [string]$_.ImplementationCost; if ($costRank.ContainsKey($cost)) { $costRank[$cost] } else { 3 } } },
             @{ Expression = { [string]$_.Id } } |
         Select-Object -First 15)

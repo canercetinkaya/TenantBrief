@@ -211,7 +211,7 @@
     const DATA = {{REPORT_JSON}};
     const isTr = DATA.Language === 'tr';
     const statusLabel = s => !isTr ? (s || '') : ({ Passed: 'Geçti', Failed: 'Başarısız', Skipped: 'Atlandı', Investigate: 'İncele', Planned: 'Planlandı', Error: 'Hata', Pass: 'Geçti', Fail: 'Başarısız' }[s] || s || '');
-    const riskLabel = r => !isTr ? (r || '') : ({ High: 'Yüksek', Medium: 'Orta', Low: 'Düşük' }[r] || r || '');
+    const riskLabel = r => !isTr ? (r || '') : ({ Critical: 'Kritik', High: 'Yüksek', Medium: 'Orta', Low: 'Düşük' }[r] || r || '');
     const costLabel = c => !isTr ? (c || '') : ({ Low: 'Düşük', Medium: 'Orta', High: 'Yüksek', Unknown: 'Bilinmiyor' }[c] || c || '');
     let activePillarFilter = 'ALL';
     let activeSourceFilter = 'ALL';
@@ -386,7 +386,7 @@
       const items = F.filter(x => getDomains(x).includes(mp.key));
       const pass = items.filter(x => x.Status === 'Passed').length;
       const fail = items.filter(x => x.Status === 'Failed').length;
-      const hi   = items.filter(x => x.Status === 'Failed' && x.Risk === 'High').length;
+      const hi   = items.filter(x => x.Status === 'Failed' && (x.Risk === 'Critical' || x.Risk === 'High')).length;
       const med  = items.filter(x => x.Status === 'Failed' && x.Risk === 'Medium').length;
       const lowF = items.filter(x => x.Status === 'Failed' && x.Risk === 'Low').length;
       const invErr = items.filter(x => x.Status === 'Investigate' || x.Status === 'Error').length;
@@ -495,7 +495,7 @@
       const fixSkip = document.getElementById('simSkipped').checked;
       document.getElementById('simResults').innerHTML = (DATA.Frameworks || []).map(f => {
         const scoped = f.SourceTag ? F.filter(x => getSources(x).includes(f.SourceTag)) : [];
-        const fHigh = scoped.length ? scoped.filter(x => x.Status === 'Failed' && x.Risk === 'High').length : Math.min(f.Failed || 0, s.HighRiskFailed);
+        const fHigh = scoped.length ? scoped.filter(x => x.Status === 'Failed' && (x.Risk === 'Critical' || x.Risk === 'High')).length : Math.min(f.Failed || 0, s.HighRiskFailed);
         const fSkip = scoped.length ? scoped.filter(x => x.Status === 'Skipped').length : (f.Skipped || 0);
         const addedPass = (fixHigh ? fHigh : 0) + (fixSkip ? fSkip : 0);
         const newEval = Math.max(1, (f.Evaluated || 0) + (fixSkip ? fSkip : 0));
@@ -921,7 +921,7 @@
     // Offline Deterministic Executive Remediation Digest (Zero external AI data sharing)
     const costOrder = { Low: 0, Medium: 1, High: 2, Unknown: 3 };
     const byCostThenId = (a, b) => ((costOrder[a.ImplementationCost] ?? 3) - (costOrder[b.ImplementationCost] ?? 3)) || String(a.Id || '').localeCompare(String(b.Id || ''));
-    const highFailed = F.filter(x => x.Status === 'Failed' && x.Risk === 'High').slice().sort(byCostThenId);
+    const highFailed = F.filter(x => x.Status === 'Failed' && (x.Risk === 'Critical' || x.Risk === 'High')).slice().sort(byCostThenId);
     const pillarBreak = {};
     highFailed.forEach(x => { getDomains(x).forEach(p => { pillarBreak[p] = (pillarBreak[p] || 0) + 1; }); });
     const breakText = Object.entries(pillarBreak).sort((a,b) => b[1]-a[1]).map(([k,v]) => `${k}: ${v}`).join(' · ');
@@ -953,7 +953,7 @@
         </div>
       `).join('');
       const items = (activePhaseIdx === 0
-        ? F.filter(x => x.Status === 'Failed' && x.Risk === 'High')
+        ? F.filter(x => x.Status === 'Failed' && (x.Risk === 'Critical' || x.Risk === 'High'))
         : (activePhaseIdx === 1
           ? F.filter(x => x.Status === 'Failed' && x.Risk === 'Medium')
           : F.filter(x => (x.Status === 'Failed' && x.Risk === 'Low') || x.Status === 'Investigate'))).slice().sort(byCostThenId);
@@ -988,7 +988,7 @@
       document.getElementById('statusChips').innerHTML = `<span style="font-size:12px;color:var(--muted);">${isTr ? 'Durum:' : 'Status:'}</span>` +
         statuses.map(st => `<button class="chip ${activeStatusFilter === st ? 'active' : ''}" onclick="setStatus('${st}')">${st === 'ALL' ? (isTr ? 'Tümü' : 'All') : statusLabel(st)}</button>`).join('');
 
-      const risks = ['ALL', 'High', 'Medium', 'Low'];
+      const risks = ['ALL', 'Critical', 'High', 'Medium', 'Low'];
       document.getElementById('riskChips').innerHTML = `<span style="font-size:12px;color:var(--muted);">Risk:</span>` +
         risks.map(rk => `<button class="chip ${activeRiskFilter === rk ? 'active' : ''}" onclick="setRisk('${rk}')">${rk === 'ALL' ? (isTr ? 'Tümü' : 'All') : riskLabel(rk)}</button>`).join('');
     }
@@ -1062,7 +1062,7 @@
               </div>
               <div style="white-space:nowrap;">
                 <span class="pill ${esc(f.Status)}">${esc(statusLabel(f.Status))}</span>
-                <span class="pill">${esc(riskLabel(f.Risk))}</span>
+                <span class="pill" ${f.Risk === 'Critical' ? 'style="background:rgba(220,38,38,.25);color:#fca5a5;border:1px solid #ef4444;"' : ''}>${esc(riskLabel(f.Risk))}</span>
               </div>
             </div>
             <details>
