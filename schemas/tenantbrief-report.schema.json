@@ -52,7 +52,8 @@
         "Planned": { "type": "integer", "minimum": 0 },
         "PlannedExcluded": { "type": "integer", "minimum": 0 },
         "Error": { "type": "integer", "minimum": 0 },
-        "HighRiskFailed": { "type": "integer", "minimum": 0 }
+        "HighRiskFailed": { "type": "integer", "minimum": 0 },
+        "UnreviewedTranslations": { "type": "integer", "minimum": 0 }
       }
     },
     "Run": {
@@ -158,6 +159,7 @@
           "Impact": { "type": ["string", "null"], "deprecated": true, "description": "Deprecated alias for UserImpact; retained for one minor release for backward compatibility." },
           "Description": { "type": ["string", "null"] },
           "SkippedReason": { "type": ["string", "null"] },
+          "Remediation": { "type": ["string", "null"] },
           "RemediationTr": { "type": ["string", "null"] }
         }
       }

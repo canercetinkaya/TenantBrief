@@ -30,13 +30,15 @@ Describe 'Invoke-TenantBriefAssessment (offline pipeline)' {
         $script:Run.JsonPath | Should -Match 'TenantBriefReport-TR\.json$'
     }
 
-    It 'correlates duplicate control titles reported by two engines' {
-        # 'Ensure MFA is enforced for all users' exists in Identity (Passed) and CISA SCuBA (Failed)
-        @($script:Report.Findings | Where-Object { $_.Title -eq 'Ensure MFA is enforced for all users' }).Count | Should -Be 1
+    It 'correlates duplicate controls reported by two engines via CanonicalId and localizes TR title' {
+        # TB-ID-MFA-ALL-USERS correlates MT.1007 (Passed) and SCUBA-MS.AAD.3.2v2 (Failed)
+        $mfaMatches = @($script:Report.Findings | Where-Object { $_.CanonicalId -eq 'TB-ID-MFA-ALL-USERS' })
+        $mfaMatches.Count | Should -Be 1
+        $mfaMatches[0].Title | Should -Be 'Tüm kullanıcılar için MFA zorunlu kıl'
     }
 
     It 'keeps the worst status when correlating a control' {
-        $merged = $script:Report.Findings | Where-Object { $_.Title -eq 'Ensure MFA is enforced for all users' }
+        $merged = $script:Report.Findings | Where-Object { $_.CanonicalId -eq 'TB-ID-MFA-ALL-USERS' }
         $merged.Status | Should -Be 'Failed'
     }
 
@@ -172,6 +174,8 @@ Describe 'Invoke-TenantBriefAssessment framework selection' {
 
     It 'keeps English labels' {
         $script:FwReport.Labels.TotalChecks | Should -Be 'Total Checks'
+        $enMerged = $script:FwReport.Findings | Where-Object { $_.CanonicalId -eq 'TB-ID-MFA-ALL-USERS' }
+        $enMerged.Title | Should -Be 'Ensure MFA is enforced for all users'
         $script:FwRun.HtmlPath | Should -Match 'TenantBriefReport-EN\.html$'
     }
 }
@@ -440,7 +444,7 @@ Describe 'Multi-engine Maester & EntraFalcon JSON ingestion' {
     }
 
     It 'attaches canonical DomainPillar, Sources and CorrelatedIds on correlated controls' {
-        $merged = $script:Report.Findings | Where-Object { $_.Title -eq 'Ensure MFA is enforced for all users' }
+        $merged = $script:Report.Findings | Where-Object { $_.CanonicalId -eq 'TB-ID-MFA-ALL-USERS' }
         $merged.DomainPillar | Should -Be 'Identity'
         $merged.Sources | Should -Contain 'ZeroTrust'
         $merged.Sources | Should -Contain 'CISA SCuBA'

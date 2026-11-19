@@ -6,7 +6,21 @@ $script:CrosswalkPath = Join-Path $script:ModuleRoot 'data\control-crosswalk.jso
 $script:CrosswalkMapCache = $null
 $script:ScoringConfigPath = Join-Path $script:ModuleRoot 'data\scoring.json'
 $script:ScoringConfigCache = $null
+$script:I18nCache = @{}
+$script:GlossaryTrCache = $null
 $script:ReportTemplatePath = Join-Path $script:ModuleRoot 'assets\report-template.html'
+
+function Get-TenantBriefI18n {
+    [CmdletBinding()]
+    param([ValidateSet('tr', 'en')][string]$Language = 'tr')
+    if ($script:I18nCache.ContainsKey($Language)) { return $script:I18nCache[$Language] }
+    $p = Join-Path $script:ModuleRoot "data\i18n\$Language.json"
+    if (Test-Path -LiteralPath $p) {
+        $script:I18nCache[$Language] = Get-Content -LiteralPath $p -Raw -Encoding UTF8 | ConvertFrom-Json
+        return $script:I18nCache[$Language]
+    }
+    return $null
+}
 
 function Get-TenantBriefScoringConfig {
     [CmdletBinding()]
@@ -395,43 +409,23 @@ function Connect-TenantBrief {
 }
 
 function ConvertTo-TenantBriefTurkish {
+    [CmdletBinding()]
     param([string]$Text)
     if ([string]::IsNullOrWhiteSpace($Text)) { return $Text }
-    $map = [ordered]@{
-        'Conditional Access policies' = 'Koşullu Erişim ilkeleri'
-        'Conditional Access policy'   = 'Koşullu Erişim ilkesi'
-        'Conditional Access'          = 'Koşullu Erişim'
-        'Sensitivity labels'          = 'Hassasiyet etiketleri'
-        'Break-glass'                 = 'Acil durum (Break-glass)'
-        'Legacy authentication'       = 'Eski kimlik doğrulama (Legacy Auth)'
-        'Token protection'            = 'Belirteç koruması (Token Protection)'
-        'Passkey'                     = 'Geçiş anahtarı (Passkey)'
-        'Passwordless'                = 'Parolasız kimlik doğrulama'
-        'Admin consent'               = 'Yönetici onayı'
-        'are configured'              = 'yapılandırılmış'
-        'is configured'               = 'yapılandırılmış'
-        'are enabled'                 = 'etkinleştirilmiş'
-        'is enabled'                  = 'etkinleştirilmiş'
-        'are enforced'                = 'zorunlu kılınmış'
-        'is enforced'                 = 'zorunlu kılınmış'
-        'are published to users'      = 'kullanıcılara yayımlanmış'
-        'are blocked'                 = 'engellenmiş'
-        'is blocked'                  = 'engellenmiş'
-        'are required'                = 'zorunlu'
-        'is required'                 = 'zorunlu'
-        'for all users'               = 'tüm kullanıcılar için'
-        'for all administrators'      = 'tüm yöneticiler için'
-        'for privileged roles'        = 'ayrıcalıklı roller için'
-        'with encryption'             = 'şifreleme ile'
-        'should be'                   = 'olmalıdır'
-        'must be'                     = 'olmalıdır'
-        'High'                        = 'Yüksek'
-        'Medium'                      = 'Orta'
-        'Low'                         = 'Düşük'
+    if ($null -eq $script:GlossaryTrCache) {
+        $gPath = Join-Path $script:ModuleRoot 'data\i18n\glossary-tr.json'
+        $map = [ordered]@{}
+        if (Test-Path -LiteralPath $gPath) {
+            $gObj = Get-Content -LiteralPath $gPath -Raw -Encoding UTF8 | ConvertFrom-Json
+            foreach ($p in $gObj.replacements.PSObject.Properties) {
+                $map[$p.Name] = [string]$p.Value
+            }
+        }
+        $script:GlossaryTrCache = $map
     }
     $out = $Text
-    foreach ($k in $map.Keys) {
-        $out = $out -replace [regex]::Escape($k), $map[$k]
+    foreach ($k in $script:GlossaryTrCache.Keys) {
+        $out = $out -replace [regex]::Escape($k), $script:GlossaryTrCache[$k]
     }
     return $out
 }
@@ -1645,9 +1639,34 @@ function New-TenantBriefFindings {
         $fTitle = [string](Get-TenantBriefPropertyValue -Object $t -Name 'TestTitle')
         $fDesc  = [string](Get-TenantBriefPropertyValue -Object $t -Name 'TestDescription')
         $fImp   = [string](Get-TenantBriefPropertyValue -Object $t -Name 'TestImpact')
-        if ($Language -eq 'tr' -and $TranslationCache.ContainsKey($tid)) {
-            if ($TranslationCache[$tid].Title) { $fTitle = [string]$TranslationCache[$tid].Title }
-            if ($TranslationCache[$tid].Desc)  { $fDesc  = [string]$TranslationCache[$tid].Desc }
+        $trEntry = $null
+        $trReviewed = $true
+        if ($Language -eq 'tr' -and $TranslationCache.Count -gt 0) {
+            foreach ($sTag in $sourceList) {
+                $compositeKey = "$sTag|$tid"
+                if ($TranslationCache.ContainsKey($compositeKey)) { $trEntry = $TranslationCache[$compositeKey]; break }
+            }
+            if (-not $trEntry) {
+                foreach ($cid in $corrList) {
+                    foreach ($sTag in $sourceList) {
+                        $ck = "$sTag|$cid"
+                        if ($TranslationCache.ContainsKey($ck)) { $trEntry = $TranslationCache[$ck]; break }
+                    }
+                    if ($trEntry) { break }
+                }
+            }
+            if (-not $trEntry -and $TranslationCache.ContainsKey($tid)) {
+                $trEntry = $TranslationCache[$tid]
+            }
+            if ($trEntry) {
+                if ($trEntry.PSObject.Properties['Title'] -and $trEntry.Title) { $fTitle = [string]$trEntry.Title }
+                if ($trEntry.PSObject.Properties['Desc'] -and $trEntry.Desc) { $fDesc = [string]$trEntry.Desc }
+                $trReviewed = if ($trEntry.PSObject.Properties['Reviewed']) { [bool]$trEntry.Reviewed } else { $false }
+            }
+        }
+        if ($Language -eq 'tr') {
+            $fTitle = ConvertTo-TenantBriefTurkish -Text $fTitle
+            $fDesc  = ConvertTo-TenantBriefTurkish -Text $fDesc
         }
         if ($Language -eq 'tr' -and $fImp) {
             $fImp = $fImp -replace '^High$', 'Yüksek' -replace '^Medium$', 'Orta' -replace '^Low$', 'Düşük'
@@ -1658,60 +1677,74 @@ function New-TenantBriefFindings {
         $domPrimary = if ($domainList.Count -gt 0) { [string]$domainList[0] } else { $primaryPillar }
 
         # Determine admin portal & least-privilege role from Control ID, Sources, Category, and canonical DomainPillar
-        $portalName = ''
-        $requiredRole = ''
-        if (($sourceList -contains 'MDO / ORCA') -or $tid -like 'ORCA-*' -or $tid -match '^SCUBA-MS\.EXO\.' -or $catRaw -match 'Exchange|EXO|Anti-Phish|Safe Links|Safe Attachments|DKIM|DMARC|SPF|OWA') {
-            $portalName = 'Microsoft Defender & Exchange Yönetim Merkezi (security.microsoft.com)'
-            $requiredRole = 'Security Administrator / Exchange Administrator'
+        $i18n = Get-TenantBriefI18n -Language $Language
+        $portalKey = if (($sourceList -contains 'MDO / ORCA') -or $tid -like 'ORCA-*' -or $tid -match '^SCUBA-MS\.EXO\.' -or $catRaw -match 'Exchange|EXO|Anti-Phish|Safe Links|Safe Attachments|DKIM|DMARC|SPF|OWA') {
+            'defenderExchange'
         } elseif ($tid -match '^(CIS\.M365\.8\.|SCUBA-MS\.TEAMS\.)' -or $catRaw -match 'Teams') {
-            $portalName = 'Microsoft Teams yönetim merkezi (admin.teams.microsoft.com)'
-            $requiredRole = 'Teams Administrator'
+            'teams'
         } elseif ($domPrimary -eq 'Devices' -or ($domPrimary -ne 'Identity' -and $catRaw -match 'Intune|BitLocker|Device|Compliance')) {
-            $portalName = 'Microsoft Intune yönetim merkezi (intune.microsoft.com)'
-            $requiredRole = 'Intune Administrator'
+            'intune'
         } elseif ($tid -match '^SCUBA-MS\.SHAREPOINT\.' -or $catRaw -match 'SharePoint|OneDrive') {
-            $portalName = 'Microsoft SharePoint & Purview Yönetim Merkezi (purview.microsoft.com)'
-            $requiredRole = 'SharePoint Administrator / Compliance Administrator'
+            'sharePointPurview'
         } elseif ($domPrimary -eq 'AI' -or $catRaw -match 'Copilot|Agent') {
-            $portalName = 'Microsoft Purview / Entra Agent ID (entra.microsoft.com)'
-            $requiredRole = 'Compliance Administrator / Information Protection Admin'
+            'aiPurviewEntra'
         } elseif ($domPrimary -eq 'Data' -or $tid -match '^SCUBA-MS\.SECURITYSUITE\.3\.' -or $catRaw -match 'Purview|Sensitivity|DLP|Information Protection|Encryption|Lockbox|Storage') {
-            $portalName = 'Microsoft Purview portalı (purview.microsoft.com)'
-            $requiredRole = 'Compliance Administrator / Information Protection Admin'
+            'purview'
         } elseif ($catRaw -match 'Defender for Cloud|AzureConfig|Azure Network') {
-            $portalName = 'Azure Portal (portal.azure.com)'
-            $requiredRole = 'Security Admin / Subscription Contributor'
+            'azure'
         } elseif ($domPrimary -eq 'Network' -or $catRaw -match 'Global Secure Access|Private Access|Application Proxy') {
-            $portalName = 'Global Secure Access / Azure Portal (portal.azure.com)'
-            $requiredRole = 'Global Secure Access Administrator / Network Contributor'
+            'globalSecureAccess'
         } elseif ($domPrimary -eq 'SecOps' -or $tid -match '^SCUBA-MS\.SECURITYSUITE\.' -or $catRaw -match 'Defender|Exposure|Audit|Sentinel|Incident|Threat') {
-            $portalName = 'Microsoft Defender XDR / Sentinel (security.microsoft.com)'
-            $requiredRole = 'Security Administrator / Sentinel Contributor'
+            'defenderXdr'
         } elseif ($domPrimary -eq 'Identity') {
-            $portalName = 'Microsoft Entra yönetim merkezi (entra.microsoft.com)'
-            $requiredRole = 'Conditional Access Administrator / Security Administrator'
+            'entra'
         } else {
-            $portalName = 'Microsoft 365 Yönetim Merkezi'
-            $requiredRole = 'Security Administrator'
+            'm365Admin'
         }
+        $portalName = if ($i18n -and $i18n.portals.PSObject.Properties[$portalKey]) { [string]$i18n.portals.$portalKey } else { 'Microsoft 365 Admin Center' }
+        $requiredRole = if ($i18n -and $i18n.roles.PSObject.Properties[$portalKey]) { [string]$i18n.roles.$portalKey } else { 'Security Administrator' }
 
-        # Extract concrete remediation bullet/step from Description when available; keep guidance compact.
+        # Extract concrete remediation bullet/step from Description on sentence boundaries (no ellipsis, no Learn/öğrenin artifacts).
         $remTr = ''
+        $remLocalized = ''
         if ($statusRaw -in @('Failed', 'Investigate')) {
             $extractedStep = ''
             if ($fDesc -match '(?is)(?:\*\*Düzeltme işlemi\*\*|####\s*Remediation action|\*\*Remediation action\*\*)(.+)$') {
-                $remBlock = ($Matches[1] -replace '```[\s\S]*?```', ' ' -replace '\[([^\]]+)\]\([^\)]+\)', '$1' -replace 'https?://\S+', ' ' -replace '[#*_`>|\[\]]', ' ' -replace '\s+', ' ').Trim()
-                if ($remBlock -match 'Related links') {
-                    $remBlock = ($remBlock -split 'Related links')[0].Trim()
+                $rawLines = @($Matches[1] -split '\r?\n' | Where-Object {
+                    $ln = $_.Trim()
+                    $ln -and ($ln -notmatch '(?i)(Related links|İlgili bağlantılar|Learn|Daha fazla bilgi|öğrenin|For more information|See also)')
+                })
+                $remBlock = (($rawLines -join ' ') -replace '```[\s\S]*?```', ' ' -replace '\[([^\]]+)\]\([^\)]+\)', '$1' -replace 'https?://\S+', ' ' -replace '[#*_`>|\[\]]', ' ' -replace '\.\.\.+', '.' -replace '\s+', ' ').Trim()
+                # Keep complete sentences up to 220 chars without mid-word ellipsis
+                $sentences = @($remBlock -split '(?<=[.!?])\s+' | Where-Object {
+                    $_ -and ($_ -notmatch '(?i)(Related links|İlgili bağlantılar|Learn|Daha fazla bilgi|öğrenin|For more information)')
+                })
+                $acc = ''
+                foreach ($sent in $sentences) {
+                    $cand = if ($acc) { "$acc $sent" } else { $sent }
+                    if ($cand.Length -le 220) {
+                        $acc = $cand
+                    } else {
+                        if (-not $acc) {
+                            $cut = $sent.Substring(0, [Math]::Min(215, $sent.Length))
+                            $lastSp = $cut.LastIndexOf(' ')
+                            if ($lastSp -gt 40) { $cut = $cut.Substring(0, $lastSp) }
+                            $acc = $cut.TrimEnd(' ', ',', ';', ':', '.') + '.'
+                        }
+                        break
+                    }
                 }
-                if ($remBlock.Length -gt 160) { $remBlock = $remBlock.Substring(0, 157).Trim() + '...' }
-                $extractedStep = $remBlock
+                if ($acc -and $acc -notmatch '[.!?]$') { $acc = "$acc." }
+                $extractedStep = $acc.Trim()
             }
             if ($extractedStep -and $extractedStep.Length -gt 12) {
                 $remTr = "$portalName üzerinden uygulayın: $extractedStep Pilot gruba Denetim (Report-only) kipinde uygulayıp doğruladıktan sonra Zorunlu (Enforce) durumuna geçin. [En Az Ayrıcalıklı Rol: $requiredRole]"
+                $remEn = "Apply in $portalName`: $extractedStep Roll out in Report-only mode to a pilot group, verify sign-in/audit logs, then switch to Enforce. [Least-Privilege Role: $requiredRole]"
             } else {
                 $remTr = "1. $portalName üzerinden '$fTitle' kontrolünü açın. 2. Değişikliği önce Denetim (Report-only) kipinde pilot gruba uygulayıp oturum açma/olay günlüklerini doğrulayın. 3. Etki analizi sonrası kademeli olarak Zorunlu (Enforce) durumuna geçin. [En Az Ayrıcalıklı Rol: $requiredRole]"
+                $remEn = "1. Open '$fTitle' in $portalName. 2. Apply the change to a pilot group in Report-only mode and verify sign-in/audit logs. 3. Enforce incrementally after impact validation. [Least-Privilege Role: $requiredRole]"
             }
+            $remLocalized = if ($Language -eq 'tr') { $remTr } else { $remEn }
         }
 
         $minLicRaw = Get-TenantBriefPropertyValue -Object $t -Name 'TestMinimumLicense'
@@ -1783,7 +1816,9 @@ function New-TenantBriefFindings {
             Description        = $fDesc
             SkippedReason      = [string]$skippedRaw
             ErrorRemedy        = $errRemedy
-            RemediationTr      = $remTr
+            Remediation         = $remLocalized
+            RemediationTr       = $remTr
+            TranslationReviewed = $trReviewed
         }
     }
 }
@@ -2477,6 +2512,10 @@ function Invoke-TenantBriefAssessment {
         $tenantInsightObj.TotalAgents = [int]$ppAgentsSummary.TotalAgents
     }
 
+    $unreviewedTrCount = if ($Language -eq 'tr') {
+        @($findings | Where-Object { $_.PSObject.Properties['TranslationReviewed'] -and -not $_.TranslationReviewed }).Count
+    } else { 0 }
+
     $reportObj = [PSCustomObject]@{
         Tenant              = $tenantDisplay
         Language            = $Language
@@ -2494,9 +2533,10 @@ function Invoke-TenantBriefAssessment {
             Investigate     = $investigateCount
             Skipped         = $skippedCount
             Planned         = $plannedCount
-            PlannedExcluded = $plannedExcludedCount
-            Error           = $errorCount
-            HighRiskFailed  = $highRiskFailed
+            PlannedExcluded        = $plannedExcludedCount
+            Error                  = $errorCount
+            HighRiskFailed         = $highRiskFailed
+            UnreviewedTranslations = $unreviewedTrCount
         }
         Run              = [PSCustomObject]@{
             Status        = $runStatus
