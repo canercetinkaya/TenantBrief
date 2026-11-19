@@ -1,0 +1,27 @@
+{
+  "schemaVersion": "1.0.0",
+  "description": "Deterministic remediation prioritization weights (0-100) for TenantBrief findings.",
+  "riskWeights": {
+    "Critical": 45,
+    "High": 35,
+    "Medium": 18,
+    "Low": 8
+  },
+  "statusWeights": {
+    "Failed": 30,
+    "Error": 20,
+    "Investigate": 15,
+    "Skipped": 5,
+    "Planned": 0,
+    "Passed": 0
+  },
+  "costBonus": {
+    "Low": 15,
+    "Medium": 10,
+    "High": 5,
+    "Unknown": 0
+  },
+  "multiSourceBonusPerExtra": 4,
+  "multiSourceBonusCap": 10,
+  "conflictBonus": 5
+}

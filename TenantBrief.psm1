@@ -4,7 +4,42 @@ $script:ModuleRoot = $PSScriptRoot
 $script:FrameworkMapPath = Join-Path $script:ModuleRoot 'data\framework-mappings.json'
 $script:CrosswalkPath = Join-Path $script:ModuleRoot 'data\control-crosswalk.json'
 $script:CrosswalkMapCache = $null
+$script:ScoringConfigPath = Join-Path $script:ModuleRoot 'data\scoring.json'
+$script:ScoringConfigCache = $null
 $script:ReportTemplatePath = Join-Path $script:ModuleRoot 'assets\report-template.html'
+
+function Get-TenantBriefScoringConfig {
+    [CmdletBinding()]
+    param()
+    if ($null -ne $script:ScoringConfigCache) { return $script:ScoringConfigCache }
+    if (Test-Path -LiteralPath $script:ScoringConfigPath) {
+        $script:ScoringConfigCache = Get-Content -LiteralPath $script:ScoringConfigPath -Raw -Encoding UTF8 | ConvertFrom-Json
+    }
+    return $script:ScoringConfigCache
+}
+
+function Get-TenantBriefPriorityScore {
+    [CmdletBinding()]
+    param(
+        [string]$Status,
+        [string]$Risk,
+        [string]$ImplementationCost,
+        [int]$SourceCount = 1,
+        [bool]$StatusConflict = $false
+    )
+    if ($Status -eq 'Passed' -or $Status -eq 'Planned') { return 0 }
+    $cfg = Get-TenantBriefScoringConfig
+    $rW = if ($cfg -and $cfg.riskWeights.PSObject.Properties[$Risk]) { [int]$cfg.riskWeights.$Risk } else { 8 }
+    $sW = if ($cfg -and $cfg.statusWeights.PSObject.Properties[$Status]) { [int]$cfg.statusWeights.$Status } else { 0 }
+    $costKey = if ([string]::IsNullOrWhiteSpace($ImplementationCost)) { 'Unknown' } else { $ImplementationCost }
+    $cB = if ($cfg -and $cfg.costBonus.PSObject.Properties[$costKey]) { [int]$cfg.costBonus.$costKey } else { 0 }
+    $extraSrc = [Math]::Max(0, $SourceCount - 1)
+    $perExtra = if ($cfg) { [int]$cfg.multiSourceBonusPerExtra } else { 4 }
+    $cap = if ($cfg) { [int]$cfg.multiSourceBonusCap } else { 10 }
+    $mB = [Math]::Min($cap, ($extraSrc * $perExtra))
+    $confB = if ($StatusConflict -and $cfg) { [int]$cfg.conflictBonus } else { 0 }
+    return [Math]::Min(100, [Math]::Max(0, ($rW + $sW + $cB + $mB + $confB)))
+}
 
 function Get-TenantBriefCrosswalkMap {
     [CmdletBinding()]
@@ -1714,6 +1749,9 @@ function New-TenantBriefFindings {
         }
         $conflictRaw = [bool](Get-TenantBriefPropertyValue -Object $t -Name 'StatusConflict')
 
+        $riskFinal = if ($riskRaw) { [string]$riskRaw } else { 'Low' }
+        $costFinal = if ($implCostRaw) { [string]$implCostRaw } else { 'Unknown' }
+        $prioScore = Get-TenantBriefPriorityScore -Status $statusRaw -Risk $riskFinal -ImplementationCost $costFinal -SourceCount $sourceList.Count -StatusConflict $conflictRaw
         $canonicalPrimary = if ($domainList.Count -gt 0) { [string]$domainList[0] } else { 'Identity' }
         [PSCustomObject]@{
             Id                 = $tid
@@ -1730,12 +1768,13 @@ function New-TenantBriefFindings {
             StatusConflict     = $conflictRaw
             Category           = if ($catRaw) { $catRaw } else { 'General' }
             SfiPillar          = if ($sfiRaw) { [string]$sfiRaw } else { '' }
-            ImplementationCost = if ($implCostRaw) { [string]$implCostRaw } else { 'Unknown' }
+            ImplementationCost = $costFinal
             MinimumLicense     = $minLicStr
             RequiredRole       = $requiredRole
             AdminPortal        = $portalName
             Status             = $statusRaw
-            Risk               = if ($riskRaw) { [string]$riskRaw } else { 'Low' }
+            Risk               = $riskFinal
+            PriorityScore      = $prioScore
             Title              = $fTitle
             FrameworkRef       = $fwRef
             Result             = [string]$resultRaw

@@ -182,6 +182,12 @@ TenantBrief stands on top of trusted Microsoft and community open-source securit
 - Run `Test-TenantBriefPrerequisites` for a strictly read-only preflight check of installed modules, OPA, and active M365 sessions.
 - Pass **`-AutoFixDependencies`** explicitly to `Connect-TenantBrief` only if you want TenantBrief to install missing PSGallery modules, OPA, or prune conflicting local `Microsoft.Graph.Authentication` / `SharePoint` copies automatically.
 
+## Remediation Prioritization (`PriorityScore` & `data/scoring.json`)
+
+- Every finding receives a deterministic **`PriorityScore`** (`0–100`) driven by `data/scoring.json`:
+  - `PriorityScore = min(100, riskWeight + statusWeight + costBonus + multiSourceBonus + conflictBonus)` (0 for `Passed` / `Planned`).
+  - Weights: `Risk` (`Critical=45, High=35, Medium=18, Low=8`), `Status` (`Failed=30, Error=20, Investigate=15, Skipped=5`), `ImplementationCost` (`Low=15, Medium=10, High=5, Unknown=0`), corroboration (`+4` per extra engine, cap `+10`), and cross-engine status conflict (`+5`).
+
 ---
 
 ## Development & Tests
