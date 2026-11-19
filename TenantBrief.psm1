@@ -3461,10 +3461,29 @@ function Get-TenantBriefCopilotReadiness {
         }
     }
 
-    $passC = @($checks | Where-Object { $_.Status -eq 'Pass' }).Count
+    $scCfg = Get-TenantBriefScoringConfig
+    $passW = if ($scCfg -and $scCfg.PSObject.Properties['copilotReadiness']) { [double]$scCfg.copilotReadiness.passWeight } else { 1.0 }
+    $warnW = if ($scCfg -and $scCfg.PSObject.Properties['copilotReadiness']) { [double]$scCfg.copilotReadiness.warningWeight } else { 0.5 }
+    $failW = if ($scCfg -and $scCfg.PSObject.Properties['copilotReadiness']) { [double]$scCfg.copilotReadiness.failWeight } else { 0.0 }
+    $gateIds = if ($scCfg -and $scCfg.PSObject.Properties['copilotReadiness'] -and $scCfg.copilotReadiness.gateIds) { @($scCfg.copilotReadiness.gateIds) } else { @('COP-LIC-01') }
+
+    $weightedSum = 0.0
+    $gateFailed = $false
+    foreach ($chk in @($checks)) {
+        if ($chk.Status -eq 'Pass') { $weightedSum += $passW }
+        elseif ($chk.Status -eq 'Warning') { $weightedSum += $warnW }
+        else {
+            $weightedSum += $failW
+            if ($chk.Status -eq 'Fail' -and (($gateIds -contains $chk.Id) -or $chk.Id -eq 'COP-LIC-01')) {
+                $gateFailed = $true
+            }
+        }
+    }
     $totC = [Math]::Max(1, $checks.Count)
-    $readinessScore = [Math]::Round(($passC / $totC) * 100, 1)
-    $maturity = if ($isTr) {
+    $readinessScore = [Math]::Round(($weightedSum / $totC) * 100, 1)
+    $maturity = if ($gateFailed) {
+        if ($isTr) { 'L1 - Başlangıç (Initial)' } else { 'L1 - Initial' }
+    } elseif ($isTr) {
         if ($readinessScore -ge 85) { 'L4 - Yönetilen (Managed)' } elseif ($readinessScore -ge 65) { 'L3 - Tanımlı (Defined)' } elseif ($readinessScore -ge 40) { 'L2 - Tekrarlanabilir (Repeatable)' } else { 'L1 - Başlangıç (Initial)' }
     } else {
         if ($readinessScore -ge 85) { 'L4 - Managed' } elseif ($readinessScore -ge 65) { 'L3 - Defined' } elseif ($readinessScore -ge 40) { 'L2 - Repeatable' } else { 'L1 - Initial' }
