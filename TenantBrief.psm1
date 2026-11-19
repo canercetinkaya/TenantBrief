@@ -1546,40 +1546,37 @@ function New-TenantBriefFindings {
         $catRaw = [string](Get-TenantBriefPropertyValue -Object $t -Name 'TestCategory')
         $domPrimary = if ($domainList.Count -gt 0) { [string]$domainList[0] } else { $primaryPillar }
 
-        # Determine admin portal & least-privilege role from Control ID + Category + Domain/Pillar
+        # Determine admin portal & least-privilege role from Control ID, Sources, Category, and canonical DomainPillar
         $portalName = ''
         $requiredRole = ''
-        if ($primaryPillar -eq 'Defender for Office 365 (ORCA)' -or $tid -like 'ORCA-*' -or $catRaw -match 'Exchange|Anti-Phish|Safe Links|Safe Attachments|DKIM|DMARC|SPF|OWA') {
+        if (($sourceList -contains 'MDO / ORCA') -or $tid -like 'ORCA-*' -or $tid -match '^SCUBA-MS\.EXO\.' -or $catRaw -match 'Exchange|EXO|Anti-Phish|Safe Links|Safe Attachments|DKIM|DMARC|SPF|OWA') {
             $portalName = 'Microsoft Defender & Exchange Yönetim Merkezi (security.microsoft.com)'
             $requiredRole = 'Security Administrator / Exchange Administrator'
-        } elseif ($tid -match '^CIS\.M365\.8\.' -or $catRaw -match 'Teams') {
+        } elseif ($tid -match '^(CIS\.M365\.8\.|SCUBA-MS\.TEAMS\.)' -or $catRaw -match 'Teams') {
             $portalName = 'Microsoft Teams yönetim merkezi (admin.teams.microsoft.com)'
             $requiredRole = 'Teams Administrator'
-        } elseif ($domPrimary -eq 'Devices' -or ($primaryPillar -ne 'Identity' -and $catRaw -match 'Intune|BitLocker|Device|Compliance')) {
+        } elseif ($domPrimary -eq 'Devices' -or ($domPrimary -ne 'Identity' -and $catRaw -match 'Intune|BitLocker|Device|Compliance')) {
             $portalName = 'Microsoft Intune yönetim merkezi (intune.microsoft.com)'
             $requiredRole = 'Intune Administrator'
-        } elseif ($catRaw -match 'SharePoint|OneDrive') {
+        } elseif ($tid -match '^SCUBA-MS\.SHAREPOINT\.' -or $catRaw -match 'SharePoint|OneDrive') {
             $portalName = 'Microsoft SharePoint & Purview Yönetim Merkezi (purview.microsoft.com)'
             $requiredRole = 'SharePoint Administrator / Compliance Administrator'
         } elseif ($domPrimary -eq 'AI' -or $catRaw -match 'Copilot|Agent') {
             $portalName = 'Microsoft Purview / Entra Agent ID (entra.microsoft.com)'
             $requiredRole = 'Compliance Administrator / Information Protection Admin'
-        } elseif ($domPrimary -eq 'Data' -or $catRaw -match 'Purview|Sensitivity|DLP|Information Protection|Encryption|Lockbox|Storage') {
+        } elseif ($domPrimary -eq 'Data' -or $tid -match '^SCUBA-MS\.SECURITYSUITE\.3\.' -or $catRaw -match 'Purview|Sensitivity|DLP|Information Protection|Encryption|Lockbox|Storage') {
             $portalName = 'Microsoft Purview portalı (purview.microsoft.com)'
             $requiredRole = 'Compliance Administrator / Information Protection Admin'
-        } elseif ($primaryPillar -eq 'Infrastructure' -or $catRaw -match 'Defender for Cloud|AzureConfig|Azure Network') {
+        } elseif ($catRaw -match 'Defender for Cloud|AzureConfig|Azure Network') {
             $portalName = 'Azure Portal (portal.azure.com)'
             $requiredRole = 'Security Admin / Subscription Contributor'
         } elseif ($domPrimary -eq 'Network' -or $catRaw -match 'Global Secure Access|Private Access|Application Proxy') {
             $portalName = 'Global Secure Access / Azure Portal (portal.azure.com)'
             $requiredRole = 'Global Secure Access Administrator / Network Contributor'
-        } elseif ($domPrimary -eq 'SecOps' -or $catRaw -match 'Defender|Exposure|Audit|Sentinel|Incident|Threat') {
+        } elseif ($domPrimary -eq 'SecOps' -or $tid -match '^SCUBA-MS\.SECURITYSUITE\.' -or $catRaw -match 'Defender|Exposure|Audit|Sentinel|Incident|Threat') {
             $portalName = 'Microsoft Defender XDR / Sentinel (security.microsoft.com)'
             $requiredRole = 'Security Administrator / Sentinel Contributor'
-        } elseif ($primaryPillar -eq 'CISA SCuBA') {
-            $portalName = 'M365 / Entra / Exchange / Defender Yönetim Merkezleri (CISA SCuBA)'
-            $requiredRole = 'Security Administrator'
-        } elseif ($domPrimary -eq 'Identity' -or $primaryPillar -in @('Identity', 'Maester (EIDSCA / CIS)', 'EntraFalcon')) {
+        } elseif ($domPrimary -eq 'Identity') {
             $portalName = 'Microsoft Entra yönetim merkezi (entra.microsoft.com)'
             $requiredRole = 'Conditional Access Administrator / Security Administrator'
         } else {
