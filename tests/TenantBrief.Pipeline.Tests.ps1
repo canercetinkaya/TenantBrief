@@ -61,8 +61,8 @@ Describe 'Invoke-TenantBriefAssessment (offline pipeline)' {
         $errors[0].Id | Should -Be 'MT.9001'
         $zt = $script:Report.Frameworks | Where-Object { $_.Id -eq 'ZeroTrust' }
         $zt.Errors | Should -Be 1
-        # An unmeasured control must not be counted as a pass: 2 passed / 9 evaluated = 22.2%.
-        $zt.Score | Should -Be 22.2
+        # An unmeasured control must not be counted as a pass: 3 passed / 9 evaluated = 33.3% (pre-correlation source score).
+        $zt.Score | Should -Be 33.3
     }
 
     It 'scores only benchmarks/engines present in the run with real source denominators' {
@@ -79,7 +79,7 @@ Describe 'Invoke-TenantBriefAssessment (offline pipeline)' {
         foreach ($fw in $script:Report.Frameworks) { $byId[$fw.Id] = $fw }
         $byId['ZeroTrust'].Evaluated | Should -Be 9
         $byId['ZeroTrust'].Total | Should -Be 12
-        $byId['ZeroTrust'].Score | Should -Be 22.2
+        $byId['ZeroTrust'].Score | Should -Be 33.3
         $byId['CISA_SCuBA'].Evaluated | Should -Be 2
         $byId['CISA_SCuBA'].Score | Should -Be 0
         $byId['MDO_ORCA'].Evaluated | Should -Be 2
@@ -444,8 +444,8 @@ Describe 'Multi-engine Maester & EntraFalcon JSON ingestion' {
         $merged.DomainPillar | Should -Be 'Identity'
         $merged.Sources | Should -Contain 'ZeroTrust'
         $merged.Sources | Should -Contain 'CISA SCuBA'
-        $merged.CorrelatedIds | Should -Contain 'MT.1001'
-        $merged.CorrelatedIds | Should -Contain 'SCUBA-AAD-1'
+        $merged.CorrelatedIds | Should -Contain 'MT.1007'
+        $merged.CorrelatedIds | Should -Contain 'SCUBA-MS.AAD.3.2v2'
 
         $html = Get-Content -Path $script:Run.HtmlPath -Raw -Encoding UTF8
         $html | Should -Match 'id="sourceCoverageCard"'

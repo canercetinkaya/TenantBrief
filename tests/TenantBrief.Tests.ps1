@@ -102,13 +102,13 @@ Describe 'TenantBrief Module' {
         InModuleScope TenantBrief {
             $incoming = @(
                 [PSCustomObject]@{
-                    TestId = 'ZT.1'; TestTitle = 'Ensure MFA is enforced for all users'; TestStatus = 'Passed'
+                    TestId = 'MT.1007'; TestTitle = 'Ensure MFA is enforced for all users'; TestStatus = 'Passed'
                     TestRisk = 'Medium'; TestPillar = 'Identity'; TestCategory = 'Authentication'; TestSfiPillar = 'Identity'
                     TestImplementationCost = 'Low'; TestMinimumLicense = 'ENTRA_PREMIUM_P1'; SkippedReason = ''
                     TestResult = 'Conditional Access policy requires MFA.'; TestImpact = 'Medium'; TestDescription = 'ZeroTrustAssessment text'
                 },
                 [PSCustomObject]@{
-                    TestId = 'SCUBA-AAD-1'; TestTitle = 'Ensure  MFA is enforced for all users!'; TestStatus = 'Failed'
+                    TestId = 'SCUBA-MS.AAD.3.2v2'; TestTitle = 'Ensure  MFA is enforced for all users!'; TestStatus = 'Failed'
                     TestRisk = 'High'; TestPillar = 'CISA SCuBA'; TestCategory = 'AAD'; TestSfiPillar = 'CISA SCuBA'
                     TestImplementationCost = ''; TestMinimumLicense = ''; SkippedReason = ''
                     TestResult = 'Guests excluded from policy.'; TestImpact = 'High'; TestDescription = 'ScubaGear requirement text'
@@ -370,7 +370,7 @@ Describe 'TenantBrief Module' {
     It 'splits space-joined multi-pillars and attaches canonical DomainPillar, Sources and CorrelatedIds' {
         InModuleScope TenantBrief {
             $rawTests = @(
-                [PSCustomObject]@{ TestId = '21781'; TestTitle = 'Sensitivity labels cover AI data'; TestStatus = 'Failed'; TestRisk = 'High'; TestPillar = 'Data AI'; TestCategory = 'Information Protection' },
+                [PSCustomObject]@{ TestId = '21784'; TestTitle = 'Sensitivity labels cover AI data'; TestStatus = 'Failed'; TestRisk = 'High'; TestPillar = 'Data AI'; TestCategory = 'Information Protection' },
                 [PSCustomObject]@{ TestId = 'EIDSCA.AF01'; TestTitle = 'Sensitivity labels cover AI data'; TestStatus = 'Passed'; TestRisk = 'Low'; TestPillar = 'Maester (EIDSCA / CIS)'; TestSource = 'EIDSCA' }
             )
             $corr = @(New-TenantBriefCorrelatedTests -Tests $rawTests)
@@ -383,7 +383,7 @@ Describe 'TenantBrief Module' {
             $f[0].FrameworkRef | Should -Match 'EIDSCA\.AF01'
             $f[0].Sources | Should -Contain 'ZeroTrust'
             $f[0].Sources | Should -Contain 'EIDSCA'
-            $f[0].CorrelatedIds | Should -Contain '21781'
+            $f[0].CorrelatedIds | Should -Contain '21784'
             $f[0].CorrelatedIds | Should -Contain 'EIDSCA.AF01'
             $f[0].DomainPillars | Should -Contain 'Data'
             $f[0].DomainPillars | Should -Contain 'AI'
