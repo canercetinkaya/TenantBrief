@@ -18,7 +18,8 @@
         'Import-TenantBriefSharePointRisk',
         'Import-TenantBriefPowerPlatformAgents',
         'Compare-TenantBriefReports',
-        'Export-TenantBriefExecutiveSummary'
+        'Export-TenantBriefExecutiveSummary',
+        'Test-TenantBriefPrerequisites'
     )
     CmdletsToExport   = @()
     VariablesToExport = @()

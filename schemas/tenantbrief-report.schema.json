@@ -67,6 +67,7 @@
       }
     },
     "Diagnostics": { "type": ["array", "null"] },
+    "Prerequisites": { "type": ["array", "null"] },
     "Frameworks": {
       "type": "array",
       "items": {

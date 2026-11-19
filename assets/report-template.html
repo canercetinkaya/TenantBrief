@@ -131,6 +131,7 @@
       <div class="card" id="skippedOverviewBanner" style="display:none;margin-bottom:20px;font-size:13px;border-color:rgba(168,85,247,.35);background:rgba(168,85,247,.06);"></div>
       <div class="card" id="pillarMatrixCard" style="margin-bottom:20px;"></div>
       <div class="card" id="sourceCoverageCard" style="margin-bottom:20px;"></div>
+      <div class="card" id="prereqCoverageCard" style="display:none;margin-bottom:20px;"></div>
       <div class="card" id="execActionDigest" style="margin-bottom:20px;"></div>
     </section>
 
@@ -449,6 +450,20 @@
       <h3 style="margin-bottom:10px;">${isTr ? 'Tarama Motoru ve Standart Kaynak Dağılımı (Filtrelemek için tıklayın)' : 'Engine & Standard Source Coverage (Click card to filter)'}</h3>
       <div class="cards" style="margin-bottom:0;">${sourceCardsHtml}</div>
     `;
+
+    const prereqs = DATA.Prerequisites || [];
+    const prereqEl = document.getElementById('prereqCoverageCard');
+    if (prereqs.length > 0 && prereqEl) {
+      prereqEl.style.display = 'block';
+      const pRows = prereqs.map(pr => {
+        const stCol = pr.Status === 'Ready' ? 'var(--ok)' : (pr.Status === 'Missing' ? 'var(--fail)' : 'var(--warn)');
+        return `<tr><td>${esc(pr.Category)}</td><td><strong>${esc(pr.Name)}</strong></td><td style="color:${stCol};font-weight:600;">${esc(pr.Status)}</td><td>${esc(pr.InstalledVersion || '-')}</td><td style="font-size:12px;color:var(--muted);">${esc(pr.Details || '')}</td></tr>`;
+      }).join('');
+      prereqEl.innerHTML = `
+        <h3 style="margin-bottom:6px;">${isTr ? 'Kapsam ve Kör Noktalar (Preflight Ön Kontrol)' : 'Scope & Blind Spots (Preflight Check)'}</h3>
+        <table class="md-table"><thead><tr><th>${isTr ? 'Kategori' : 'Category'}</th><th>${isTr ? 'Bileşen' : 'Component'}</th><th>${isTr ? 'Durum' : 'Status'}</th><th>${isTr ? 'Sürüm' : 'Version'}</th><th>${isTr ? 'Detay' : 'Details'}</th></tr></thead><tbody>${pRows}</tbody></table>
+      `;
+    }
 
     // SVG Donut Chart
     const total = Math.max(1, s.Total);
