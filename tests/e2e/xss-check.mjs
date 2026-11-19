@@ -68,22 +68,30 @@ async function auditFile(browser, htmlPath, label, interactiveMain) {
     await page.waitForTimeout(150);
   }
 
-  const domAudit = await page.evaluate(() => {
+  const domAudit = await page.evaluate((isMain) => {
     const evilNodes = document.querySelectorAll('[onerror],[onload],[onmouseover]');
-    const findingCount = document.querySelectorAll('.finding').length;
+    const findingCount = isMain
+      ? document.querySelectorAll('.finding').length
+      : document.querySelectorAll('table:nth-of-type(2) tbody tr').length;
     const bodyText = document.body ? document.body.innerText : '';
+    const actionTableText = !isMain && document.querySelector('table:nth-of-type(2) tbody')
+      ? document.querySelector('table:nth-of-type(2) tbody').innerText
+      : '';
     return {
       evilAttrCount: evilNodes.length,
       evilTags: Array.from(evilNodes).map((el) => el.outerHTML.slice(0, 120)),
       xssFlag: Boolean(window.__xssTriggered),
       findingCount,
-      hasEscapedPayloadText: bodyText.includes('alert(1)'),
+      hasEscapedPayloadText: isMain
+        ? bodyText.includes('alert(1)')
+        : (actionTableText.includes('99901') && actionTableText.includes('alert(1)')),
     };
-  });
+  }, interactiveMain);
 
   await context.close();
 
-  console.log(`[E2E XSS] ${label}: dialogs=${dialogs.length}, pageErrors=${pageErrors.length}, evilAttrCount=${domAudit.evilAttrCount}, xssFlag=${domAudit.xssFlag}, hasEscapedPayloadText=${domAudit.hasEscapedPayloadText}, findings=${domAudit.findingCount}`);
+  const rowLabel = interactiveMain ? 'findings' : 'top15ActionRows';
+  console.log(`[E2E XSS] ${label}: dialogs=${dialogs.length}, pageErrors=${pageErrors.length}, evilAttrCount=${domAudit.evilAttrCount}, xssFlag=${domAudit.xssFlag}, hasEscapedPayloadText=${domAudit.hasEscapedPayloadText}, ${rowLabel}=${domAudit.findingCount}`);
 
   if (dialogs.length > 0) {
     throw new Error(`${label} triggered unexpected dialog(s): ${dialogs.join(' | ')}`);
@@ -96,6 +104,9 @@ async function auditFile(browser, htmlPath, label, interactiveMain) {
   }
   if (domAudit.xssFlag) {
     throw new Error(`${label} executed injected script (window.__xssTriggered === true)`);
+  }
+  if (domAudit.findingCount < 1) {
+    throw new Error(`${label} rendered 0 ${rowLabel} (malicious finding did not reach rendered output)`);
   }
   if (!domAudit.hasEscapedPayloadText) {
     throw new Error(`${label} did not render the escaped payload text in DOM (fixture may not have loaded)`);

@@ -43,8 +43,8 @@ Her sprint şu şablonla yürütülür: `.agents/skills/tenantbrief-sprint/SKILL
 | S1.3 | `$statusRank` tablosuna `Error` eklenir; Planned ayrı tutulur. | Error + Passed birleşiminde sonuç Error. Test var. |
 | S1.4 | `Pillar`/`PrimaryPillar` = `DomainPillars[0]`, `DomainPillars` dizi. Araç adı yalnızca `Sources` alanında. `EngineLabel` yeni alanına eski değer taşınır. `Resolve-TenantBriefDomainPillars` regex'ine ScubaGear 2.0 `SECURITYSUITE` (`MS.SECURITYSUITE.*`) eklenir. | Q02 = 0, Q03 = 0. `MS.SECURITYSUITE.*` doğru sütuna düşer. HTML şablonu kırılmadı (ekran görüntüsü). |
 | S1.5 | Portal ve rol seçimi kaynak etiketine ve sütuna bağlanır (`$primaryPillar -eq 'CISA SCuBA'` vb. dallar kaldırılır). | Fixture: SCuBA EXO kontrolü → Exchange/Defender portalı. |
-| S1.6 | Risk/Etki normalizasyonu: tek ölçek (`Critical/High/Medium/Low`), son kullanıcı kesinti etkisi için yeni `UserImpact` alanı eklenir (`Impact` bir sürüm boyunca `deprecated` kalır ve `CHANGELOG.md`'ye yazılır). ORCA risk seviyesi upstream `ChiValue` (`ORCA.psm1:187-195` `enum ORCACHI`: `NotRated=0, Low=5, Medium=10, High=15, VeryHigh=20, Critical=100`) üzerinden türetilir; `Critical` değeri şemadaki `Risk` enum'una ve şablon filtre/renklerine yansıtılır. | Q04 ve gerekçesiz çelişki = 0. ORCA'da `Critical`/`High`/`Medium`/`Low` dağılımı var. |
-| S1.7 | Şema sıkılaştırılır (enum'lar, zorunlu alanlar). Eski alanlar `deprecated` olarak işaretlenir. `Compare-TenantBriefReports` eski (v1.0.x) rapor ile yeni şema arasında geriye dönük uyumlu kalır (test). | Demo JSON yeniden üretildiyse şemadan geçiyor. Eski+yeni rapor karşılaştırma testi yeşil. CHANGELOG girdisi var. |
+| S1.6 | Risk/Etki normalizasyonu: tek ölçek (`Critical/High/Medium/Low`), son kullanıcı kesinti etkisi için yeni `UserImpact` alanı eklenir (`Impact` bir sürüm boyunca `deprecated` kalır ve `CHANGELOG.md`'ye yazılır). ORCA risk seviyesi upstream `ChiValue` (`ORCA.psm1:187-195` `enum ORCACHI`: `NotRated=0, Low=5, Medium=10, High=15, VeryHigh=20, Critical=100`) üzerinden türetilir. `PriorityScore` = ağırlıklı formül (`data/scoring.json`). | Q04 ve gerekçesiz çelişki = 0. ORCA'da `Critical`/`High`/`Medium`/`Low` dağılımı var. Formül README'de. |
+| S1.7 | Şema sıkılaştırılır (enum'lar, zorunlu alanlar). Eski alanlar `deprecated` olarak işaretlenir. | Demo JSON yeniden üretildiyse şemadan geçiyor. CHANGELOG girdisi var. |
 
 **NEEDS-LIVE-TENANT:** tam bir çalıştırma ile Q01 değerinin gerçek veride ölçülmesi.
 
@@ -61,7 +61,6 @@ Her sprint şu şablonla yürütülür: `.agents/skills/tenantbrief-sprint/SKILL
 | S2.4 | EntraFalcon: ya gerçekten entegre edilir (`Import-TenantBriefEntraFalconFindings` uçtan uca, framework kartı, fixture), ya da README ve About'tan "opsiyonel / deneysel" olarak düzeltilir. | Q15 = 0. Seçilen yol CLAIMS.md'de. |
 | S2.5 | Planned ZT testleri skordan ve toplamdan çıkarılır, raporda "Yakında (upstream)" listesinde gösterilir. Error bulguları "Eksik izin/hata" eylem kartına dönüşür (ör. 403 → gereken Graph izni). | Q11 = 0. Fixture testi. |
 | S2.6 | Diagnostics: her atlanan aşama veya ürün için yapılandırılmış kayıt (Stage, Component, Severity, Remedy). | Yönetici Özeti'nde kısmi veri uyarısı doğru tetikleniyor (test). |
-| S2.7 | `PriorityScore` ağırlıklı önceliklendirme formülü ve `data/scoring.json` yapılandırma dosyası (Sprint 1'den taşındı). | Formül README'de belgelenmiş, deterministik sıralama Pester testi yeşil. |
 
 ---
 

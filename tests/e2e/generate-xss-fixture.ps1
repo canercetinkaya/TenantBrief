@@ -1,14 +1,18 @@
 #Requires -Version 7.0
 param(
     [Parameter(Mandatory = $true)]
-    [string]$OutDir
+    [string]$OutDir,
+
+    [Parameter(Mandatory = $false)]
+    [string]$ModulePath
 )
 
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 
 $repoRoot = Split-Path -Path (Split-Path -Path $PSScriptRoot -Parent) -Parent
-Import-Module (Join-Path $repoRoot 'TenantBrief.psd1') -Force
+$psd1 = if ($ModulePath) { $ModulePath } else { Join-Path $repoRoot 'TenantBrief.psd1' }
+Import-Module $psd1 -Force
 
 New-Item -ItemType Directory -Path $OutDir -Force | Out-Null
 $rawZt = Join-Path $OutDir 'ZeroTrustAssessmentReport.json'
