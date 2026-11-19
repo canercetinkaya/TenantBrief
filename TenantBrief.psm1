@@ -2290,19 +2290,7 @@ function Invoke-TenantBriefAssessment {
         "Out of $skippedCount skipped controls, $licGapTotal are blocked by missing licenses, $connGapTotal by disconnected services or missing API scopes (blind spots), and $scopeGapTotal are not applicable because those features/platforms are unused in the tenant."
     }
 
-    $roadmap = if ($Language -eq 'tr') {
-        @(
-            [PSCustomObject]@{ Phase = '0–30 Gün (Kritik / Quick Wins)'; Count = $highRiskFailed; Focus = 'Yüksek riskli Kimlik, Passkey, Break-Glass ve Defender temel açıkları' },
-            [PSCustomObject]@{ Phase = '31–60 Gün (Orta Risk)'; Count = $medRiskFailed; Focus = 'Intune uyumluluk, DLP/Purview etiketleme ve ağ segmentasyonu' },
-            [PSCustomObject]@{ Phase = '61–90 Gün (İnceleme & Düşük)'; Count = ($lowRiskFailed + $investigateCount); Focus = 'Investigate bulguları, SOC triyaj SLA ve sürekli drift takibi' }
-        )
-    } else {
-        @(
-            [PSCustomObject]@{ Phase = 'Days 0–30 (Critical / Quick Wins)'; Count = $highRiskFailed; Focus = 'High-risk Identity, Passkeys, Break-Glass, and Defender baselines' },
-            [PSCustomObject]@{ Phase = 'Days 31–60 (Medium Risk)'; Count = $medRiskFailed; Focus = 'Intune compliance, Purview labeling/DLP, and network segmentation' },
-            [PSCustomObject]@{ Phase = 'Days 61–90 (Investigate & Low)'; Count = ($lowRiskFailed + $investigateCount); Focus = 'Manual Investigate items, SOC triage SLAs, and drift monitoring' }
-        )
-    }
+    $roadmap = @()
 
     $pillarMap = $null
 
@@ -2368,6 +2356,42 @@ function Invoke-TenantBriefAssessment {
 
     $findings = @(New-TenantBriefFindings -Tests $tests -PillarMap $pillarMap -Language $Language -TranslationCache $trCache)
     $plannedFindings = @(New-TenantBriefFindings -Tests $plannedTests -PillarMap $pillarMap -Language $Language -TranslationCache $trCache)
+
+    $buildPhaseFocus = {
+        param([object[]]$Items, [string]$EmptyText)
+        if (-not $Items -or $Items.Count -eq 0) { return $EmptyText }
+        $topCats = @($Items | Where-Object { $_.Category } | Group-Object Category | Sort-Object -Property @(@{ Expression = 'Count'; Descending = $true }, 'Name') | Select-Object -First 3 | ForEach-Object { "$($_.Name) ($($_.Count))" })
+        if ($topCats.Count -gt 0) { return ($topCats -join ' · ') }
+        return $EmptyText
+    }
+    $sortByPrio = @(
+        @{ Expression = { [int]$_.PriorityScore }; Descending = $true },
+        @{ Expression = { [string]$_.Id }; Descending = $false }
+    )
+    $p0Items = @($findings | Where-Object { $_.Status -eq 'Failed' -and $_.Risk -in @('Critical', 'High') } | Sort-Object -Property $sortByPrio)
+    $p1Items = @($findings | Where-Object { $_.Status -eq 'Failed' -and $_.Risk -eq 'Medium' } | Sort-Object -Property $sortByPrio)
+    $p2Items = @($findings | Where-Object { ($_.Status -eq 'Failed' -and $_.Risk -eq 'Low') -or $_.Status -eq 'Investigate' } | Sort-Object -Property $sortByPrio)
+    $emptyPhaseMsg = if ($Language -eq 'tr') { 'Bu fazda açık bulgu bulunmuyor' } else { 'No open findings in this phase' }
+    $roadmap = @(
+        [PSCustomObject]@{
+            Phase      = if ($Language -eq 'tr') { '0–30 Gün (Kritik / Quick Wins)' } else { 'Days 0–30 (Critical / Quick Wins)' }
+            Count      = $p0Items.Count
+            Focus      = (& $buildPhaseFocus $p0Items $emptyPhaseMsg)
+            FindingIds = @($p0Items | ForEach-Object { [string]$_.Id })
+        },
+        [PSCustomObject]@{
+            Phase      = if ($Language -eq 'tr') { '31–60 Gün (Orta Risk)' } else { 'Days 31–60 (Medium Risk)' }
+            Count      = $p1Items.Count
+            Focus      = (& $buildPhaseFocus $p1Items $emptyPhaseMsg)
+            FindingIds = @($p1Items | ForEach-Object { [string]$_.Id })
+        },
+        [PSCustomObject]@{
+            Phase      = if ($Language -eq 'tr') { '61–90 Gün (İnceleme & Düşük)' } else { 'Days 61–90 (Investigate & Low)' }
+            Count      = $p2Items.Count
+            Focus      = (& $buildPhaseFocus $p2Items $emptyPhaseMsg)
+            FindingIds = @($p2Items | ForEach-Object { [string]$_.Id })
+        }
+    )
 
     $tenantDisplay = if ($Anonymize) { 'contoso.onmicrosoft.com (Anonymized)' } else { [string]$raw.Domain }
     $ti = $raw.PSObject.Properties['TenantInfo'].Value
