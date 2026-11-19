@@ -426,8 +426,8 @@ Describe 'Multi-engine Maester & EntraFalcon JSON ingestion' {
 
     It 'merges Maester and EntraFalcon controls into findings and summary' {
         $script:MultiReport.Summary.Total | Should -Be 17
-        ($script:MultiReport.Findings | Where-Object { $_.Pillar -match 'Maester' }).Count | Should -Be 1
-        ($script:MultiReport.Findings | Where-Object { $_.Pillar -eq 'EntraFalcon' }).Count | Should -Be 1
+        ($script:MultiReport.Findings | Where-Object { $_.EngineLabel -match 'Maester' }).Count | Should -Be 1
+        ($script:MultiReport.Findings | Where-Object { $_.EngineLabel -eq 'EntraFalcon' }).Count | Should -Be 1
         $ef = $script:MultiReport.Findings | Where-Object { $_.Id -eq 'EF-ROLE-001' }
         $ef.RequiredRole | Should -Be 'Conditional Access Administrator / Security Administrator'
         $ef.DomainPillar | Should -Be 'Identity'

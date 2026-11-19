@@ -143,11 +143,12 @@ Describe 'TenantBrief Module' {
         }
     }
 
-    It 'normalizes a grouped pillar into Pillar/PrimaryPillar' {
+    It 'normalizes a grouped pillar into canonical Pillar/PrimaryPillar and EngineLabel' {
         InModuleScope TenantBrief {
             $f = @(New-TenantBriefFindings -Tests @([PSCustomObject]@{ TestId = 'X'; TestTitle = 't'; TestStatus = 'Failed'; TestPillar = @('Identity', 'CISA SCuBA') }) -Language en)
-            $f[0].Pillar | Should -Be 'Identity, CISA SCuBA'
+            $f[0].Pillar | Should -Be 'Identity'
             $f[0].PrimaryPillar | Should -Be 'Identity'
+            $f[0].EngineLabel | Should -Be 'Identity, CISA SCuBA'
         }
     }
 

@@ -746,8 +746,9 @@ function Resolve-TenantBriefDomainPillars {
             'Defender for Office 365 (ORCA)' { & $addDom 'SecOps' }
             'EntraFalcon'                    { & $addDom 'Identity' }
             'CISA SCuBA' {
-                if ($id -match '\.(EXO|DEFENDER)\.') { & $addDom 'SecOps' }
-                elseif ($id -match '\.(SHAREPOINT|ONE)\.') { & $addDom 'Data' }
+                if ($id -match '\.SECURITYSUITE\.3\.') { & $addDom 'Data' }
+                elseif ($id -match '\.(EXO|DEFENDER|SECURITYSUITE)\.') { & $addDom 'SecOps' }
+                elseif ($id -match '\.(SHAREPOINT|ONE|POWERBI)\.') { & $addDom 'Data' }
                 else { & $addDom 'Identity' }
             }
             'Maester (EIDSCA / CIS)' {
@@ -1621,14 +1622,16 @@ function New-TenantBriefFindings {
         }
         $conflictRaw = [bool](Get-TenantBriefPropertyValue -Object $t -Name 'StatusConflict')
 
+        $canonicalPrimary = if ($domainList.Count -gt 0) { [string]$domainList[0] } else { 'Identity' }
         [PSCustomObject]@{
             Id                 = $tid
             CanonicalId        = $canonicalRaw
             CorrelatedIds      = @($corrList)
-            Pillar             = if ($pillarStr) { $pillarStr } else { 'General' }
-            PrimaryPillar      = if ($primaryPillar) { $primaryPillar } else { 'General' }
-            DomainPillar       = $domainStr
+            Pillar             = $canonicalPrimary
+            PrimaryPillar      = $canonicalPrimary
+            DomainPillar       = $canonicalPrimary
             DomainPillars      = @($domainList)
+            EngineLabel        = if ($pillarStr) { $pillarStr } else { $canonicalPrimary }
             Source             = $sourceStr
             Sources            = @($sourceList)
             SourceStatuses     = $srcStatusesRaw
