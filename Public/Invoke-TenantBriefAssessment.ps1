@@ -555,10 +555,11 @@
 
     if ($Anonymize) {
         $rawDomainForMask = if ($raw -and $raw.PSObject.Properties['Domain'] -and $raw.Domain) { [string]$raw.Domain } else { '' }
+        $rawTenantNameForMask = if ($raw -and $raw.PSObject.Properties['TenantName'] -and $raw.TenantName) { [string]$raw.TenantName } else { '' }
         foreach ($item in (@($findings) + @($plannedFindings))) {
             foreach ($propName in @('Title', 'Result', 'Description', 'SkippedReason', 'Remediation', 'RemediationTr', 'ErrorRemedy')) {
                 if ($item.PSObject.Properties[$propName] -and $item.$propName) {
-                    $item.$propName = Protect-TenantBriefSensitiveText -Text ([string]$item.$propName) -TenantDomain $rawDomainForMask
+                    $item.$propName = Protect-TenantBriefSensitiveText -Text ([string]$item.$propName) -TenantDomain $rawDomainForMask -TenantName $rawTenantNameForMask
                 }
             }
         }
@@ -608,7 +609,8 @@
         $mfaDesc = "Son $($Matches[1]) günde oturum açmaların %$($Matches[2]) kadarı çok faktörlü kimlik doğrulama (MFA) zorunlu kılan Koşullu Erişim politikaları ile korundu."
     }
     if ($Anonymize -and $mfaDesc) {
-        $mfaDesc = Protect-TenantBriefSensitiveText -Text $mfaDesc -TenantDomain ([string]$raw.Domain)
+        $tNameMfa = if ($raw -and $raw.PSObject.Properties['TenantName'] -and $raw.TenantName) { [string]$raw.TenantName } else { '' }
+        $mfaDesc = Protect-TenantBriefSensitiveText -Text $mfaDesc -TenantDomain ([string]$raw.Domain) -TenantName $tNameMfa
     }
     $devComp = if ($ti -and $ti.PSObject.Properties['DeviceOverview'].Value -and $ti.DeviceOverview.PSObject.Properties['DeviceCompliance'].Value) { $ti.DeviceOverview.DeviceCompliance } else { $null }
     $agentOv = if ($ti -and $ti.PSObject.Properties['AgentOverview'].Value) { $ti.AgentOverview } else { $null }

@@ -132,5 +132,9 @@ Her sprint şu şablonla yürütülür: `.agents/skills/tenantbrief-sprint/SKILL
 
 ## Sürüm planı
 - **v1.1:** Sprint 0–3 (doğruluk ve Türkçe)
-- **v1.2:** Sprint 4–5 (anlatı ve güvenlik)
-- **v2.0:** Sprint 6–7 (mimari ve UX; JSON şeması v2, deprecated alanlar kaldırılır)
+- **v1.2.0:** Sprint 0–7 (korelasyon, Türkçe yerelleştirme, anlatı, güvenlik/gizlilik, modüler mimari, bloklayıcı CI, UX/erişilebilirlik/trend; `Finding.Impact` deprecated olarak korunur)
+- **v2.0.0 (Planlanan — Breaking Change Paketi):**
+  - `V2.1` — Deprecated `Finding.Impact` alanının JSON çıktısından ve HTML şablonundan kaldırılması (`Finding.UserImpact` tek kaynak olur).
+  - `V2.2` — JSON Şeması v2 (`schemas/tenantbrief-report.schema.json` `schemaVersion: "2.0.0"`, `Impact` kaldırılmış ve sıkılaştırılmış zorunlu alanlar).
+  - `V2.3` — Geriye dönük geçiş ve yükseltme rehberi (`docs/migration-v1-to-v2.md` ve `CHANGELOG.md` breaking-change bölümü).
+  - `V2.4` — Golden-file snapshot'ları ve `Compare-TenantBriefReports` çapraz sürüm (v1→v2) uyumluluk testleri.

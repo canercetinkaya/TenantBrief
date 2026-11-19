@@ -4,6 +4,11 @@ All notable changes to **TenantBrief** are documented in this file.
 
 ## [Unreleased]
 
+## [1.2.0] - 2026-11-19
+
+### Security
+- **`-Anonymize` `TenantName` Leak Fix:** Previous releases did not redact `TenantName` values appearing inside finding `Result`, `Description`, or policy/rule names when `-Anonymize` was enabled. `Protect-TenantBriefSensitiveText` and `Invoke-TenantBriefAssessment` now redact `TenantName` (alongside UPNs/emails, GUIDs, `*.onmicrosoft.com`, `*.sharepoint.com`, and tenant domain/prefix). **Action recommended:** Review any anonymized reports shared with earlier versions (`<= 1.0.1`) for unmasked tenant display names.
+
 ### Added
 - **Sprint 0 Quality & Governance Tooling (`#1`):**
   - `tools/Measure-TenantBriefQuality.ps1` and `tests/Measure-TenantBriefQuality.Tests.ps1` for deterministic Q01–Q15 report quality metrics (including `Q04a`/`Q04b`, `Q08a`/`Q08b`, `Q10a`/`Q10b`).
@@ -52,7 +57,12 @@ All notable changes to **TenantBrief** are documented in this file.
   - A4 portrait `@page` and `@media print` pagination rules (`break-inside: avoid`) in `Export-TenantBriefExecutiveSummary`.
 
 ### Deprecated
-- **`Finding.Impact`:** Retained for one release for backward compatibility; use `Finding.UserImpact` instead.
+- **`Finding.Impact`:** Retained in `v1.2.0` for backward compatibility; scheduled for removal in **`v2.0.0`** (alongside JSON Schema v2). Migrate consumers to `Finding.UserImpact` (end-user/business disruption impact) and `Finding.Risk` (security risk severity).
+
+### Known Limitations
+- **Cross-Engine Correlation (`Q01 = 42`):** Only the 42 canonical controls verified directly against upstream ZeroTrustAssessment, CISA ScubaGear 2.0, Maester, and Microsoft ORCA catalogs (`data/control-crosswalk.json`) are merged across engines; unmapped controls remain separate engine-scoped entries.
+- **ScubaGear Product Coverage (`Q12 = 8`):** Multi-product execution covers the 7 ScubaGear 2.0 M365 baselines (`aad, securitysuite, exo, powerplatform, sharepoint, teams, powerbi`) plus Defender/SecuritySuite; in offline runs or when a service session is disconnected, unavailable products are skipped and reported in `run-manifest.json` (`ScubaProducts`).
+- **Turkish Machine Translations (`Reviewed = 0`):** All 619 entries in `data/tr-translation-cache.json` are machine-translated and have not yet completed human editorial review (`Reviewed = false`, tracked via `Summary.UnreviewedTranslations` and `docs/improvement/translation-review.md`).
 
 ## [1.0.1] - 2026-11-19
 
