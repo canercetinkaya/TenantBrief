@@ -1121,7 +1121,10 @@ function Invoke-TenantBriefBaselineCollections {
         [string]$ManifestPath,
 
         [Parameter(Mandatory = $false)]
-        [switch]$SkipMaester
+        [switch]$SkipMaester,
+
+        [Parameter(Mandatory = $false)]
+        [string[]]$ScubaProducts = @('aad', 'securitysuite', 'exo', 'powerplatform', 'sharepoint', 'teams', 'powerbi')
     )
 
     $markStage = {
@@ -1167,12 +1170,24 @@ function Invoke-TenantBriefBaselineCollections {
                 & $Log "[Stage 2/5] Installing OPA executable for ScubaGear..."
                 Install-OPAforSCuBA | Out-Null
             }
-            & $Log "[Stage 2/5] Running CISA ScubaGear checks (aad baseline — reusing active Graph session)..."
-            $null = Invoke-SCuBA -ProductNames @('aad') -LogIn:$false -DisconnectOnExit:$false -OPAPath $opaDir -OutPath $scubaOut -Quiet 6>$null 3>$null
+            $requestedScuba = @($ScubaProducts | ForEach-Object { ([string]$_).Trim().ToLowerInvariant() } | Where-Object { $_ } | Select-Object -Unique)
+            if ($requestedScuba.Count -eq 0) { $requestedScuba = @('aad', 'securitysuite', 'exo', 'powerplatform', 'sharepoint', 'teams', 'powerbi') }
+            & $Log "[Stage 2/5] Running CISA ScubaGear checks ($($requestedScuba -join ', ') — reusing active session)..."
+            $null = Invoke-SCuBA -ProductNames $requestedScuba -LogIn:$false -DisconnectOnExit:$false -OPAPath $opaDir -OutPath $scubaOut -Quiet 6>$null 3>$null
             $scubaItems = @(Import-TenantBriefScubaResults -Path $scubaOut)
+            $executedScuba = @($scubaItems | ForEach-Object { ([string]$_.TestCategory).Trim().ToLowerInvariant() } | Where-Object { $_ } | Select-Object -Unique)
+            $skippedScuba = @($requestedScuba | Where-Object { $executedScuba -notcontains $_ })
+            if ($Manifest) {
+                $scubaSummaryObj = [PSCustomObject]@{
+                    Requested = @($requestedScuba)
+                    Executed  = @($executedScuba)
+                    Skipped   = @($skippedScuba)
+                }
+                $Manifest | Add-Member -NotePropertyName 'ScubaProducts' -NotePropertyValue $scubaSummaryObj -Force
+            }
             if ($scubaItems.Count -gt 0) {
                 $collected += $scubaItems
-                & $Log "[Stage 2/5] ScubaGear completed: $($scubaItems.Count) controls merged."
+                & $Log "[Stage 2/5] ScubaGear completed: $($scubaItems.Count) controls merged ($($executedScuba.Count)/$($requestedScuba.Count) products)."
                 $scubaOk = $true
             } else {
                 "ScubaGear finished without ScubaResults.json / *Report.json output." | Set-Content -Path (Join-Path $scubaOut 'scuba-error.txt') -Encoding UTF8
