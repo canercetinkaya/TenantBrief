@@ -16,8 +16,8 @@
 | Q05 | Çatışan durum işaretsiz (`StatusConflictUnflagged`) | **0** | `NOT STARTED` (`SourceStatuses`/`StatusConflict` Sprint 1 `S1.2`'de eklenir) |
 | Q06 | `ImplementationCost = Unknown` | 100 (ORCA 66 + SCuBA 34) | — |
 | Q07 | Failed ve `MinimumLicense` boş | 130 | — |
-| Q08a | TR başlıkta İngilizce kalıp (BASELINE dar kalıp / case-sensitive) | 164 (Python dar kalıp; PS `-cmatch`: 148) | Dar kalıp referansı |
-| Q08b | TR başlıkta İngilizce kalıp (`SKILL.md` regex `(?i)`) | **202** | Ek eşleşmelerin tamamı gerçek İngilizce başlık (`should`, `Enabled`; 0 Türkçe yanlış pozitif) |
+| Q08a | TR başlıkta İngilizce kalıp (case-sensitive `-cmatch`) | **148** (`Maester 73, CIS 37, SCuBA 34, EIDSCA 3, ZT 1`) | `Measure-TenantBriefQuality.ps1` `Q08a` çıktısı (ilk Python özetindeki `164`, farklı kelime kümesiyle hesaplandığı için `148` olarak kanıtla sabitlendi) |
+| Q08b | TR başlıkta İngilizce kalıp (`SKILL.md` regex `(?i)`) | **202** (`+47 should, +5 Enabled, +2 must`) | Ek 54 kaydın tamamı gerçek İngilizce başlık (0 Türkçe yanlış pozitif) |
 | Q09 | Yasak kelime ("tasdiqi") | 1 | `Id: 21840` |
 | Q10a | `"..."` ile kesilmiş düzeltme | **77** | 160 karakter kesmesi |
 | Q10b | `"öğrenin/Learn/Related links"` artığı | **10** (case-sensitive) / **11** (`(?i)` `MT.1100` `learn` dahil) | — |
