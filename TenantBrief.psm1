@@ -2,7 +2,28 @@
 
 $script:ModuleRoot = $PSScriptRoot
 $script:FrameworkMapPath = Join-Path $script:ModuleRoot 'data\framework-mappings.json'
+$script:CrosswalkPath = Join-Path $script:ModuleRoot 'data\control-crosswalk.json'
+$script:CrosswalkMapCache = $null
 $script:ReportTemplatePath = Join-Path $script:ModuleRoot 'assets\report-template.html'
+
+function Get-TenantBriefCrosswalkMap {
+    [CmdletBinding()]
+    param()
+
+    if ($null -ne $script:CrosswalkMapCache) { return $script:CrosswalkMapCache }
+    $map = @{}
+    if (Test-Path -LiteralPath $script:CrosswalkPath) {
+        $cw = Get-Content -LiteralPath $script:CrosswalkPath -Raw -Encoding UTF8 | ConvertFrom-Json
+        foreach ($c in @($cw.controls)) {
+            foreach ($uId in @($c.ids)) {
+                $k = ([string]$uId).Trim().ToUpperInvariant()
+                if ($k) { $map[$k] = $c }
+            }
+        }
+    }
+    $script:CrosswalkMapCache = $map
+    return $map
+}
 
 function Get-TenantBriefFrameworks {
     <#
@@ -725,8 +746,9 @@ function Resolve-TenantBriefDomainPillars {
             'Defender for Office 365 (ORCA)' { & $addDom 'SecOps' }
             'EntraFalcon'                    { & $addDom 'Identity' }
             'CISA SCuBA' {
-                if ($id -match '\.(EXO|DEFENDER)\.') { & $addDom 'SecOps' }
-                elseif ($id -match '\.(SHAREPOINT|ONE)\.') { & $addDom 'Data' }
+                if ($id -match '\.SECURITYSUITE\.3\.') { & $addDom 'Data' }
+                elseif ($id -match '\.(EXO|DEFENDER|SECURITYSUITE)\.') { & $addDom 'SecOps' }
+                elseif ($id -match '\.(SHAREPOINT|ONE|POWERBI)\.') { & $addDom 'Data' }
                 else { & $addDom 'Identity' }
             }
             'Maester (EIDSCA / CIS)' {
@@ -851,12 +873,22 @@ function Import-TenantBriefOrcaResults {
         $rec  = if ($item.PSObject.Properties['FailRecommendation']) { [string]$item.FailRecommendation } else { '' }
         $passTxt = if ($item.PSObject.Properties['PassText']) { [string]$item.PassText } else { '' }
         $imp  = if ($item.PSObject.Properties['Importance']) { [string]$item.Importance } else { '' }
+        $chiRaw = if ($item.PSObject.Properties['ChiValue']) { $item.ChiValue } else { $null }
+        $mappedRisk = if ($null -ne $chiRaw -and "$chiRaw" -ne '') {
+            switch ([string]$chiRaw) {
+                { $_ -in @('100', 'Critical') }       { 'Critical' }
+                { $_ -in @('20', 'VeryHigh', '15', 'High') } { 'High' }
+                { $_ -in @('10', 'Medium') }          { 'Medium' }
+                { $_ -in @('5', 'Low', '0', 'NotRated') } { 'Low' }
+                default                               { 'Medium' }
+            }
+        } else { 'Medium' }
         $mappedOrStatus = if ($st -in @('1', 'Pass', 'OK')) { 'Passed' } elseif ($st -in @('2', '0', 'Informational', 'Info', 'None')) { 'Investigate' } else { 'Failed' }
         $out += [PSCustomObject]@{
             TestId                 = if ($ctrl -like 'ORCA-*') { $ctrl } else { "ORCA-$ctrl" }
             TestTitle              = $cName
             TestStatus             = $mappedOrStatus
-            TestRisk               = 'Medium'
+            TestRisk               = $mappedRisk
             TestPillar             = 'Defender for Office 365 (ORCA)'
             TestSource             = 'MDO / ORCA'
             TestCategory           = $area
@@ -1299,29 +1331,37 @@ function New-TenantBriefCorrelatedTests {
         [object[]]$Tests
     )
 
-    $statusRank = @{ 'Passed' = 0; 'Planned' = 1; 'Skipped' = 1; 'Investigate' = 2; 'Failed' = 3 }
-    $riskRank = @{ 'Low' = 0; 'Medium' = 1; 'High' = 2 }
+    $statusRank = @{ 'Passed' = 0; 'Planned' = 1; 'Skipped' = 1; 'Investigate' = 2; 'Error' = 3; 'Failed' = 4 }
+    $riskRank = @{ 'Low' = 0; 'Medium' = 1; 'High' = 2; 'Critical' = 3 }
     $enrichable = @('TestCategory', 'TestSfiPillar', 'TestImplementationCost', 'TestMinimumLicense', 'SkippedReason', 'TestResult', 'TestImpact', 'TestDescription')
+    $crosswalkMap = Get-TenantBriefCrosswalkMap
 
     # Ordered dictionary keeps report output deterministic between runs.
     $correlated = [ordered]@{}
+    $seq = 0
     foreach ($t in @($Tests)) {
         if ($null -eq $t) { continue }
+        $seq++
 
-        $title = [string](Get-TenantBriefPropertyValue -Object $t -Name 'TestTitle')
-        # Trim after collapsing separators: a title ending in punctuation would otherwise keep a
-        # trailing space and never match its counterpart from another engine.
-        $normTitle = ($title.ToLowerInvariant().Trim() -replace '[^a-z0-9]+', ' ').Trim()
-        if (-not $normTitle) { $normTitle = [string](Get-TenantBriefPropertyValue -Object $t -Name 'TestId') }
-
-        $rawId = [string](Get-TenantBriefPropertyValue -Object $t -Name 'TestId')
+        $rawId = ([string](Get-TenantBriefPropertyValue -Object $t -Name 'TestId')).Trim()
+        $rawIdKey = $rawId.ToUpperInvariant()
         $pillarList = @(ConvertTo-TenantBriefPillarList -PillarValue (Get-TenantBriefPropertyValue -Object $t -Name 'TestPillar'))
         $sourceList = @(Resolve-TenantBriefSourceTag -Test $t)
         $newStatus = [string](Get-TenantBriefPropertyValue -Object $t -Name 'TestStatus')
         $newRisk = [string](Get-TenantBriefPropertyValue -Object $t -Name 'TestRisk')
 
-        if ($correlated.Contains($normTitle)) {
-            $existing = $correlated[$normTitle]
+        $cwEntry = if ($rawIdKey -and $crosswalkMap.ContainsKey($rawIdKey)) { $crosswalkMap[$rawIdKey] } else { $null }
+        $canonicalId = if ($cwEntry) { [string]$cwEntry.canonicalId } else { '' }
+        $corrKey = if ($canonicalId) {
+            "CW:$canonicalId"
+        } elseif ($rawIdKey) {
+            "RAW:$(($sourceList -join '+').ToUpperInvariant())|$rawIdKey"
+        } else {
+            "SEQ:$seq"
+        }
+
+        if ($correlated.Contains($corrKey)) {
+            $existing = $correlated[$corrKey]
             foreach ($p in $pillarList) {
                 if ($p -and ($existing.TestPillar -notcontains $p)) {
                     $existing.TestPillar = @($existing.TestPillar) + $p
@@ -1330,6 +1370,16 @@ function New-TenantBriefCorrelatedTests {
             foreach ($s in $sourceList) {
                 if ($s -and ($existing.TestSources -notcontains $s)) {
                     $existing.TestSources = @($existing.TestSources) + $s
+                }
+                if ($s) {
+                    if ($existing.SourceStatuses.Contains($s)) {
+                        $prevSrcStatus = [string]$existing.SourceStatuses[$s]
+                        if (($statusRank[$newStatus] ?? 0) -gt ($statusRank[$prevSrcStatus] ?? 0)) {
+                            $existing.SourceStatuses[$s] = $newStatus
+                        }
+                    } else {
+                        $existing.SourceStatuses[$s] = $newStatus
+                    }
                 }
             }
             if ($rawId -and ($existing.CorrelatedIds -notcontains $rawId)) {
@@ -1353,8 +1403,15 @@ function New-TenantBriefCorrelatedTests {
                     $existing.$field = $incoming
                 }
             }
+            $distinctStatuses = @($existing.SourceStatuses.Values | Where-Object { $_ } | Select-Object -Unique)
+            $existing.StatusConflict = ($distinctStatuses.Count -gt 1)
         } else {
-            $correlated[$normTitle] = [PSCustomObject]@{
+            $srcStatuses = [ordered]@{}
+            foreach ($s in $sourceList) {
+                if ($s) { $srcStatuses[$s] = $newStatus }
+            }
+            $correlated[$corrKey] = [PSCustomObject]@{
+                CanonicalId            = $canonicalId
                 TestId                 = $rawId
                 CorrelatedIds          = if ($rawId) { @($rawId) } else { @() }
                 TestTitle              = Get-TenantBriefPropertyValue -Object $t -Name 'TestTitle'
@@ -1362,6 +1419,8 @@ function New-TenantBriefCorrelatedTests {
                 TestRisk               = $newRisk
                 TestPillar             = @($pillarList)
                 TestSources            = @($sourceList)
+                SourceStatuses         = $srcStatuses
+                StatusConflict         = $false
                 TestCategory           = Get-TenantBriefPropertyValue -Object $t -Name 'TestCategory'
                 TestSfiPillar          = Get-TenantBriefPropertyValue -Object $t -Name 'TestSfiPillar'
                 TestImplementationCost = Get-TenantBriefPropertyValue -Object $t -Name 'TestImplementationCost'
@@ -1497,40 +1556,37 @@ function New-TenantBriefFindings {
         $catRaw = [string](Get-TenantBriefPropertyValue -Object $t -Name 'TestCategory')
         $domPrimary = if ($domainList.Count -gt 0) { [string]$domainList[0] } else { $primaryPillar }
 
-        # Determine admin portal & least-privilege role from Control ID + Category + Domain/Pillar
+        # Determine admin portal & least-privilege role from Control ID, Sources, Category, and canonical DomainPillar
         $portalName = ''
         $requiredRole = ''
-        if ($primaryPillar -eq 'Defender for Office 365 (ORCA)' -or $tid -like 'ORCA-*' -or $catRaw -match 'Exchange|Anti-Phish|Safe Links|Safe Attachments|DKIM|DMARC|SPF|OWA') {
+        if (($sourceList -contains 'MDO / ORCA') -or $tid -like 'ORCA-*' -or $tid -match '^SCUBA-MS\.EXO\.' -or $catRaw -match 'Exchange|EXO|Anti-Phish|Safe Links|Safe Attachments|DKIM|DMARC|SPF|OWA') {
             $portalName = 'Microsoft Defender & Exchange Yönetim Merkezi (security.microsoft.com)'
             $requiredRole = 'Security Administrator / Exchange Administrator'
-        } elseif ($tid -match '^CIS\.M365\.8\.' -or $catRaw -match 'Teams') {
+        } elseif ($tid -match '^(CIS\.M365\.8\.|SCUBA-MS\.TEAMS\.)' -or $catRaw -match 'Teams') {
             $portalName = 'Microsoft Teams yönetim merkezi (admin.teams.microsoft.com)'
             $requiredRole = 'Teams Administrator'
-        } elseif ($domPrimary -eq 'Devices' -or ($primaryPillar -ne 'Identity' -and $catRaw -match 'Intune|BitLocker|Device|Compliance')) {
+        } elseif ($domPrimary -eq 'Devices' -or ($domPrimary -ne 'Identity' -and $catRaw -match 'Intune|BitLocker|Device|Compliance')) {
             $portalName = 'Microsoft Intune yönetim merkezi (intune.microsoft.com)'
             $requiredRole = 'Intune Administrator'
-        } elseif ($catRaw -match 'SharePoint|OneDrive') {
+        } elseif ($tid -match '^SCUBA-MS\.SHAREPOINT\.' -or $catRaw -match 'SharePoint|OneDrive') {
             $portalName = 'Microsoft SharePoint & Purview Yönetim Merkezi (purview.microsoft.com)'
             $requiredRole = 'SharePoint Administrator / Compliance Administrator'
         } elseif ($domPrimary -eq 'AI' -or $catRaw -match 'Copilot|Agent') {
             $portalName = 'Microsoft Purview / Entra Agent ID (entra.microsoft.com)'
             $requiredRole = 'Compliance Administrator / Information Protection Admin'
-        } elseif ($domPrimary -eq 'Data' -or $catRaw -match 'Purview|Sensitivity|DLP|Information Protection|Encryption|Lockbox|Storage') {
+        } elseif ($domPrimary -eq 'Data' -or $tid -match '^SCUBA-MS\.SECURITYSUITE\.3\.' -or $catRaw -match 'Purview|Sensitivity|DLP|Information Protection|Encryption|Lockbox|Storage') {
             $portalName = 'Microsoft Purview portalı (purview.microsoft.com)'
             $requiredRole = 'Compliance Administrator / Information Protection Admin'
-        } elseif ($primaryPillar -eq 'Infrastructure' -or $catRaw -match 'Defender for Cloud|AzureConfig|Azure Network') {
+        } elseif ($catRaw -match 'Defender for Cloud|AzureConfig|Azure Network') {
             $portalName = 'Azure Portal (portal.azure.com)'
             $requiredRole = 'Security Admin / Subscription Contributor'
         } elseif ($domPrimary -eq 'Network' -or $catRaw -match 'Global Secure Access|Private Access|Application Proxy') {
             $portalName = 'Global Secure Access / Azure Portal (portal.azure.com)'
             $requiredRole = 'Global Secure Access Administrator / Network Contributor'
-        } elseif ($domPrimary -eq 'SecOps' -or $catRaw -match 'Defender|Exposure|Audit|Sentinel|Incident|Threat') {
+        } elseif ($domPrimary -eq 'SecOps' -or $tid -match '^SCUBA-MS\.SECURITYSUITE\.' -or $catRaw -match 'Defender|Exposure|Audit|Sentinel|Incident|Threat') {
             $portalName = 'Microsoft Defender XDR / Sentinel (security.microsoft.com)'
             $requiredRole = 'Security Administrator / Sentinel Contributor'
-        } elseif ($primaryPillar -eq 'CISA SCuBA') {
-            $portalName = 'M365 / Entra / Exchange / Defender Yönetim Merkezleri (CISA SCuBA)'
-            $requiredRole = 'Security Administrator'
-        } elseif ($domPrimary -eq 'Identity' -or $primaryPillar -in @('Identity', 'Maester (EIDSCA / CIS)', 'EntraFalcon')) {
+        } elseif ($domPrimary -eq 'Identity') {
             $portalName = 'Microsoft Entra yönetim merkezi (entra.microsoft.com)'
             $requiredRole = 'Conditional Access Administrator / Security Administrator'
         } else {
@@ -1565,15 +1621,28 @@ function New-TenantBriefFindings {
         $resultRaw   = Get-TenantBriefPropertyValue -Object $t -Name 'TestResult'
         $skippedRaw  = Get-TenantBriefPropertyValue -Object $t -Name 'SkippedReason'
 
+        $canonicalRaw = [string](Get-TenantBriefPropertyValue -Object $t -Name 'CanonicalId')
+        $srcStatusesRaw = Get-TenantBriefPropertyValue -Object $t -Name 'SourceStatuses'
+        if ($null -eq $srcStatusesRaw) {
+            $srcStatusesRaw = [ordered]@{}
+            foreach ($s in $sourceList) { if ($s) { $srcStatusesRaw[$s] = $statusRaw } }
+        }
+        $conflictRaw = [bool](Get-TenantBriefPropertyValue -Object $t -Name 'StatusConflict')
+
+        $canonicalPrimary = if ($domainList.Count -gt 0) { [string]$domainList[0] } else { 'Identity' }
         [PSCustomObject]@{
             Id                 = $tid
+            CanonicalId        = $canonicalRaw
             CorrelatedIds      = @($corrList)
-            Pillar             = if ($pillarStr) { $pillarStr } else { 'General' }
-            PrimaryPillar      = if ($primaryPillar) { $primaryPillar } else { 'General' }
-            DomainPillar       = $domainStr
+            Pillar             = $canonicalPrimary
+            PrimaryPillar      = $canonicalPrimary
+            DomainPillar       = $canonicalPrimary
             DomainPillars      = @($domainList)
+            EngineLabel        = if ($pillarStr) { $pillarStr } else { $canonicalPrimary }
             Source             = $sourceStr
             Sources            = @($sourceList)
+            SourceStatuses     = $srcStatusesRaw
+            StatusConflict     = $conflictRaw
             Category           = if ($catRaw) { $catRaw } else { 'General' }
             SfiPillar          = if ($sfiRaw) { [string]$sfiRaw } else { '' }
             ImplementationCost = if ($implCostRaw) { [string]$implCostRaw } else { 'Unknown' }
@@ -1585,6 +1654,7 @@ function New-TenantBriefFindings {
             Title              = $fTitle
             FrameworkRef       = $fwRef
             Result             = [string]$resultRaw
+            UserImpact         = $fImp
             Impact             = $fImp
             Description        = $fDesc
             SkippedReason      = [string]$skippedRaw
@@ -1653,6 +1723,12 @@ function Invoke-TenantBriefAssessment {
 
         [Parameter()]
         [string]$InputPowerPlatformAgentsPath,
+
+        [Parameter()]
+        [string]$InputScubaJsonPath,
+
+        [Parameter()]
+        [string]$InputOrcaJsonPath,
 
         [Parameter()]
         [string]$InputMaesterJsonPath,
@@ -1833,10 +1909,10 @@ function Invoke-TenantBriefAssessment {
         $accountName = if ($mgCheck -and $mgCheck.Account) { [string]$mgCheck.Account } else { '' }
         $collectedTests = @(Invoke-TenantBriefBaselineCollections -OutputPath $OutputPath -Account $accountName -Log $addLog -State $progressState -Diagnostics $diagnostics -Manifest $manifest -ManifestPath $manifestPath -SkipMaester:$SkipMaester)
     } else {
-        $resumeScubaDir = Join-Path $OutputPath 'raw-scuba'
+        $scubaSource = if ($InputScubaJsonPath) { $InputScubaJsonPath } else { Join-Path $OutputPath 'raw-scuba' }
         $scubaLoaded = @()
-        if (Test-Path $resumeScubaDir) {
-            $scubaLoaded = @(Import-TenantBriefScubaResults -Path $resumeScubaDir | Where-Object { $null -ne $_ })
+        if ($scubaSource -and (Test-Path $scubaSource)) {
+            $scubaLoaded = @(Import-TenantBriefScubaResults -Path $scubaSource | Where-Object { $null -ne $_ })
         }
         if ($scubaLoaded.Count -gt 0) {
             $collectedTests += $scubaLoaded
@@ -1845,10 +1921,10 @@ function Invoke-TenantBriefAssessment {
             & $markStage 2 'CISA ScubaGear' 'skipped' 'Offline mode: -InputReportJson supplied, ScubaGear was not executed.'
         }
 
-        $resumeOrcaDir = Join-Path $OutputPath 'raw-orca'
+        $orcaSource = if ($InputOrcaJsonPath) { $InputOrcaJsonPath } else { Join-Path $OutputPath 'raw-orca' }
         $orcaLoaded = @()
-        if (Test-Path $resumeOrcaDir) {
-            $orcaLoaded = @(Import-TenantBriefOrcaResults -Path $resumeOrcaDir | Where-Object { $null -ne $_ })
+        if ($orcaSource -and (Test-Path $orcaSource)) {
+            $orcaLoaded = @(Import-TenantBriefOrcaResults -Path $orcaSource | Where-Object { $null -ne $_ })
         }
         if ($orcaLoaded.Count -gt 0) {
             $collectedTests += $orcaLoaded
@@ -1910,7 +1986,10 @@ function Invoke-TenantBriefAssessment {
             Add-TenantBriefDiagnostic -Diagnostics $diagnostics -Stage 3 -Component 'FastTrackPowerPlatformAgents' -Message "Belirtilen Power Platform ajan envanteri bulunamadi: $InputPowerPlatformAgentsPath"
         }
     }
-    $tests = New-TenantBriefCorrelatedTests -Tests @((@($ztTests) + @($collectedTests)) | Where-Object { $null -ne $_ })
+    $rawAllTests = @((@($ztTests) + @($collectedTests)) | Where-Object { $null -ne $_ })
+    $allCorrelatedTests = @(New-TenantBriefCorrelatedTests -Tests $rawAllTests)
+    $plannedTests = @($allCorrelatedTests | Where-Object { $_.TestStatus -eq 'Planned' })
+    $tests = @($allCorrelatedTests | Where-Object { $_.TestStatus -ne 'Planned' })
     $progressState.Stage = 4
     & $markStage 4 'Correlation & scoring' 'started' ''
     & $addLog "[Stage 4/5] Computing License ROI, Secure Score & Multi-Framework Scores..."
@@ -1919,9 +1998,10 @@ function Invoke-TenantBriefAssessment {
     $failedCount = @($tests | Where-Object { $_.TestStatus -eq 'Failed' }).Count
     $investigateCount = @($tests | Where-Object { $_.TestStatus -eq 'Investigate' }).Count
     $skippedCount = @($tests | Where-Object { $_.TestStatus -eq 'Skipped' }).Count
-    $plannedCount = @($tests | Where-Object { $_.TestStatus -eq 'Planned' }).Count
+    $plannedCount = 0
+    $plannedExcludedCount = $plannedTests.Count
     $errorCount = @($tests | Where-Object { $_.TestStatus -eq 'Error' }).Count
-    $highRiskFailed = @($tests | Where-Object { $_.TestStatus -eq 'Failed' -and $_.TestRisk -eq 'High' }).Count
+    $highRiskFailed = @($tests | Where-Object { $_.TestStatus -eq 'Failed' -and $_.TestRisk -in @('Critical', 'High') }).Count
     $medRiskFailed = @($tests | Where-Object { $_.TestStatus -eq 'Failed' -and $_.TestRisk -eq 'Medium' }).Count
     $lowRiskFailed = @($tests | Where-Object { $_.TestStatus -eq 'Failed' -and $_.TestRisk -eq 'Low' }).Count
 
@@ -1932,7 +2012,7 @@ function Invoke-TenantBriefAssessment {
 
     $allFwIds = @($fwConfig.PSObject.Properties | ForEach-Object { $_.Name })
     $selectedFwIds = if ($Framework -eq 'All') { $allFwIds } else { @($Framework) }
-    $frameworkCards = @(Get-TenantBriefFrameworkScorecard -Tests $tests -FrameworkConfig $fwConfig -FrameworkIds $selectedFwIds -Language $Language)
+    $frameworkCards = @(Get-TenantBriefFrameworkScorecard -Tests $rawAllTests -FrameworkConfig $fwConfig -FrameworkIds $selectedFwIds -Language $Language)
     if ($Framework -eq 'All') {
         $frameworkCards = @($frameworkCards | Where-Object { $_.Total -gt 0 })
     }
@@ -2126,7 +2206,8 @@ function Invoke-TenantBriefAssessment {
         }
     }
 
-    $findings = New-TenantBriefFindings -Tests $tests -PillarMap $pillarMap -Language $Language -TranslationCache $trCache
+    $findings = @(New-TenantBriefFindings -Tests $tests -PillarMap $pillarMap -Language $Language -TranslationCache $trCache)
+    $plannedFindings = @(New-TenantBriefFindings -Tests $plannedTests -PillarMap $pillarMap -Language $Language -TranslationCache $trCache)
 
     $tenantDisplay = if ($Anonymize) { 'contoso.onmicrosoft.com (Anonymized)' } else { [string]$raw.Domain }
     $ti = $raw.PSObject.Properties['TenantInfo'].Value
@@ -2280,14 +2361,17 @@ function Invoke-TenantBriefAssessment {
         SharePointRisk      = $sharePointRiskSummary
         PowerPlatformAgents = $ppAgentsSummary
         Summary          = [PSCustomObject]@{
-            Total          = $tests.Count
-            Passed         = $passedCount
-            Failed         = $failedCount
-            Investigate    = $investigateCount
-            Skipped        = $skippedCount
-            Planned        = $plannedCount
-            Error          = $errorCount
-            HighRiskFailed = $highRiskFailed
+            Total           = $tests.Count
+            UniqueControls  = $tests.Count
+            SourceControls  = $rawAllTests.Count
+            Passed          = $passedCount
+            Failed          = $failedCount
+            Investigate     = $investigateCount
+            Skipped         = $skippedCount
+            Planned         = $plannedCount
+            PlannedExcluded = $plannedExcludedCount
+            Error           = $errorCount
+            HighRiskFailed  = $highRiskFailed
         }
         Run              = [PSCustomObject]@{
             Status        = $runStatus
@@ -2310,6 +2394,7 @@ function Invoke-TenantBriefAssessment {
         CopilotReadiness = $copilotReadiness
         Roadmap          = @($roadmap)
         Findings         = @($findings)
+        PlannedFindings  = @($plannedFindings)
         Labels     = if ($Language -eq 'tr') {
             [PSCustomObject]@{
                 TotalChecks        = 'Toplam Kontrol'
@@ -2607,9 +2692,11 @@ function Export-TenantBriefExecutiveSummary {
     $isTr = ($Language -eq 'tr')
     $costRank = @{ 'Low' = 0; 'Medium' = 1; 'High' = 2; 'Unknown' = 3 }
     $costMap = @{ 'Low' = 'Düşük'; 'Medium' = 'Orta'; 'High' = 'Yüksek'; 'Unknown' = 'Bilinmiyor' }
+    $riskRankExec = @{ 'Critical' = 0; 'High' = 1 }
     $topHigh = @($data.Findings |
-        Where-Object { $_.Status -eq 'Failed' -and $_.Risk -eq 'High' } |
+        Where-Object { $_.Status -eq 'Failed' -and $_.Risk -in @('Critical', 'High') } |
         Sort-Object `
+            @{ Expression = { $rk = [string]$_.Risk; if ($riskRankExec.ContainsKey($rk)) { $riskRankExec[$rk] } else { 2 } } },
             @{ Expression = { $cost = [string]$_.ImplementationCost; if ($costRank.ContainsKey($cost)) { $costRank[$cost] } else { 3 } } },
             @{ Expression = { [string]$_.Id } } |
         Select-Object -First 15)

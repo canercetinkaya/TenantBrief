@@ -36,3 +36,24 @@ TenantBrief, M365 ve Azure kiracıları için salt okunur CISO değerlendirme ra
 - Küçük, geri alınabilir commit'ler kullan. Mesaj formatı: `type(scope): özet`, ör. `fix(correlation): crosswalk ile kaynaklar arası eşleme`.
 - Bir sprintte kapsam dışı bir sorun bulursan düzeltme. `docs/improvement/BACKLOG.md`'ye ekle.
 - Sprint sırası ve kabul kriterleri için: @docs/improvement/ROADMAP.md
+
+## Özerk çalışma yetkisi
+
+### İZİNLİ (sormadan yap)
+- Branch açma, commit, kendi dallarına push (`--force-with-lease` dahil), PR açma.
+- `gh pr checks` tamamen pass ise kendi açtığın PR'ı `gh pr merge --squash --delete-branch` ile merge etme.
+- Bir sprint bittiğinde sonraki sprintin planını yazıp uygulamaya geçme.
+
+### DUR VE BANA SOR (yalnızca bunlarda)
+- Bir check fail oldu ve 3 denemede düzelmedi (`BLOCKED`).
+- Mevcut bir testin beklentisini değiştirmek gerekiyor.
+- Dışa açık fonksiyon adı/parametre ya da JSON alanı kaldırılacak (breaking change).
+- Tag, release veya PSGallery yayını (sürüm sonu: `v1.1`, `v1.2`, `v2.0`).
+- `NEEDS-LIVE-TENANT` adımı.
+- `ROADMAP.md`'de kapsam değişikliği.
+
+### Raporlama formatı
+- Ara rapor verme. Her sprint sonunda yalnızca en fazla 15 satırla özetle:
+  `Sprint N | PR linki | Pester x/y | Q metrikleri önce→sonra (araç çıktısından) | BLOCKED/PARTIAL maddeler | NEEDS-LIVE-TENANT komutları.`
+- Ayrıntılar walkthrough artefaktında kalır.
+- Kurallar değişmedi: DÜRÜSTLÜK PROTOKOLÜ, kırmızı→yeşil test, kanıtsız `DONE-VERIFIED` yok. Framework skorları ve önceki tüm testler gerilemeyecek; gerilerse merge etme.
