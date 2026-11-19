@@ -61,4 +61,41 @@ Describe 'S5.2 & S5.3 - Content-Security-Policy Meta & Deep -Anonymize Masking' 
             Remove-Item -Path $tmpDir -Recurse -Force -ErrorAction SilentlyContinue
         }
     }
+
+    It 'masks TenantName across JSON, main HTML, and Executive Summary HTML when -Anonymize is set' {
+        $tmpDir = Join-Path ([System.IO.Path]::GetTempPath()) ("tb-s53-tname-" + [guid]::NewGuid().ToString('N').Substring(0, 8))
+        New-Item -ItemType Directory -Path $tmpDir -Force | Out-Null
+        $rawZt = Join-Path $tmpDir 'zt-tname.json'
+        $tenantSecret = 'ACMECORP_HOLDINGS'
+        try {
+            [PSCustomObject]@{
+                TenantId   = '22222222-3333-4444-5555-666666666666'
+                TenantName = $tenantSecret
+                Domain     = 'acmecorp.example'
+                TenantInfo = [PSCustomObject]@{
+                    TenantOverview = [PSCustomObject]@{ UserCount = 40; GuestCount = 1; GroupCount = 4; ApplicationCount = 4; DeviceCount = 8; ManagedDeviceCount = 8 }
+                    OverviewCaMfaAllUsers = [PSCustomObject]@{ description = "CA policy for $tenantSecret users" }
+                    DeviceOverview = $null; AgentOverview = $null; OverviewAuthMethodsPrivilegedUsers = $null
+                }
+                Tests = @(
+                    [PSCustomObject]@{
+                        TestId = '21882'; TestTitle = "MFA check for $tenantSecret"; TestStatus = 'Failed'; TestRisk = 'High'
+                        TestPillar = 'Identity'; TestCategory = 'CA'; TestSfiPillar = 'Identity'
+                        TestImplementationCost = 'Low'; TestMinimumLicense = 'P1'; TestImpact = 'Low'
+                        TestResult = "Sensitivity label $tenantSecret-Confidential is active on $tenantSecret portal"
+                        TestDescription = "Update rule $tenantSecret-Copilot-DLP"
+                        SkippedReason = ''
+                    }
+                )
+            } | ConvertTo-Json -Depth 10 | Set-Content -Path $rawZt -Encoding UTF8
+
+            $run = Invoke-TenantBriefAssessment -InputReportJson $rawZt -OutputPath $tmpDir -Language tr -Framework All -Anonymize -NoBrowser
+            foreach ($p in @($run.JsonPath, $run.HtmlPath, $run.ExecutiveSummaryPath)) {
+                $content = Get-Content -LiteralPath $p -Raw -Encoding UTF8
+                $content | Should -Not -Match ([regex]::Escape($tenantSecret)) -Because "TenantName '$tenantSecret' must not appear in $p"
+            }
+        } finally {
+            Remove-Item -Path $tmpDir -Recurse -Force -ErrorAction SilentlyContinue
+        }
+    }
 }

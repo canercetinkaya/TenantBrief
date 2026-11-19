@@ -2,6 +2,7 @@
 <html lang="tr">
 <head>
 <meta charset="UTF-8" />
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; connect-src 'none'; img-src 'self' data:; style-src 'unsafe-inline'; script-src 'none'; font-src 'none'; base-uri 'none'; form-action 'none';" />
 <title>TenantBrief - Yönetici Özeti — Güvenlik Duruşu ve Lisans ROI</title>
 <style>
   body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; color: #0f172a; margin: 32px; }
@@ -14,46 +15,59 @@
   th, td { border: 1px solid #cbd5e1; padding: 8px 10px; text-align: left; font-size: 13px; }
   th { background: #f1f5f9; }
   code { background: #f1f5f9; padding: 1px 5px; border-radius: 4px; font-size: 11px; }
-  @media print { body { margin: 12mm; } }
+  @page { size: A4 portrait; margin: 10mm; }
+  @media print {
+    body { margin: 0; font-size: 11px; }
+    h1 { font-size: 18px; }
+    h2 { font-size: 14px; margin-top: 14px !important; }
+    .grid { gap: 8px; margin-bottom: 10px; }
+    .card { padding: 8px; break-inside: avoid; page-break-inside: avoid; }
+    .val { font-size: 18px; }
+    table { margin-top: 8px; }
+    th, td { padding: 5px 7px; font-size: 10.5px; }
+    tr { break-inside: avoid; page-break-inside: avoid; }
+  }
 </style>
 </head>
 <body>
   <h1>TenantBrief — Yönetici Özeti — Güvenlik Duruşu ve Lisans ROI</h1>
-  <div class="sub">Üretim: 2026-11-18 18:02 | Salt Okunur Değerlendirme</div>
+  <div class="sub">Üretim: 2026-11-19 17:25 | Salt Okunur Değerlendirme</div>
   
+  <div style='border:1px solid #38bdf8;background:#f0f9ff;color:#0369a1;padding:8px 12px;border-radius:6px;font-size:12.5px;margin-bottom:14px;'>Test / Lab Kiracısı Uyarısı: Kiracıda yalnızca 1 kullanıcı tespit edildi; skorlar ve lisans metrikleri &#252;retim ortamını temsil etmeyebilir.</div>
   <div class="grid">
-    <div class="card"><div>Toplam Kontrol</div><div class="val">700</div></div>
-    <div class="card"><div>Başarılı</div><div class="val">163</div></div>
-    <div class="card"><div>Başarısız (Yüksek)</div><div class="val">271 (145)</div></div>
-    <div class="card"><div>Atıl Lisans (Yıllık USD)</div><div class="val">$0</div></div>
+    <div class="card"><div>Toplam Kontrol</div><div class="val">575</div></div>
+    <div class="card"><div>Başarılı</div><div class="val">121</div></div>
+    <div class="card"><div>Başarısız (Yüksek)</div><div class="val">232 (139)</div></div>
+    <div class="card"><div>Atıl Lisans (Yıllık USD)</div><div class="val">Uygulanamaz</div></div>
   </div>
+  <div class='grid' style='grid-template-columns:repeat(1,1fr);'><div class='card'><div>Copilot Olgunluk Seviyesi</div><div class='val' style='font-size:15px;'>L3 - Tanımlı (Defined)</div></div></div>
   <table>
     <thead><tr><th>Standart / Motor (Framework)</th><th>Geçen / Ölçülen</th><th>Puan</th></tr></thead>
-    <tbody><tr><td>Microsoft Zero Trust Assessment</td><td>56 / 215</td><td><strong>26%</strong></td></tr>
+    <tbody><tr><td>Microsoft Zero Trust Assessment</td><td>55 / 215</td><td><strong>25.6%</strong></td></tr>
 <tr><td>CIS Microsoft 365 Temelleri v7.0.0</td><td>11 / 28</td><td><strong>39.3%</strong></td></tr>
-<tr><td>CISA SCuBA M365 Güvenlik Taban Hattı</td><td>7 / 34</td><td><strong>20.6%</strong></td></tr>
-<tr><td>Microsoft Defender for Office 365 (ORCA)</td><td>43 / 66</td><td><strong>65.2%</strong></td></tr>
-<tr><td>Entra ID Güvenlik Yapılandırma Analizi (EIDSCA)</td><td>12 / 34</td><td><strong>35.3%</strong></td></tr>
-<tr><td>Maester M365 & XSPM Kontrolleri</td><td>34 / 94</td><td><strong>36.2%</strong></td></tr></tbody>
+<tr><td>CISA SCuBA M365 G&#252;venlik Taban Hattı</td><td>7 / 34</td><td><strong>20.6%</strong></td></tr>
+<tr><td>Microsoft Defender for Office 365 (ORCA)</td><td>44 / 67</td><td><strong>65.7%</strong></td></tr>
+<tr><td>Entra ID G&#252;venlik Yapılandırma Analizi (EIDSCA)</td><td>12 / 34</td><td><strong>35.3%</strong></td></tr>
+<tr><td>Maester M365 &amp; XSPM Kontrolleri</td><td>34 / 94</td><td><strong>36.2%</strong></td></tr></tbody>
   </table>
   <h2 style="font-size:17px;margin-top:24px;">Öncelikli İlk 15 İyileştirme Adımı — düşük efor önce (Çevrimdışı Analiz)</h2>
   <table>
     <thead><tr><th>Kontrol</th><th>Maliyet</th><th>Önerilen Aksiyon</th></tr></thead>
-    <tbody><tr><td><code>21786</code> <strong>Kullanıcı oturum açılışı etkinliği token koruması kullanır</strong><br/><span style='color:#64748b;font-size:11px;'>Identity · Access control</span></td><td>Düşük</td><td>Microsoft Entra yönetim merkezi (entra.microsoft.com) üzerinden uygulayın: - Belirteç koruması gerektiren Koşullu Erişim politikası dağıt Pilot gruba Denetim (Report-only) kipinde uygulayıp doğruladıktan sonra Zorunlu (E...</td></tr>
-<tr><td><code>21788</code> <strong>Global Yöneticilerin, kiracıdaki tüm Azure aboneliklerine sürekli yükseltilmiş erişimi yoktur</strong><br/><span style='color:#64748b;font-size:11px;'>Identity · Privileged access</span></td><td>Düşük</td><td>Microsoft Entra yönetim merkezi (entra.microsoft.com) üzerinden uygulayın: - Oltalamaya karşı dayanıklı şifresiz kimlik doğrulama dağıtımına başlayın - Ayrıcalıklı hesapların kayıt yapmasını ve oltalama dirençli yöntemle...</td></tr>
-<tr><td><code>21808</code> <strong>Cihaz kodu akışını kısıtla</strong><br/><span style='color:#64748b;font-size:11px;'>Identity · Access control</span></td><td>Düşük</td><td>Microsoft Entra yönetim merkezi (entra.microsoft.com) üzerinden uygulayın: - Aygıt kodu akışını engellemek için Koşullu Erişim politikası dağıt. Pilot gruba Denetim (Report-only) kipinde uygulayıp doğruladıktan sonra Zor...</td></tr>
-<tr><td><code>21809</code> <strong>Yönetici onayı iş akışı etkinleştirildi</strong><br/><span style='color:#64748b;font-size:11px;'>Identity · Application management</span></td><td>Düşük</td><td>Microsoft Entra yönetim merkezi (entra.microsoft.com) üzerinden uygulayın: Yönetici onayı talepleri için, Kullanıcılar onay veremedikleri uygulamalara yönetici onayı isteyebilir ayarını Evet olarak ayarlayın. Diğer ayarl...</td></tr>
-<tr><td><code>21828</code> <strong>Kimlik doğrulama aktarımı engellendi</strong><br/><span style='color:#64748b;font-size:11px;'>Identity · Access control</span></td><td>Düşük</td><td>Microsoft Entra yönetim merkezi (entra.microsoft.com) üzerinden uygulayın: - Kimlik doğrulama transferini engellemek için Koşullu Erişim politikası dağıt Pilot gruba Denetim (Report-only) kipinde uygulayıp doğruladıktan ...</td></tr>
-<tr><td><code>21837</code> <strong>Kullanıcı başına maksimum cihaz sayısını 10 ile sınırlayın</strong><br/><span style='color:#64748b;font-size:11px;'>Identity · Devices</span></td><td>Düşük</td><td>Microsoft Entra yönetim merkezi (entra.microsoft.com) üzerinden uygulayın: - kullanıcı başına maksimum cihaz sayısını sınırlamayı öğrenin. Pilot gruba Denetim (Report-only) kipinde uygulayıp doğruladıktan sonra Zorunlu (...</td></tr>
-<tr><td><code>21838</code> <strong>Güvenlik anahtarı kimlik doğrulama yöntemi etkin</strong><br/><span style='color:#64748b;font-size:11px;'>Identity · Credential management</span></td><td>Düşük</td><td>Microsoft Entra yönetim merkezi (entra.microsoft.com) üzerinden uygulayın: - FIDO2 güvenlik anahtarı kimlik doğrulama yöntemini etkinleştir - Kimlik doğrulama yöntemlerini yönet Pilot gruba Denetim (Report-only) kipinde ...</td></tr>
-<tr><td><code>21840</code> <strong>Güvenlik anahtarı tasdiqi uygulanır</strong><br/><span style='color:#64748b;font-size:11px;'>Identity · Credential management</span></td><td>Düşük</td><td>1. Microsoft Entra yönetim merkezi (entra.microsoft.com) üzerinden 'Güvenlik anahtarı tasdiqi uygulanır' kontrolünü açın. 2. Değişikliği önce Denetim (Report-only) kipinde pilot gruba uygulayıp oturum açma/olay günlükler...</td></tr>
-<tr><td><code>21842</code> <strong>Yöneticilerin SSPR kullanmasını engelle</strong><br/><span style='color:#64748b;font-size:11px;'>Identity · Credential management, Privileged access</span></td><td>Düşük</td><td>Microsoft Entra yönetim merkezi (entra.microsoft.com) üzerinden uygulayın: - Yetkilendirme politikasını güncelleyerek yöneticiler için SSPR'yi devre dışı bırakın Pilot gruba Denetim (Report-only) kipinde uygulayıp doğrul...</td></tr>
-<tr><td><code>21872</code> <strong>Kullanıcı eylemiyle cihaz katılımı ve cihaz kaydı için çok faktörlü kimlik doğrulama talep edin</strong><br/><span style='color:#64748b;font-size:11px;'>Identity · Access control</span></td><td>Düşük</td><td>Microsoft Entra yönetim merkezi (entra.microsoft.com) üzerinden uygulayın: - Cihaz kaydı için çok faktörlü kimlik doğrulama gerektiren Koşullu Erişim politikası dağıtın. Pilot gruba Denetim (Report-only) kipinde uygulayı...</td></tr>
-<tr><td><code>21888</code> <strong>Uygulama kayıtlarında asılı veya terk edilmiş alan adı yönlendirme URI'leri olmamalıdır</strong><br/><span style='color:#64748b;font-size:11px;'>Identity · Application management</span></td><td>Düşük</td><td>Microsoft Entra yönetim merkezi (entra.microsoft.com) üzerinden uygulayın: - Yönlendirme URI (yanıt URL'si) taslağı ve kısıtlamaları Pilot gruba Denetim (Report-only) kipinde uygulayıp doğruladıktan sonra Zorunlu (Enforc...</td></tr>
-<tr><td><code>21954</code> <strong>Yönetici olmayan kullanıcıların kendi cihazları için BitLocker anahtarlarını kurtarmasını kısıtlayın</strong><br/><span style='color:#64748b;font-size:11px;'>Identity · Devices</span></td><td>Düşük</td><td>Microsoft Entra yönetim merkezi (entra.microsoft.com) üzerinden uygulayın: - Yönetici olmayan kullanıcıların kendi cihazları için BitLocker anahtarını kurtarmasını kısıtla Pilot gruba Denetim (Report-only) kipinde uygula...</td></tr>
-<tr><td><code>24540</code> <strong>Windows Güvenlik Duvarı Politikası Oluşturulur ve Atanır</strong><br/><span style='color:#64748b;font-size:11px;'>Devices · Devices</span></td><td>Düşük</td><td>Microsoft Intune yönetim merkezi (intune.microsoft.com) üzerinden uygulayın: Yetkisiz trafiği engellemek ve tüm yönetilen cihazlarda tutarlı ağ korumalarını uygulamak için Intune'da Windows için güvenlik duvarı politikal...</td></tr>
-<tr><td><code>24541</code> <strong>Windows Uyumluluk Politikası Oluşturulur ve Atanır</strong><br/><span style='color:#64748b;font-size:11px;'>Devices · Tenant</span></td><td>Düşük</td><td>Microsoft Intune yönetim merkezi (intune.microsoft.com) üzerinden uygulayın: Kurumsal standartları uygulamak için Windows cihazlarına Intune uyumluluk politikaları oluşturun ve atayın. Pilot gruba Denetim (Report-only) k...</td></tr>
-<tr><td><code>24542</code> <strong>macOS Uyumluluk Politikası Oluşturulur ve Atanır</strong><br/><span style='color:#64748b;font-size:11px;'>Devices · Tenant</span></td><td>Düşük</td><td>1. Microsoft Intune yönetim merkezi (intune.microsoft.com) üzerinden 'macOS Uyumluluk Politikası Oluşturulur ve Atanır' kontrolünü açın. 2. Değişikliği önce Denetim (Report-only) kipinde pilot gruba uygulayıp oturum açma...</td></tr></tbody>
+    <tbody><tr><td><code>21786</code> <strong>Kullanıcı oturum a&#231;ılışı etkinliği token koruması kullanır</strong><br/><span style='color:#64748b;font-size:11px;'>Identity · Access control</span></td><td>D&#252;ş&#252;k</td><td>1. Microsoft Entra y&#246;netim merkezi (entra.microsoft.com) &#252;zerinden &#39;Kullanıcı oturum a&#231;ılışı etkinliği token koruması kullanır&#39; kontrol&#252;n&#252; a&#231;ın. 2. Değişikliği &#246;nce Denetim (Report-only) kipinde pilot gruba uygulayıp otu...</td></tr>
+<tr><td><code>21788</code> <strong>Global Y&#246;neticilerin, kiracıdaki t&#252;m Azure aboneliklerine s&#252;rekli y&#252;kseltilmiş erişimi yoktur</strong><br/><span style='color:#64748b;font-size:11px;'>Identity · Privileged access</span></td><td>D&#252;ş&#252;k</td><td>1. Microsoft Entra y&#246;netim merkezi (entra.microsoft.com) &#252;zerinden &#39;Global Y&#246;neticilerin, kiracıdaki t&#252;m Azure aboneliklerine s&#252;rekli y&#252;kseltilmiş erişimi yoktur&#39; kontrol&#252;n&#252; a&#231;ın. 2. Değişikliği &#246;nce Denetim (Report-only...</td></tr>
+<tr><td><code>21796</code> <strong>Eski kimlik doğrulama politikalarını engelle yapılandırıldı</strong><br/><span style='color:#64748b;font-size:11px;'>Identity · Access control</span></td><td>D&#252;ş&#252;k</td><td>1. Microsoft Entra y&#246;netim merkezi (entra.microsoft.com) &#252;zerinden &#39;Eski kimlik doğrulama politikalarını engelle yapılandırıldı&#39; kontrol&#252;n&#252; a&#231;ın. 2. Değişikliği &#246;nce Denetim (Report-only) kipinde pilot gruba uygulayıp ot...</td></tr>
+<tr><td><code>21802</code> <strong>Microsoft Authenticator uygulaması oturum a&#231;ma bağlamını g&#246;sterir</strong><br/><span style='color:#64748b;font-size:11px;'>Identity · Access control</span></td><td>D&#252;ş&#252;k</td><td>1. Microsoft Entra y&#246;netim merkezi (entra.microsoft.com) &#252;zerinden &#39;Microsoft Authenticator uygulaması oturum a&#231;ma bağlamını g&#246;sterir&#39; kontrol&#252;n&#252; a&#231;ın. 2. Değişikliği &#246;nce Denetim (Report-only) kipinde pilot gruba uygula...</td></tr>
+<tr><td><code>21808</code> <strong>Cihaz kodu akışını kısıtla</strong><br/><span style='color:#64748b;font-size:11px;'>Identity · Access control</span></td><td>D&#252;ş&#252;k</td><td>1. Microsoft Entra y&#246;netim merkezi (entra.microsoft.com) &#252;zerinden &#39;Cihaz kodu akışını kısıtla&#39; kontrol&#252;n&#252; a&#231;ın. 2. Değişikliği &#246;nce Denetim (Report-only) kipinde pilot gruba uygulayıp oturum a&#231;ma/olay g&#252;nl&#252;klerini doğru...</td></tr>
+<tr><td><code>21809</code> <strong>Y&#246;netici onayı iş akışı etkinleştirildi</strong><br/><span style='color:#64748b;font-size:11px;'>Identity · Application management</span></td><td>D&#252;ş&#252;k</td><td>Microsoft Entra y&#246;netim merkezi (entra.microsoft.com) &#252;zerinden uygulayın: Y&#246;netici onayı talepleri i&#231;in, Kullanıcılar onay veremedikleri uygulamalara y&#246;netici onayı isteyebilir ayarını Evet olarak ayarlayın. Diğer ayarl...</td></tr>
+<tr><td><code>21811</code> <strong>Parola s&#252;resi devre dışı bırakıldı</strong><br/><span style='color:#64748b;font-size:11px;'>Identity · Credential management</span></td><td>D&#252;ş&#252;k</td><td>1. Microsoft Entra y&#246;netim merkezi (entra.microsoft.com) &#252;zerinden &#39;Parola s&#252;resi devre dışı bırakıldı&#39; kontrol&#252;n&#252; a&#231;ın. 2. Değişikliği &#246;nce Denetim (Report-only) kipinde pilot gruba uygulayıp oturum a&#231;ma/olay g&#252;nl&#252;kleri...</td></tr>
+<tr><td><code>21812</code> <strong>Maksimum Global Y&#246;netici sayısı sekiz kullanıcıyı ge&#231;mez</strong><br/><span style='color:#64748b;font-size:11px;'>Identity · Privileged access</span></td><td>D&#252;ş&#252;k</td><td>1. Microsoft Entra y&#246;netim merkezi (entra.microsoft.com) &#252;zerinden &#39;Maksimum Global Y&#246;netici sayısı sekiz kullanıcıyı ge&#231;mez&#39; kontrol&#252;n&#252; a&#231;ın. 2. Değişikliği &#246;nce Denetim (Report-only) kipinde pilot gruba uygulayıp oturu...</td></tr>
+<tr><td><code>21828</code> <strong>Kimlik doğrulama aktarımı engellendi</strong><br/><span style='color:#64748b;font-size:11px;'>Identity · Access control</span></td><td>D&#252;ş&#252;k</td><td>1. Microsoft Entra y&#246;netim merkezi (entra.microsoft.com) &#252;zerinden &#39;Kimlik doğrulama aktarımı engellendi&#39; kontrol&#252;n&#252; a&#231;ın. 2. Değişikliği &#246;nce Denetim (Report-only) kipinde pilot gruba uygulayıp oturum a&#231;ma/olay g&#252;nl&#252;kle...</td></tr>
+<tr><td><code>21837</code> <strong>Kullanıcı başına maksimum cihaz sayısını 10 ile sınırlayın</strong><br/><span style='color:#64748b;font-size:11px;'>Identity · Devices</span></td><td>D&#252;ş&#252;k</td><td>1. Microsoft Entra y&#246;netim merkezi (entra.microsoft.com) &#252;zerinden &#39;Kullanıcı başına maksimum cihaz sayısını 10 ile sınırlayın&#39; kontrol&#252;n&#252; a&#231;ın. 2. Değişikliği &#246;nce Denetim (Report-only) kipinde pilot gruba uygulayıp otu...</td></tr>
+<tr><td><code>21838</code> <strong>G&#252;venlik anahtarı kimlik doğrulama y&#246;ntemi etkin</strong><br/><span style='color:#64748b;font-size:11px;'>Identity · Credential management</span></td><td>D&#252;ş&#252;k</td><td>1. Microsoft Entra y&#246;netim merkezi (entra.microsoft.com) &#252;zerinden &#39;G&#252;venlik anahtarı kimlik doğrulama y&#246;ntemi etkin&#39; kontrol&#252;n&#252; a&#231;ın. 2. Değişikliği &#246;nce Denetim (Report-only) kipinde pilot gruba uygulayıp oturum a&#231;ma/o...</td></tr>
+<tr><td><code>21840</code> <strong>G&#252;venlik anahtarı doğrulaması uygulanır</strong><br/><span style='color:#64748b;font-size:11px;'>Identity · Credential management</span></td><td>D&#252;ş&#252;k</td><td>1. Microsoft Entra y&#246;netim merkezi (entra.microsoft.com) &#252;zerinden &#39;G&#252;venlik anahtarı doğrulaması uygulanır&#39; kontrol&#252;n&#252; a&#231;ın. 2. Değişikliği &#246;nce Denetim (Report-only) kipinde pilot gruba uygulayıp oturum a&#231;ma/olay g&#252;nl&#252;...</td></tr>
+<tr><td><code>21842</code> <strong>Y&#246;neticilerin SSPR kullanmasını engelle</strong><br/><span style='color:#64748b;font-size:11px;'>Identity · Credential management, Privileged access</span></td><td>D&#252;ş&#252;k</td><td>1. Microsoft Entra y&#246;netim merkezi (entra.microsoft.com) &#252;zerinden &#39;Y&#246;neticilerin SSPR kullanmasını engelle&#39; kontrol&#252;n&#252; a&#231;ın. 2. Değişikliği &#246;nce Denetim (Report-only) kipinde pilot gruba uygulayıp oturum a&#231;ma/olay g&#252;nl&#252;...</td></tr>
+<tr><td><code>21847</code> <strong>Yerel parola koruması etkinleştirildi</strong><br/><span style='color:#64748b;font-size:11px;'>Identity · Credential management</span></td><td>D&#252;ş&#252;k</td><td>1. Microsoft Entra y&#246;netim merkezi (entra.microsoft.com) &#252;zerinden &#39;Yerel parola koruması etkinleştirildi&#39; kontrol&#252;n&#252; a&#231;ın. 2. Değişikliği &#246;nce Denetim (Report-only) kipinde pilot gruba uygulayıp oturum a&#231;ma/olay g&#252;nl&#252;kl...</td></tr>
+<tr><td><code>21872</code> <strong>Kullanıcı eylemiyle cihaz katılımı ve cihaz kaydı i&#231;in &#231;ok fakt&#246;rl&#252; kimlik doğrulama talep edin</strong><br/><span style='color:#64748b;font-size:11px;'>Identity · Access control</span></td><td>D&#252;ş&#252;k</td><td>1. Microsoft Entra y&#246;netim merkezi (entra.microsoft.com) &#252;zerinden &#39;Kullanıcı eylemiyle cihaz katılımı ve cihaz kaydı i&#231;in &#231;ok fakt&#246;rl&#252; kimlik doğrulama talep edin&#39; kontrol&#252;n&#252; a&#231;ın. 2. Değişikliği &#246;nce Denetim (Report-on...</td></tr></tbody>
   </table>
 </body>
 </html>

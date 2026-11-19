@@ -1,6 +1,6 @@
 ﻿@{
     RootModule        = 'TenantBrief.psm1'
-    ModuleVersion     = '1.0.1'
+    ModuleVersion     = '1.2.0'
     GUID              = 'b7e4c1a2-9d3f-4e8a-9b1c-5f2a8d4e6c10'
     Author            = 'Caner Çetinkaya'
     CompanyName       = 'canercetinkaya.com'
@@ -29,7 +29,7 @@
             Tags         = @('TenantBrief', 'ZeroTrust', 'Security', 'Microsoft365', 'Azure', 'EntraID', 'ScubaGear', 'Maester', 'EIDSCA', 'ORCA', 'CIS-M365', 'EntraFalcon', 'LicenseROI', 'Copilot')
             LicenseUri   = 'https://github.com/canercetinkaya/TenantBrief/blob/main/LICENSE'
             ProjectUri   = 'https://github.com/canercetinkaya/TenantBrief'
-            ReleaseNotes = 'Unified 6 canonical security pillars with multi-source provenance tags, removed synthetic ISO/NIST/KVKK guesses in favor of verified per-benchmark scoring (ZeroTrustAssessment, CIS M365 v7.0.0, CISA SCuBA, ORCA, EIDSCA, Maester, EntraFalcon), filtered Maester NotRun/out-of-scope suites, and fixed PesterTestSkipped & Copilot DEVELOPERPACK_E5 readiness.'
+            ReleaseNotes = 'v1.2.0 (Sprints 0-7): Crosswalk-only 4-engine correlation (42 canonical controls), ScubaGear 2.0 multi-product coverage, read-only Test-TenantBriefPrerequisites, -AutoFixDependencies safety gate, externalized TR/EN i18n + glossary, Copilot L1 maturity gate & dynamic 30-60-90 roadmap, offline CSP + deep -Anonymize + SecureString -TranslatorKey + SECURITY.md, modular Public/Private architecture with blocking Windows+Ubuntu CI, ARIA/keyboard accessibility, inline SVG charts, -PreviousReportJson Trend tab, compact HTML payload, and A4 print Executive Summary.'
         }
     }
 }
