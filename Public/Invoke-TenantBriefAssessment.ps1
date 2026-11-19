@@ -237,10 +237,12 @@
     # Collect every engine first, then correlate once: ScubaGear and ORCA controls must be
     # de-duplicated against the ZeroTrustAssessment findings as well.
     $ztTests = @($raw.Tests)
-    $collectedTests = @()
+    $collectedTests = [System.Collections.Generic.List[object]]::new()
     if (-not $InputReportJson) {
         $accountName = if ($mgCheck -and $mgCheck.Account) { [string]$mgCheck.Account } else { '' }
-        $collectedTests = @(Invoke-TenantBriefBaselineCollections -OutputPath $OutputPath -Account $accountName -Log $addLog -State $progressState -Diagnostics $diagnostics -Manifest $manifest -ManifestPath $manifestPath -SkipMaester:$SkipMaester)
+        foreach ($ct in @(Invoke-TenantBriefBaselineCollections -OutputPath $OutputPath -Account $accountName -Log $addLog -State $progressState -Diagnostics $diagnostics -Manifest $manifest -ManifestPath $manifestPath -SkipMaester:$SkipMaester)) {
+            if ($null -ne $ct) { $collectedTests.Add($ct) }
+        }
     } else {
         $scubaSource = if ($InputScubaJsonPath) { $InputScubaJsonPath } else { Join-Path $OutputPath 'raw-scuba' }
         $scubaLoaded = @()
@@ -248,7 +250,7 @@
             $scubaLoaded = @(Import-TenantBriefScubaResults -Path $scubaSource | Where-Object { $null -ne $_ })
         }
         if ($scubaLoaded.Count -gt 0) {
-            $collectedTests += $scubaLoaded
+            foreach ($sItem in $scubaLoaded) { $collectedTests.Add($sItem) }
             & $markStage 2 'CISA ScubaGear' 'completed' "Reused cached ScubaGear output ($($scubaLoaded.Count) controls)."
         } else {
             & $markStage 2 'CISA ScubaGear' 'skipped' 'Offline mode: -InputReportJson supplied, ScubaGear was not executed.'
@@ -260,7 +262,7 @@
             $orcaLoaded = @(Import-TenantBriefOrcaResults -Path $orcaSource | Where-Object { $null -ne $_ })
         }
         if ($orcaLoaded.Count -gt 0) {
-            $collectedTests += $orcaLoaded
+            foreach ($oItem in $orcaLoaded) { $collectedTests.Add($oItem) }
             & $markStage 3 'Microsoft ORCA & Maester' 'completed' "Reused cached ORCA output ($($orcaLoaded.Count) controls)."
         } else {
             & $markStage 3 'Microsoft ORCA' 'skipped' 'Offline mode: -InputReportJson supplied, ORCA was not executed.'
@@ -268,23 +270,23 @@
     }
     if ($InputMaesterJsonPath) {
         if (Test-Path $InputMaesterJsonPath) {
-            $collectedTests += @(Import-TenantBriefMaesterResults -JsonPath $InputMaesterJsonPath | Where-Object { $null -ne $_ })
+            foreach ($mItem in @(Import-TenantBriefMaesterResults -JsonPath $InputMaesterJsonPath | Where-Object { $null -ne $_ })) { $collectedTests.Add($mItem) }
         } else {
             Add-TenantBriefDiagnostic -Diagnostics $diagnostics -Stage 3 -Component 'Maester' -Message "Belirtilen Maester JSON bulunamadi: $InputMaesterJsonPath"
         }
     } elseif ($InputReportJson) {
-        $resumeMaester = Join-Path $OutputPath 'raw-maester\MaesterResults.json'
+        $resumeMaester = Join-Path $OutputPath 'raw-maester/MaesterResults.json'
         if (Test-Path $resumeMaester) {
             $maesterLoaded = @(Import-TenantBriefMaesterResults -JsonPath $resumeMaester | Where-Object { $null -ne $_ })
             if ($maesterLoaded.Count -gt 0) {
-                $collectedTests += $maesterLoaded
+                foreach ($mItem in $maesterLoaded) { $collectedTests.Add($mItem) }
                 & $markStage 3 'Microsoft ORCA & Maester' 'completed' "Reused cached baseline outputs (Maester: $($maesterLoaded.Count) controls)."
             }
         }
     }
     if ($InputEntraFalconJsonPath) {
         if (Test-Path $InputEntraFalconJsonPath) {
-            $collectedTests += @(Import-TenantBriefEntraFalconFindings -JsonPath $InputEntraFalconJsonPath | Where-Object { $null -ne $_ })
+            foreach ($efItem in @(Import-TenantBriefEntraFalconFindings -JsonPath $InputEntraFalconJsonPath | Where-Object { $null -ne $_ })) { $collectedTests.Add($efItem) }
         } else {
             Add-TenantBriefDiagnostic -Diagnostics $diagnostics -Stage 3 -Component 'EntraFalcon' -Message "Belirtilen EntraFalcon JSON bulunamadi: $InputEntraFalconJsonPath"
         }
@@ -292,7 +294,7 @@
         $efAuto = Get-ChildItem -Path $OutputPath -Filter 'tenant_findings_all_*.json' -File -ErrorAction SilentlyContinue |
             Sort-Object LastWriteTime -Descending | Select-Object -First 1
         if ($efAuto) {
-            $collectedTests += @(Import-TenantBriefEntraFalconFindings -JsonPath $efAuto.FullName | Where-Object { $null -ne $_ })
+            foreach ($efItem in @(Import-TenantBriefEntraFalconFindings -JsonPath $efAuto.FullName | Where-Object { $null -ne $_ })) { $collectedTests.Add($efItem) }
         }
     }
     $sharePointRiskSummary = $null
@@ -301,7 +303,7 @@
             $spRiskRes = Import-TenantBriefSharePointRisk -CsvPath $InputSharePointRiskCsvPath -Language $Language
             if ($spRiskRes) {
                 $sharePointRiskSummary = $spRiskRes.Summary
-                if ($spRiskRes.Findings) { $collectedTests += @($spRiskRes.Findings | Where-Object { $null -ne $_ }) }
+                if ($spRiskRes.Findings) { foreach ($spItem in @($spRiskRes.Findings | Where-Object { $null -ne $_ })) { $collectedTests.Add($spItem) } }
             }
         } else {
             Add-TenantBriefDiagnostic -Diagnostics $diagnostics -Stage 3 -Component 'FastTrackSharePointRisk' -Message "Belirtilen SharePoint Risk CSV bulunamadi: $InputSharePointRiskCsvPath"
@@ -313,13 +315,13 @@
             $ppRes = Import-TenantBriefPowerPlatformAgents -Path $InputPowerPlatformAgentsPath -Language $Language
             if ($ppRes) {
                 $ppAgentsSummary = $ppRes.Summary
-                if ($ppRes.Findings) { $collectedTests += @($ppRes.Findings | Where-Object { $null -ne $_ }) }
+                if ($ppRes.Findings) { foreach ($ppItem in @($ppRes.Findings | Where-Object { $null -ne $_ })) { $collectedTests.Add($ppItem) } }
             }
         } else {
             Add-TenantBriefDiagnostic -Diagnostics $diagnostics -Stage 3 -Component 'FastTrackPowerPlatformAgents' -Message "Belirtilen Power Platform ajan envanteri bulunamadi: $InputPowerPlatformAgentsPath"
         }
     }
-    $rawAllTests = @((@($ztTests) + @($collectedTests)) | Where-Object { $null -ne $_ })
+    $rawAllTests = @((@($ztTests) + @($collectedTests.ToArray())) | Where-Object { $null -ne $_ })
     $allCorrelatedTests = @(New-TenantBriefCorrelatedTests -Tests $rawAllTests)
     $plannedTests = @($allCorrelatedTests | Where-Object { $_.TestStatus -eq 'Planned' })
     $tests = @($allCorrelatedTests | Where-Object { $_.TestStatus -ne 'Planned' })

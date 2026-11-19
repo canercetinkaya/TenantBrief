@@ -13,7 +13,7 @@ function Import-TenantBriefOrcaResults {
     $orcaData = Get-Content -Path $orcaFile.FullName -Raw -Encoding UTF8 | ConvertFrom-Json
     $orcaItems = if ($orcaData.PSObject.Properties['Results']) { @($orcaData.Results) } elseif ($orcaData.PSObject.Properties['Checks']) { @($orcaData.Checks) } else { @($orcaData) }
     $ocCount = 0
-    $out = @()
+    $out = [System.Collections.Generic.List[object]]::new()
     foreach ($item in $orcaItems) {
         $cName = if ($item.PSObject.Properties['Name'] -and $item.Name) { [string]$item.Name } elseif ($item.PSObject.Properties['CheckName'] -and $item.CheckName) { [string]$item.CheckName } else { '' }
         if (-not $cName) { continue }
@@ -35,7 +35,7 @@ function Import-TenantBriefOrcaResults {
             }
         } else { 'Medium' }
         $mappedOrStatus = if ($st -in @('1', 'Pass', 'OK')) { 'Passed' } elseif ($st -in @('2', '0', 'Informational', 'Info', 'None')) { 'Investigate' } else { 'Failed' }
-        $out += [PSCustomObject]@{
+        $out.Add([PSCustomObject]@{
             TestId                 = if ($ctrl -like 'ORCA-*') { $ctrl } else { "ORCA-$ctrl" }
             TestTitle              = $cName
             TestStatus             = $mappedOrStatus
@@ -50,7 +50,7 @@ function Import-TenantBriefOrcaResults {
             TestResult             = if ($mappedOrStatus -eq 'Passed' -and $passTxt) { $passTxt } else { $rec }
             TestImpact             = 'Medium'
             TestDescription        = if ($imp) { $imp } else { $cName }
-        }
+        })
     }
-    return @($out)
+    return @($out.ToArray())
 }

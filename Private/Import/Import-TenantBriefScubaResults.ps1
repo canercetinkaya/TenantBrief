@@ -14,26 +14,30 @@ function Import-TenantBriefScubaResults {
 
     $scubaData = Get-Content -Path $scubaJson.FullName -Raw -Encoding UTF8 | ConvertFrom-Json
     $scCount = 0
-    $scubaControlList = @()
+    $scubaControlList = [System.Collections.Generic.List[object]]::new()
     if ($scubaData.PSObject.Properties['Results']) {
         if ($scubaData.Results -is [System.Array]) {
             foreach ($grp in @($scubaData.Results)) {
-                if ($grp.PSObject.Properties['Controls']) { $scubaControlList += @($grp.Controls) } else { $scubaControlList += $grp }
+                if ($grp.PSObject.Properties['Controls']) {
+                    foreach ($c in @($grp.Controls)) { $scubaControlList.Add($c) }
+                } else {
+                    $scubaControlList.Add($grp)
+                }
             }
         } else {
             foreach ($prop in $scubaData.Results.PSObject.Properties) {
                 foreach ($entry in @($prop.Value)) {
                     if ($entry.PSObject.Properties['Controls']) {
-                        foreach ($c in @($entry.Controls)) { $scubaControlList += [PSCustomObject]@{ Cat = [string]$prop.Name; Item = $c } }
+                        foreach ($c in @($entry.Controls)) { $scubaControlList.Add([PSCustomObject]@{ Cat = [string]$prop.Name; Item = $c }) }
                     } else {
-                        $scubaControlList += [PSCustomObject]@{ Cat = [string]$prop.Name; Item = $entry }
+                        $scubaControlList.Add([PSCustomObject]@{ Cat = [string]$prop.Name; Item = $entry })
                     }
                 }
             }
         }
     }
 
-    $out = @()
+    $out = [System.Collections.Generic.List[object]]::new()
     foreach ($wrap in $scubaControlList) {
         $cat  = if ($wrap.PSObject.Properties['Cat']) { [string]$wrap.Cat } else { 'AAD' }
         $item = if ($wrap.PSObject.Properties['Item']) { $wrap.Item } else { $wrap }
@@ -52,7 +56,7 @@ function Import-TenantBriefScubaResults {
             '^(Fail|Not Met)$' { 'Failed' }
             default            { 'Investigate' }
         }
-        $out += [PSCustomObject]@{
+        $out.Add([PSCustomObject]@{
             TestId                 = if ($ctrl -like 'SCUBA-*') { $ctrl } else { "SCUBA-$ctrl" }
             TestTitle              = $req
             TestStatus             = $mappedStatus
@@ -67,7 +71,7 @@ function Import-TenantBriefScubaResults {
             TestResult             = $det
             TestImpact             = if ($crit -match 'Shall') { 'High' } else { 'Medium' }
             TestDescription        = $req
-        }
+        })
     }
-    return @($out)
+    return @($out.ToArray())
 }

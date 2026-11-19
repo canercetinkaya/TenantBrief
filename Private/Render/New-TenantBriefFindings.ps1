@@ -1,4 +1,4 @@
-function New-TenantBriefFindings {
+﻿function New-TenantBriefFindings {
     [CmdletBinding()]
     param(
         [Parameter(Mandatory = $true)][AllowEmptyCollection()][object[]]$Tests,
@@ -26,9 +26,9 @@ function New-TenantBriefFindings {
             $m = @($corrList | Where-Object { $_ -match $Pattern } | Select-Object -First 1)
             if ($m.Count -gt 0 -and $m[0]) { [string]$m[0] } else { $tid }
         }
-        $refParts = @()
+        $refParts = [System.Collections.Generic.List[string]]::new()
         foreach ($src in $sourceList) {
-            $refParts += switch ($src) {
+            $refVal = switch ($src) {
                 'CIS M365'    { "CIS Microsoft 365 Foundations v7.0.0 ($(& $pickId '^CIS\.M365\.'))" }
                 'CISA SCuBA'  { "CISA SCuBA M365 Baseline ($(& $pickId '^SCUBA-'))" }
                 'MDO / ORCA'  { "Microsoft Defender for Office 365 / ORCA ($(& $pickId '^ORCA-'))" }
@@ -38,6 +38,7 @@ function New-TenantBriefFindings {
                 'ZeroTrust'   { "Microsoft Zero Trust ($domainStr · $(& $pickId '^\d+$'))" }
                 default       { "$src ($tid)" }
             }
+            $refParts.Add([string]$refVal)
         }
         $fwRef = if ($refParts.Count -gt 0) { $refParts -join ' + ' } else { "Microsoft Zero Trust ($tid)" }
 

@@ -1,4 +1,4 @@
-function Import-TenantBriefMaesterResults {
+﻿function Import-TenantBriefMaesterResults {
     [CmdletBinding()]
     param(
         [Parameter(Mandatory = $false)][object]$MaesterResult,
@@ -17,7 +17,7 @@ function Import-TenantBriefMaesterResults {
         }
     }
 
-    $out = @()
+    $out = [System.Collections.Generic.List[object]]::new()
     foreach ($item in $testsArray) {
         if ($null -eq $item) { continue }
         $rawId = Get-TenantBriefPropertyValue -Object $item -Name 'Id'
@@ -106,7 +106,7 @@ function Import-TenantBriefMaesterResults {
             }
         }
 
-        $out += [PSCustomObject]@{
+        $out.Add([PSCustomObject]@{
             TestId                 = $rawId
             TestTitle              = $cleanTitle
             TestStatus             = $mappedStatus
@@ -121,7 +121,7 @@ function Import-TenantBriefMaesterResults {
             TestResult             = $tRes
             TestImpact             = $mappedRisk
             TestDescription        = $desc
-        }
+        })
     }
-    return @($out)
+    return @($out.ToArray())
 }

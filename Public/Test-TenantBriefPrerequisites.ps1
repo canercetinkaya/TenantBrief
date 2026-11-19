@@ -28,8 +28,18 @@ function Test-TenantBriefPrerequisites {
         @{ Name = 'Microsoft.Online.SharePoint.PowerShell'; Required = $false; InstallCmd = 'Save-Module Microsoft.Online.SharePoint.PowerShell -Path "$HOME\Documents\WindowsPowerShell\Modules"' }
     )
 
+    $allModNames = @($moduleSpecs | ForEach-Object { $_.Name })
+    $installedByName = @{}
+    foreach ($m in @(Get-Module -ListAvailable -Name $allModNames -ErrorAction SilentlyContinue)) {
+        $key = $m.Name.ToLowerInvariant()
+        if (-not $installedByName.ContainsKey($key) -or $m.Version -gt $installedByName[$key].Version) {
+            $installedByName[$key] = $m
+        }
+    }
+
     foreach ($spec in $moduleSpecs) {
-        $found = Get-Module -ListAvailable -Name $spec.Name -ErrorAction SilentlyContinue | Sort-Object Version -Descending | Select-Object -First 1
+        $key = $spec.Name.ToLowerInvariant()
+        $found = if ($installedByName.ContainsKey($key)) { $installedByName[$key] } else { $null }
         $status = if ($found) { 'Ready' } elseif ($spec.Required) { 'Missing' } else { 'Warning' }
         $results.Add([PSCustomObject]@{
             Category         = 'Module'

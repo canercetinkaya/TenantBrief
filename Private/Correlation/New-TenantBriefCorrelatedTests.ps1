@@ -18,12 +18,21 @@ function New-TenantBriefCorrelatedTests {
         if ($null -eq $t) { continue }
         $seq++
 
-        $rawId = ([string](Get-TenantBriefPropertyValue -Object $t -Name 'TestId')).Trim()
+        $isDict = $t -is [System.Collections.IDictionary]
+        $readProp = {
+            param([string]$n)
+            if ($isDict) { if ($t.Contains($n)) { return $t[$n] } return $null }
+            $p = $t.PSObject.Properties[$n]
+            if ($null -ne $p) { return $p.Value }
+            return $null
+        }
+
+        $rawId = ([string](& $readProp 'TestId')).Trim()
         $rawIdKey = $rawId.ToUpperInvariant()
-        $pillarList = @(ConvertTo-TenantBriefPillarList -PillarValue (Get-TenantBriefPropertyValue -Object $t -Name 'TestPillar'))
+        $pillarList = @(ConvertTo-TenantBriefPillarList -PillarValue (& $readProp 'TestPillar'))
         $sourceList = @(Resolve-TenantBriefSourceTag -Test $t)
-        $newStatus = [string](Get-TenantBriefPropertyValue -Object $t -Name 'TestStatus')
-        $newRisk = [string](Get-TenantBriefPropertyValue -Object $t -Name 'TestRisk')
+        $newStatus = [string](& $readProp 'TestStatus')
+        $newRisk = [string](& $readProp 'TestRisk')
 
         $cwEntry = if ($rawIdKey -and $crosswalkMap.ContainsKey($rawIdKey)) { $crosswalkMap[$rawIdKey] } else { $null }
         $canonicalId = if ($cwEntry) { [string]$cwEntry.canonicalId } else { '' }
@@ -89,21 +98,21 @@ function New-TenantBriefCorrelatedTests {
                 CanonicalId            = $canonicalId
                 TestId                 = $rawId
                 CorrelatedIds          = if ($rawId) { @($rawId) } else { @() }
-                TestTitle              = Get-TenantBriefPropertyValue -Object $t -Name 'TestTitle'
+                TestTitle              = & $readProp 'TestTitle'
                 TestStatus             = $newStatus
                 TestRisk               = $newRisk
                 TestPillar             = @($pillarList)
                 TestSources            = @($sourceList)
                 SourceStatuses         = $srcStatuses
                 StatusConflict         = $false
-                TestCategory           = Get-TenantBriefPropertyValue -Object $t -Name 'TestCategory'
-                TestSfiPillar          = Get-TenantBriefPropertyValue -Object $t -Name 'TestSfiPillar'
-                TestImplementationCost = Get-TenantBriefPropertyValue -Object $t -Name 'TestImplementationCost'
-                TestMinimumLicense     = Get-TenantBriefPropertyValue -Object $t -Name 'TestMinimumLicense'
-                SkippedReason          = Get-TenantBriefPropertyValue -Object $t -Name 'SkippedReason'
-                TestResult             = Get-TenantBriefPropertyValue -Object $t -Name 'TestResult'
-                TestImpact             = Get-TenantBriefPropertyValue -Object $t -Name 'TestImpact'
-                TestDescription        = Get-TenantBriefPropertyValue -Object $t -Name 'TestDescription'
+                TestCategory           = & $readProp 'TestCategory'
+                TestSfiPillar          = & $readProp 'TestSfiPillar'
+                TestImplementationCost = & $readProp 'TestImplementationCost'
+                TestMinimumLicense     = & $readProp 'TestMinimumLicense'
+                SkippedReason          = & $readProp 'SkippedReason'
+                TestResult             = & $readProp 'TestResult'
+                TestImpact             = & $readProp 'TestImpact'
+                TestDescription        = & $readProp 'TestDescription'
             }
         }
     }

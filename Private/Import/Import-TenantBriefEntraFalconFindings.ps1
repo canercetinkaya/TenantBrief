@@ -7,7 +7,7 @@ function Import-TenantBriefEntraFalconFindings {
 
     if (-not (Test-Path $JsonPath)) { return @() }
     $rawList = @(Get-Content -Path $JsonPath -Raw -Encoding UTF8 | ConvertFrom-Json)
-    $out = @()
+    $out = [System.Collections.Generic.List[object]]::new()
 
     foreach ($f in $rawList) {
         if ($null -eq $f) { continue }
@@ -42,7 +42,7 @@ function Import-TenantBriefEntraFalconFindings {
         $resTxt = if ($affCount -gt 0) { "Affected objects: $affCount`n`n$threat".Trim() } else { $threat }
         $fullDesc = if ($rem) { "$desc`n`n**Remediation action**`n$rem".Trim() } else { $desc }
 
-        $out += [PSCustomObject]@{
+        $out.Add([PSCustomObject]@{
             TestId                 = $tid
             TestTitle              = $title
             TestStatus             = $status
@@ -56,7 +56,7 @@ function Import-TenantBriefEntraFalconFindings {
             TestResult             = $resTxt
             TestImpact             = $risk
             TestDescription        = $fullDesc
-        }
+        })
     }
-    return @($out)
+    return @($out.ToArray())
 }
