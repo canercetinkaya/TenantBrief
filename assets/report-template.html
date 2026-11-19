@@ -251,7 +251,7 @@
     document.getElementById('tenantMeta').textContent = `${DATA.Tenant} | ${isTr ? 'Salt Okunur Değerlendirme' : 'Read-Only Assessment'}`;
 
     function esc(s) {
-      return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+      return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
     }
 
     function renderMd(md) {
@@ -435,7 +435,7 @@
       const pCnt = items.filter(x => x.Status === 'Passed').length;
       const fCnt = items.filter(x => x.Status === 'Failed').length;
       const sCnt = items.filter(x => x.Status === 'Skipped' || x.Status === 'Planned').length;
-      return `<div class="card road-card" onclick="switchView('findings', 'ALL', document.getElementById('navAllFindings'), '${esc(src)}')" style="padding:12px;">
+      return `<div class="card road-card" data-source="${esc(src)}" onclick="switchView('findings', 'ALL', document.getElementById('navAllFindings'), this.dataset.source)" style="padding:12px;">
         <div class="lbl" style="color:#c7d2fe;font-weight:600;">${esc(src)}</div>
         <div class="val" style="font-size:22px;">${items.length}</div>
         <div style="font-size:11.5px;color:var(--muted);margin-top:4px;">
@@ -462,7 +462,7 @@
     `;
 
     const fwHtml = (DATA.Frameworks || []).map(f => {
-      const clickAttr = f.SourceTag ? `style="cursor:pointer;" onclick="switchView('findings', 'ALL', document.getElementById('navAllFindings'), '${esc(f.SourceTag)}')"` : '';
+      const clickAttr = f.SourceTag ? `style="cursor:pointer;" data-source="${esc(f.SourceTag)}" onclick="switchView('findings', 'ALL', document.getElementById('navAllFindings'), this.dataset.source)"` : '';
       const subCounts = (typeof f.Total === 'number')
         ? `<div style="font-size:11px;color:var(--muted);margin-top:3px;">${isTr ? 'Başarısız' : 'Failed'}: ${f.Failed ?? 0} · ${isTr ? 'İncele' : 'Investigate'}: ${f.Investigate ?? 0} · ${isTr ? 'Atlandı' : 'Skipped'}: ${f.Skipped ?? 0} · ${isTr ? 'Hata' : 'Err'}: ${f.Errors ?? 0} · ${isTr ? 'Toplam' : 'Total'}: ${f.Total}</div>`
         : '';
@@ -539,13 +539,12 @@
     if (gaps.length > 0 || (s.Skipped || 0) > 0) {
       const gapRows = gaps.map(g => {
         const cat = g.Category || 'Scope';
-        const q = String(g.Search || '').replace(/'/g, "\\'");
         return `<tr>
           <td><strong>${esc(g.License)}</strong></td>
           <td><span class="tag" style="color:${gapCatColor(cat)};border-color:${gapCatColor(cat)};">${esc(gapCatLabel(cat))}</span></td>
           <td><strong>${g.Count}</strong></td>
           <td style="font-size:12.5px;color:var(--muted);">${esc(g.Note || '')}</td>
-          <td><button class="chip" onclick="filterSkippedGap('${q}')">${isTr ? 'Kontrollerde Gör →' : 'View Controls →'}</button></td>
+          <td><button class="chip" data-q="${esc(g.Search || '')}" onclick="filterSkippedGap(this.dataset.q)">${isTr ? 'Kontrollerde Gör →' : 'View Controls →'}</button></td>
         </tr>`;
       }).join('');
       document.getElementById('skippedBox').innerHTML = `
@@ -644,8 +643,7 @@
     });
     const licRows = Object.entries(licCounts).sort((a,b) => b[1].total - a[1].total).map(([prod,v]) => {
       const rawHint = [...v.rawCodes].slice(0, 4).join(', ') + (v.rawCodes.size > 4 ? '…' : '');
-      const filterTok = String(v.firstRaw || '').replace(/'/g, "\\'");
-      return `<tr style="cursor:pointer;" onclick="filterByMinLicense('${filterTok}')" title="${isTr ? 'Bu lisansla eşleşen kontrolleri filtrele' : 'Filter controls matching this product'}"><td><strong>${esc(prod)}</strong><div style="font-size:11px;color:var(--muted);">${esc(rawHint)}</div></td><td>${v.total}</td><td style="color:var(--ok)">${v.passed}</td><td style="color:var(--fail)">${v.failed}</td><td style="color:var(--skip)">${v.skipped}</td></tr>`;
+      return `<tr style="cursor:pointer;" data-lic="${esc(v.firstRaw || '')}" onclick="filterByMinLicense(this.dataset.lic)" title="${isTr ? 'Bu lisansla eşleşen kontrolleri filtrele' : 'Filter controls matching this product'}"><td><strong>${esc(prod)}</strong><div style="font-size:11px;color:var(--muted);">${esc(rawHint)}</div></td><td>${v.total}</td><td style="color:var(--ok)">${v.passed}</td><td style="color:var(--fail)">${v.failed}</td><td style="color:var(--skip)">${v.skipped}</td></tr>`;
     }).join('');
     document.getElementById('minLicBox').innerHTML = `
       <h3 style="margin-bottom:6px;">${isTr ? 'Kontrollerin Minimum Ürün / Lisans Gereksinimi Dağılımı' : 'Minimum Product & License Requirements Breakdown'}</h3>
@@ -983,7 +981,7 @@
         `<button class="chip ${activeSourceFilter === 'ALL' ? 'active' : ''}" onclick="setSource('ALL')">${isTr ? 'Tümü' : 'All'} (${F.length})</button>` +
         allSources.map(src => {
           const cnt = F.filter(x => getSources(x).includes(src)).length;
-          return `<button class="chip ${activeSourceFilter === src ? 'active' : ''}" onclick="setSource('${esc(src)}')">${esc(src)} (${cnt})</button>`;
+          return `<button class="chip ${activeSourceFilter === src ? 'active' : ''}" data-source="${esc(src)}" onclick="setSource(this.dataset.source)">${esc(src)} (${cnt})</button>`;
         }).join('');
 
       const statuses = ['ALL', 'Failed', 'Passed', 'Skipped', 'Investigate', 'Planned', 'Error'];
