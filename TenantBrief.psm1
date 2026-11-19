@@ -2290,19 +2290,7 @@ function Invoke-TenantBriefAssessment {
         "Out of $skippedCount skipped controls, $licGapTotal are blocked by missing licenses, $connGapTotal by disconnected services or missing API scopes (blind spots), and $scopeGapTotal are not applicable because those features/platforms are unused in the tenant."
     }
 
-    $roadmap = if ($Language -eq 'tr') {
-        @(
-            [PSCustomObject]@{ Phase = '0–30 Gün (Kritik / Quick Wins)'; Count = $highRiskFailed; Focus = 'Yüksek riskli Kimlik, Passkey, Break-Glass ve Defender temel açıkları' },
-            [PSCustomObject]@{ Phase = '31–60 Gün (Orta Risk)'; Count = $medRiskFailed; Focus = 'Intune uyumluluk, DLP/Purview etiketleme ve ağ segmentasyonu' },
-            [PSCustomObject]@{ Phase = '61–90 Gün (İnceleme & Düşük)'; Count = ($lowRiskFailed + $investigateCount); Focus = 'Investigate bulguları, SOC triyaj SLA ve sürekli drift takibi' }
-        )
-    } else {
-        @(
-            [PSCustomObject]@{ Phase = 'Days 0–30 (Critical / Quick Wins)'; Count = $highRiskFailed; Focus = 'High-risk Identity, Passkeys, Break-Glass, and Defender baselines' },
-            [PSCustomObject]@{ Phase = 'Days 31–60 (Medium Risk)'; Count = $medRiskFailed; Focus = 'Intune compliance, Purview labeling/DLP, and network segmentation' },
-            [PSCustomObject]@{ Phase = 'Days 61–90 (Investigate & Low)'; Count = ($lowRiskFailed + $investigateCount); Focus = 'Manual Investigate items, SOC triage SLAs, and drift monitoring' }
-        )
-    }
+    $roadmap = @()
 
     $pillarMap = $null
 
@@ -2368,6 +2356,42 @@ function Invoke-TenantBriefAssessment {
 
     $findings = @(New-TenantBriefFindings -Tests $tests -PillarMap $pillarMap -Language $Language -TranslationCache $trCache)
     $plannedFindings = @(New-TenantBriefFindings -Tests $plannedTests -PillarMap $pillarMap -Language $Language -TranslationCache $trCache)
+
+    $buildPhaseFocus = {
+        param([object[]]$Items, [string]$EmptyText)
+        if (-not $Items -or $Items.Count -eq 0) { return $EmptyText }
+        $topCats = @($Items | Where-Object { $_.Category } | Group-Object Category | Sort-Object -Property @(@{ Expression = 'Count'; Descending = $true }, 'Name') | Select-Object -First 3 | ForEach-Object { "$($_.Name) ($($_.Count))" })
+        if ($topCats.Count -gt 0) { return ($topCats -join ' · ') }
+        return $EmptyText
+    }
+    $sortByPrio = @(
+        @{ Expression = { [int]$_.PriorityScore }; Descending = $true },
+        @{ Expression = { [string]$_.Id }; Descending = $false }
+    )
+    $p0Items = @($findings | Where-Object { $_.Status -eq 'Failed' -and $_.Risk -in @('Critical', 'High') } | Sort-Object -Property $sortByPrio)
+    $p1Items = @($findings | Where-Object { $_.Status -eq 'Failed' -and $_.Risk -eq 'Medium' } | Sort-Object -Property $sortByPrio)
+    $p2Items = @($findings | Where-Object { ($_.Status -eq 'Failed' -and $_.Risk -eq 'Low') -or $_.Status -eq 'Investigate' } | Sort-Object -Property $sortByPrio)
+    $emptyPhaseMsg = if ($Language -eq 'tr') { 'Bu fazda açık bulgu bulunmuyor' } else { 'No open findings in this phase' }
+    $roadmap = @(
+        [PSCustomObject]@{
+            Phase      = if ($Language -eq 'tr') { '0–30 Gün (Kritik / Quick Wins)' } else { 'Days 0–30 (Critical / Quick Wins)' }
+            Count      = $p0Items.Count
+            Focus      = (& $buildPhaseFocus $p0Items $emptyPhaseMsg)
+            FindingIds = @($p0Items | ForEach-Object { [string]$_.Id })
+        },
+        [PSCustomObject]@{
+            Phase      = if ($Language -eq 'tr') { '31–60 Gün (Orta Risk)' } else { 'Days 31–60 (Medium Risk)' }
+            Count      = $p1Items.Count
+            Focus      = (& $buildPhaseFocus $p1Items $emptyPhaseMsg)
+            FindingIds = @($p1Items | ForEach-Object { [string]$_.Id })
+        },
+        [PSCustomObject]@{
+            Phase      = if ($Language -eq 'tr') { '61–90 Gün (İnceleme & Düşük)' } else { 'Days 61–90 (Investigate & Low)' }
+            Count      = $p2Items.Count
+            Focus      = (& $buildPhaseFocus $p2Items $emptyPhaseMsg)
+            FindingIds = @($p2Items | ForEach-Object { [string]$_.Id })
+        }
+    )
 
     $tenantDisplay = if ($Anonymize) { 'contoso.onmicrosoft.com (Anonymized)' } else { [string]$raw.Domain }
     $ti = $raw.PSObject.Properties['TenantInfo'].Value
@@ -2884,6 +2908,45 @@ function Export-TenantBriefExecutiveSummary {
     $thRatio   = if ($isTr) { 'Geçen / Ölçülen' } else { 'Passed / Total' }
     $thScore   = if ($isTr) { 'Puan' } else { 'Score' }
 
+    # Lab/Test tenant banner when UserCount < 25
+    $tiProp = $data.PSObject.Properties['TenantInsights']
+    $tiObj = if ($tiProp) { $tiProp.Value } else { $null }
+    $labBanner = ''
+    if ($tiObj -and $tiObj.PSObject.Properties['UserCount'] -and $null -ne $tiObj.UserCount -and [int]$tiObj.UserCount -gt 0 -and [int]$tiObj.UserCount -lt 25) {
+        $uCountInt = [int]$tiObj.UserCount
+        $labTxt = if ($isTr) { "Test / Lab Kiracısı Uyarısı: Kiracıda yalnızca $uCountInt kullanıcı tespit edildi; skorlar ve lisans metrikleri üretim ortamını temsil etmeyebilir." } else { "Test / Lab Tenant Notice: Only $uCountInt user(s) detected; scores and license metrics may not represent production scale." }
+        $labBanner = "<div style='border:1px solid #38bdf8;background:#f0f9ff;color:#0369a1;padding:8px 12px;border-radius:6px;font-size:12.5px;margin-bottom:14px;'>$(& $htmlEncode $labTxt)</div>"
+    }
+
+    # Idle License ROI: show N/A (Uygulanamaz) when Skus is empty and TotalIdleUsdYr is 0
+    $roiObj = if ($data.PSObject.Properties['LicenseROI']) { $data.LicenseROI } else { $null }
+    $hasSkus = ($roiObj -and $roiObj.PSObject.Properties['Skus'] -and @($roiObj.Skus).Count -gt 0)
+    $idleUsdYr = if ($roiObj -and $roiObj.PSObject.Properties['TotalIdleUsdYr'] -and $null -ne $roiObj.TotalIdleUsdYr) { $roiObj.TotalIdleUsdYr } else { 0 }
+    $idleDisplay = if (-not $hasSkus -and [double]$idleUsdYr -eq 0) {
+        if ($isTr) { 'Uygulanamaz' } else { 'N/A' }
+    } else {
+        "`$$idleUsdYr"
+    }
+
+    # Executive Signals strip (Secure Score, High Incidents, Copilot Maturity, MFA/CA)
+    $sigCards = New-Object System.Collections.Generic.List[string]
+    if ($tiObj -and $tiObj.PSObject.Properties['SecureScoreCurrent'] -and $null -ne $tiObj.SecureScoreCurrent -and $tiObj.PSObject.Properties['SecureScoreMax'] -and $null -ne $tiObj.SecureScoreMax -and [double]$tiObj.SecureScoreMax -gt 0) {
+        $ssLbl = if ($isTr) { 'Microsoft Secure Score' } else { 'Microsoft Secure Score' }
+        $sigCards.Add("<div class='card'><div>$ssLbl</div><div class='val' style='font-size:18px;'>$(& $htmlEncode $tiObj.SecureScoreCurrent) / $(& $htmlEncode $tiObj.SecureScoreMax)</div></div>")
+    }
+    $uaProp = $data.PSObject.Properties['UsageAdoption']
+    $secObj = if ($uaProp -and $uaProp.Value -and $uaProp.Value.PSObject.Properties['SecOps']) { $uaProp.Value.SecOps } else { $null }
+    if ($secObj -and $secObj.PSObject.Properties['IncidentsAvailable'] -and $secObj.IncidentsAvailable) {
+        $incLbl = if ($isTr) { 'Aktif Yüksek Olay (SecOps)' } else { 'Active High Incidents' }
+        $sigCards.Add("<div class='card'><div>$incLbl</div><div class='val' style='font-size:18px;'>$(& $htmlEncode $secObj.HighIncidents)</div></div>")
+    }
+    $copProp = $data.PSObject.Properties['CopilotReadiness']
+    if ($copProp -and $copProp.Value -and $copProp.Value.PSObject.Properties['MaturityLevel'] -and $copProp.Value.MaturityLevel) {
+        $copLbl = if ($isTr) { 'Copilot Olgunluk Seviyesi' } else { 'Copilot Readiness Maturity' }
+        $sigCards.Add("<div class='card'><div>$copLbl</div><div class='val' style='font-size:15px;'>$(& $htmlEncode $copProp.Value.MaturityLevel)</div></div>")
+    }
+    $signalsHtml = if ($sigCards.Count -gt 0) { "<div class='grid' style='grid-template-columns:repeat($($sigCards.Count),1fr);'>$($sigCards -join '')</div>" } else { '' }
+
     $html = @"
 <!DOCTYPE html>
 <html lang="$Language">
@@ -2908,12 +2971,14 @@ function Export-TenantBriefExecutiveSummary {
   <h1>TenantBrief — $title</h1>
   <div class="sub">$subLine</div>
   $diagNote
+  $labBanner
   <div class="grid">
     <div class="card"><div>$lblTotal</div><div class="val">$($data.Summary.Total)</div></div>
     <div class="card"><div>$lblPass</div><div class="val">$($data.Summary.Passed)</div></div>
     <div class="card"><div>$lblFail</div><div class="val">$($data.Summary.Failed) ($($data.Summary.HighRiskFailed))</div></div>
-    <div class="card"><div>$lblIdle</div><div class="val">`$$($data.LicenseROI.TotalIdleUsdYr)</div></div>
+    <div class="card"><div>$lblIdle</div><div class="val">$(& $htmlEncode $idleDisplay)</div></div>
   </div>
+  $signalsHtml
   <table>
     <thead><tr><th>$thFw</th><th>$thRatio</th><th>$thScore</th></tr></thead>
     <tbody>$fwRows</tbody>
@@ -3461,10 +3526,29 @@ function Get-TenantBriefCopilotReadiness {
         }
     }
 
-    $passC = @($checks | Where-Object { $_.Status -eq 'Pass' }).Count
+    $scCfg = Get-TenantBriefScoringConfig
+    $passW = if ($scCfg -and $scCfg.PSObject.Properties['copilotReadiness']) { [double]$scCfg.copilotReadiness.passWeight } else { 1.0 }
+    $warnW = if ($scCfg -and $scCfg.PSObject.Properties['copilotReadiness']) { [double]$scCfg.copilotReadiness.warningWeight } else { 0.5 }
+    $failW = if ($scCfg -and $scCfg.PSObject.Properties['copilotReadiness']) { [double]$scCfg.copilotReadiness.failWeight } else { 0.0 }
+    $gateIds = if ($scCfg -and $scCfg.PSObject.Properties['copilotReadiness'] -and $scCfg.copilotReadiness.gateIds) { @($scCfg.copilotReadiness.gateIds) } else { @('COP-LIC-01') }
+
+    $weightedSum = 0.0
+    $gateFailed = $false
+    foreach ($chk in @($checks)) {
+        if ($chk.Status -eq 'Pass') { $weightedSum += $passW }
+        elseif ($chk.Status -eq 'Warning') { $weightedSum += $warnW }
+        else {
+            $weightedSum += $failW
+            if ($chk.Status -eq 'Fail' -and (($gateIds -contains $chk.Id) -or $chk.Id -eq 'COP-LIC-01')) {
+                $gateFailed = $true
+            }
+        }
+    }
     $totC = [Math]::Max(1, $checks.Count)
-    $readinessScore = [Math]::Round(($passC / $totC) * 100, 1)
-    $maturity = if ($isTr) {
+    $readinessScore = [Math]::Round(($weightedSum / $totC) * 100, 1)
+    $maturity = if ($gateFailed) {
+        if ($isTr) { 'L1 - Başlangıç (Initial)' } else { 'L1 - Initial' }
+    } elseif ($isTr) {
         if ($readinessScore -ge 85) { 'L4 - Yönetilen (Managed)' } elseif ($readinessScore -ge 65) { 'L3 - Tanımlı (Defined)' } elseif ($readinessScore -ge 40) { 'L2 - Tekrarlanabilir (Repeatable)' } else { 'L1 - Başlangıç (Initial)' }
     } else {
         if ($readinessScore -ge 85) { 'L4 - Managed' } elseif ($readinessScore -ge 65) { 'L3 - Defined' } elseif ($readinessScore -ge 40) { 'L2 - Repeatable' } else { 'L1 - Initial' }

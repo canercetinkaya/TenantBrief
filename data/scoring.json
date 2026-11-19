@@ -23,5 +23,11 @@
   },
   "multiSourceBonusPerExtra": 4,
   "multiSourceBonusCap": 10,
-  "conflictBonus": 5
+  "conflictBonus": 5,
+  "copilotReadiness": {
+    "passWeight": 1.0,
+    "warningWeight": 0.5,
+    "failWeight": 0.0,
+    "gateIds": ["COP-LIC-01"]
+  }
 }
