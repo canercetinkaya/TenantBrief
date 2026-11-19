@@ -39,6 +39,11 @@ All notable changes to **TenantBrief** are documented in this file.
   - Deep `-Anonymize` masking via `Protect-TenantBriefSensitiveText` across finding fields (`Title`, `Result`, `Description`, `SkippedReason`, `Remediation`, `RemediationTr`, `ErrorRemedy`), `PlannedFindings`, and `MfaCoverageDesc` (stripping UPNs/emails, GUIDs, and tenant domains).
   - `-TranslatorKey` now accepts `[SecureString]` (with `[string]` backward compatibility), never logs or persists keys, and strips UPNs/GUIDs/tenant domains via `Protect-TenantBriefSensitiveText` before calling Azure AI Translator.
   - Added `SECURITY.md` and documented Translator data flow and privacy guarantees in `README.md`.
+- **Sprint 6 Architecture, Modularization & Blocking CI (`S6.1–S6.4`):**
+  - Added 4-engine TR/EN golden-file regression snapshots (`tests/fixtures/raw/*`, `tests/golden/*.normalized.json`, `tests/Sprint6.GoldenFile.Tests.ps1`) before refactoring.
+  - Split monolithic `TenantBrief.psm1` (4,278 lines) into 35 clean files under `Public/` (12 cmdlets) and `Private/{Import,Correlation,Scoring,Render}/` (23 helpers) with deterministic `LicenseROI.Gaps` tie-break sorting and identical 12-cmdlet export surface.
+  - Upgraded `.github/workflows/ci.yml` to a Windows + Ubuntu matrix with Pester JaCoCo code coverage artifact, blocking PSScriptAnalyzer v1.25.0 gate, blocking JSON Schema (`Test-Json`) check, and blocking Q01–Q15 quality gate.
+  - Replaced hot `+=` array loops with `List[object]`, compiled Turkish glossary regex (`ConvertTo-TenantBriefTurkish`), and batched module lookup in `Test-TenantBriefPrerequisites`.
 
 ### Deprecated
 - **`Finding.Impact`:** Retained for one release for backward compatibility; use `Finding.UserImpact` instead.

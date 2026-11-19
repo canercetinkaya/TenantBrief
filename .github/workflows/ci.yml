@@ -8,31 +8,124 @@ on:
 
 jobs:
   test:
-    runs-on: windows-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ windows-latest, ubuntu-latest ]
+    runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v5
-      - name: Run Pester Tests
+
+      - name: Install Pester
         shell: pwsh
         run: |
-          if (-not (Get-Module -ListAvailable -Name Pester | Where-Object Version -ge '5.0')) {
-            Install-Module Pester -Force -SkipPublisherCheck -Scope CurrentUser
+          if (-not (Get-Module -ListAvailable -Name Pester | Where-Object Version -ge '5.5')) {
+            Install-Module Pester -MinimumVersion 5.5.0 -Force -SkipPublisherCheck -Scope CurrentUser
           }
-          Invoke-Pester -Path ./tests -CI
-      - name: Run PSScriptAnalyzer (Advisory - Sprint 0)
+
+      - name: Run Full Pester Suite + Code Coverage (Windows)
+        if: matrix.os == 'windows-latest'
         shell: pwsh
-        continue-on-error: true
+        run: |
+          $config = New-PesterConfiguration
+          $config.Run.Path = './tests'
+          $config.Run.Exit = $true
+          $config.Output.Verbosity = 'Detailed'
+          $config.CodeCoverage.Enabled = $true
+          $config.CodeCoverage.Path = @(
+            './Public/*.ps1',
+            './Private/Import/*.ps1',
+            './Private/Correlation/*.ps1',
+            './Private/Scoring/*.ps1',
+            './Private/Render/*.ps1'
+          )
+          $config.CodeCoverage.OutputFormat = 'JaCoCo'
+          $config.CodeCoverage.OutputPath = './coverage.xml'
+          Invoke-Pester -Configuration $config
+
+      - name: Upload Code Coverage Artifact (Windows)
+        if: matrix.os == 'windows-latest'
+        uses: actions/upload-artifact@v4
+        with:
+          name: pester-code-coverage
+          path: coverage.xml
+          if-no-files-found: warn
+
+      - name: Run Pure Cross-Platform Pester Suite (Ubuntu)
+        if: matrix.os == 'ubuntu-latest'
+        shell: pwsh
+        run: |
+          $pureTests = @(
+            './tests/TenantBrief.Tests.ps1',
+            './tests/Measure-TenantBriefQuality.Tests.ps1',
+            './tests/Sprint1.Crosswalk.Tests.ps1',
+            './tests/Sprint1.CanonicalPillars.Tests.ps1',
+            './tests/Sprint1.PortalRole.Tests.ps1',
+            './tests/Sprint1.RiskOrcaUserImpact.Tests.ps1',
+            './tests/Sprint2.PriorityScore.Tests.ps1',
+            './tests/Sprint2.Diagnostics.Tests.ps1',
+            './tests/Sprint3.GlossaryDenylist.Tests.ps1',
+            './tests/Sprint3.I18nDictionaries.Tests.ps1',
+            './tests/Sprint3.RemediationQuality.Tests.ps1',
+            './tests/Sprint4.CopilotGate.Tests.ps1',
+            './tests/Sprint4.ExecutiveSummary.Tests.ps1'
+          )
+          $config = New-PesterConfiguration
+          $config.Run.Path = $pureTests
+          $config.Run.Exit = $true
+          $config.Output.Verbosity = 'Detailed'
+          Invoke-Pester -Configuration $config
+
+      - name: Run PSScriptAnalyzer Gate (Blocking)
+        if: matrix.os == 'windows-latest'
+        shell: pwsh
         run: |
           if (-not (Get-Module -ListAvailable -Name PSScriptAnalyzer | Where-Object { $_.Version -eq '1.25.0' })) {
             Install-Module PSScriptAnalyzer -RequiredVersion 1.25.0 -Force -Scope CurrentUser
           }
           Import-Module PSScriptAnalyzer -RequiredVersion 1.25.0 -Force
           $findings = @(Invoke-ScriptAnalyzer -Path . -Recurse -Settings ./PSScriptAnalyzerSettings.psd1)
-          Write-Host "PSScriptAnalyzer v1.25.0 findings: $($findings.Count) (Error: $(@($findings | Where-Object Severity -eq 'Error').Count), Warning: $(@($findings | Where-Object Severity -eq 'Warning').Count))"
-          $findings | Group-Object ScriptName | Sort-Object Count -Descending | Format-Table Name, Count -AutoSize
-          $findings | Group-Object RuleName | Sort-Object Count -Descending | Format-Table Name, Count -AutoSize
-      - name: Run Report Quality Metrics (Advisory - Sprint 0)
+          $errCount = @($findings | Where-Object Severity -eq 'Error').Count
+          $warnCount = @($findings | Where-Object Severity -eq 'Warning').Count
+          Write-Host "PSScriptAnalyzer v1.25.0 findings: $($findings.Count) (Error: $errCount, Warning: $warnCount)"
+          if ($errCount -gt 0) {
+            $findings | Where-Object Severity -eq 'Error' | Format-Table ScriptName, Line, RuleName, Message -AutoSize
+            throw "Blocking PSScriptAnalyzer gate failed: $errCount error(s)."
+          }
+          if ($findings.Count -gt 95) {
+            $findings | Group-Object ScriptName | Sort-Object Count -Descending | Format-Table Name, Count -AutoSize
+            throw "Blocking PSScriptAnalyzer gate failed: total findings $($findings.Count) exceeded ceiling 95."
+          }
+
+      - name: Run JSON Schema & Quality Metrics Gate (Blocking)
+        if: matrix.os == 'windows-latest'
         shell: pwsh
-        continue-on-error: true
         run: |
-          $res = ./tools/Measure-TenantBriefQuality.ps1 -Path ./demo/TenantBriefReport-TR.json -HtmlPath ./demo/TenantBriefReport-TR.html
+          Import-Module './TenantBrief.psd1' -Force
+          $outDir = Join-Path $env:RUNNER_TEMP 'tb-ci-quality'
+          New-Item -ItemType Directory -Path $outDir -Force | Out-Null
+          $null = Invoke-TenantBriefAssessment `
+            -InputReportJson './tests/fixtures/raw/ZeroTrustAssessmentReport.json' `
+            -InputScubaJsonPath './tests/fixtures/raw/ScubaResults.json' `
+            -InputOrcaJsonPath './tests/fixtures/raw/OrcaReport.json' `
+            -InputMaesterJsonPath './tests/fixtures/raw/MaesterResults.json' `
+            -OutputPath $outDir -Language tr -Framework All -NoBrowser
+
+          $jPath = Join-Path $outDir 'TenantBriefReport-TR.json'
+          $hPath = Join-Path $outDir 'TenantBriefReport-TR.html'
+          $valid = Get-Content -LiteralPath $jPath -Raw -Encoding UTF8 | Test-Json -SchemaFile './schemas/tenantbrief-report.schema.json'
+          if (-not $valid) { throw 'Blocking JSON Schema gate failed.' }
+
+          $res = ./tools/Measure-TenantBriefQuality.ps1 -Path $jPath -HtmlPath $hPath
           $res.Metrics | Format-Table Code, Metric, Value, Target -AutoSize
+          $byCode = @{}
+          foreach ($m in $res.Metrics) { $byCode[$m.Code] = $m.Value }
+
+          $failures = @()
+          if ($byCode['Q01'] -lt 1) { $failures += "Q01=$($byCode['Q01']) (expected >= 1)" }
+          foreach ($zeroCode in @('Q02', 'Q03', 'Q05', 'Q09', 'Q10', 'Q11', 'Q13', 'Q14', 'Q15')) {
+            if ($byCode[$zeroCode] -ne 0) { $failures += "$zeroCode=$($byCode[$zeroCode]) (expected 0)" }
+          }
+          if ($failures.Count -gt 0) {
+            throw ("Blocking Quality Metrics gate failed: " + ($failures -join '; '))
+          }
