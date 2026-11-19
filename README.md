@@ -65,12 +65,13 @@ flowchart TB
 
 | Cmdlet | Purpose |
 | --- | --- |
-| `Connect-TenantBrief` | Clears stale sessions, ensures pinned dependencies (`Graph v2.40.0`, `SPO v16.0.27612.12000`, `ScubaGear`, `ORCA`, `Maester`), and connects read-only to Graph/Azure/EXO/SCC |
+| `Connect-TenantBrief` | Clears stale sessions, ensures pinned dependencies (`Graph v2.40.0`, `SPO v16.0.27612.12000`, `MicrosoftTeams`, `ScubaGear`, `ORCA`, `Maester`), and auto-connects read-only to Graph, Azure, EXO, SCC, Teams (`-SkipTeams`), and SharePoint Online (`-SkipSharePoint`) |
 | `Invoke-TenantBriefAssessment` | Orchestrates Stages 1–5 live or offline (`-InputReportJson`, `-Resume`, `-InputFastTrackJsonPath`, `-InputSharePointRiskCsvPath`, `-InputPowerPlatformAgentsPath`, `-InputMaesterJsonPath`, `-InputEntraFalconJsonPath`, `-SkipMaester`) and outputs HTML, JSON, Executive Summary, and `run-manifest.json` |
 | `Get-TenantBriefFrameworks` | Lists the 8 verified benchmarks & engines defined in `data/framework-mappings.json` (`SourceTag` + upstream repo URL) |
 | `Get-TenantBriefLicenseRoi` | Computes purchased, assigned, and idle USD/month estimates across 32 Microsoft SKUs from `/v1.0/subscribedSkus` |
 | `Get-TenantBriefLicenseWaste` | Audits disabled licensed users (`R1`), 90+ day inactive users (`R2`), unassigned billable seats (`R3`), overlapping SKUs (`R4`), and licensed guests (`R7`) |
 | `Get-TenantBriefCopilotReadiness` | Evaluates M365 Copilot & Agent 365 readiness, security warnings, extended FastTrack prerequisites, and L1–L4 maturity live or via FastTrack JSON |
+| `Get-TenantBriefUsageAdoption` | Collects aggregate executive Usage & Adoption telemetry (M365 service adoption, Copilot active vs idle seats, app platforms, SharePoint storage, tenant-wide MFA/Passwordless, device compliance, and open Defender XDR incidents) using existing Reader Graph scopes |
 | `Import-TenantBriefSharePointRisk` | Scores site-level SharePoint oversharing risks (EEEU, Anyone links, Everyone grants, unlabeled sites, unique permissions) from SAM DAG CSV exports using Microsoft FastTrack `Analyze-SharePointRisk` weights |
 | `Import-TenantBriefPowerPlatformAgents` | Parses read-only Microsoft FastTrack `Inventory-PowerPlatformAgents` JSON/CSV exports to surface custom Default-environment, unowned, and 90+ day stale Copilot Studio / Agent Builder agents |
 | `Compare-TenantBriefReports` | Compares two `TenantBriefReport-*.json` snapshots to detect `Improved` and `Regressed` controls |
@@ -165,6 +166,7 @@ TenantBrief stands on top of trusted Microsoft and community open-source securit
 | **Microsoft FastTrack** | [microsoft.github.io/FastTrack](https://microsoft.github.io/FastTrack/) | `Get-M365CopilotReadiness` (license/EXO/OneDrive/Teams/RAC/ManualChecks), `Analyze-SharePointRisk` (EEEU/Anyone site scoring), `Inventory-PowerPlatformAgents` (read-only Shadow AI inventory), and `Agents Cost Calculator` v2 credit/Foundry planning model |
 | **M365 Copilot Automated Readiness** | [microsoft/m365-copilot-automated-readiness-assessment](https://github.com/microsoft/m365-copilot-automated-readiness-assessment) | Graph readiness signal checks adapted without mid-session disconnects |
 | **M365 License Review** | [samuelgtetteh/m365-license-review](https://github.com/samuelgtetteh/m365-license-review) | R1–R7 license waste and duplicate SKU overlap audit methodology |
+| **PS.M365UsageReport** | [junecastillote/PS.M365UsageReport](https://github.com/junecastillote/PS.M365UsageReport) | Graph `/v1.0/reports/*` aggregate usage reporting pattern adapted for `Get-TenantBriefUsageAdoption` |
 
 ---
 

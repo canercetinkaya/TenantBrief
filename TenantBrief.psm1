@@ -71,7 +71,13 @@ function Connect-TenantBrief {
         [string[]]$Service = @('Graph', 'Azure', 'ExchangeOnline', 'SecurityCompliance', 'SharePointOnline'),
 
         [Parameter()]
-        [switch]$UseDeviceCode
+        [switch]$UseDeviceCode,
+
+        [Parameter()]
+        [switch]$SkipTeams,
+
+        [Parameter()]
+        [switch]$SkipSharePoint
     )
 
     Write-Host "[TenantBrief] Cleaning any previous tenant sessions..." -ForegroundColor DarkGray
@@ -85,13 +91,19 @@ function Connect-TenantBrief {
     if (Get-Module -Name 'ExchangeOnlineManagement') {
         try { Disconnect-ExchangeOnline -Confirm:$false -ErrorAction SilentlyContinue | Out-Null } catch {}
     }
+    if (Get-Module -Name 'MicrosoftTeams') {
+        try { Disconnect-MicrosoftTeams -ErrorAction SilentlyContinue | Out-Null } catch {}
+    }
+    if (Get-Module -Name 'Microsoft.Online.SharePoint.PowerShell') {
+        try { Disconnect-SPOService -ErrorAction SilentlyContinue | Out-Null } catch {}
+    }
 
-    Write-Host "[TenantBrief] Checking ZeroTrustAssessment, ScubaGear, ORCA & PSGallery dependencies..." -ForegroundColor Cyan
+    Write-Host "[TenantBrief] Checking ZeroTrustAssessment, ScubaGear, ORCA, Maester, Teams & PSGallery dependencies..." -ForegroundColor Cyan
     if (-not (Get-Module -ListAvailable -Name 'ZeroTrustAssessment')) {
         throw "Required module 'ZeroTrustAssessment' is not installed. Run: Install-Module ZeroTrustAssessment -Scope CurrentUser"
     }
 
-    foreach ($dep in @('Microsoft.Graph.Beta.Teams', 'powershell-yaml', 'ScubaGear', 'ORCA', 'Maester')) {
+    foreach ($dep in @('Microsoft.Graph.Beta.Teams', 'MicrosoftTeams', 'powershell-yaml', 'ScubaGear', 'ORCA', 'Maester')) {
         if (-not (Get-Module -ListAvailable -Name $dep)) {
             Write-Host "[TenantBrief] Installing missing module '$dep' from PSGallery..." -ForegroundColor Yellow
             try {
@@ -235,6 +247,63 @@ function Connect-TenantBrief {
         throw "Authentication canceled or failed: Microsoft Graph session could not be established."
     }
     Write-Host "[TenantBrief] Verified active Graph session for: $($mgCtx.Account)" -ForegroundColor Green
+
+    # Auto-connect Microsoft Teams so Stage 3b Maester Teams/CIS checks do not skip (12+ controls)
+    if (-not $SkipTeams -and (Get-Module -ListAvailable -Name 'MicrosoftTeams')) {
+        Write-Host "[TenantBrief] Connecting to Microsoft Teams (Read-Only for Teams/CIS checks)..." -ForegroundColor Cyan
+        Set-StrictMode -Off
+        try {
+            Import-Module MicrosoftTeams -Global -ErrorAction Stop -WarningAction SilentlyContinue | Out-Null
+            $teamsParams = @{ ErrorAction = 'Stop' }
+            if ($mgCtx.TenantId) { $teamsParams['TenantId'] = $mgCtx.TenantId }
+            elseif ($Tenant) { $teamsParams['TenantId'] = $Tenant }
+            if ($UseDeviceCode) { $teamsParams['UseDeviceCode'] = $true }
+            elseif ($mgCtx.Account) { $teamsParams['AccountId'] = $mgCtx.Account }
+            Connect-MicrosoftTeams @teamsParams | Out-Null
+            Write-Host "[TenantBrief] Connected to Microsoft Teams." -ForegroundColor Green
+        } catch {
+            Write-Warning "[TenantBrief] Microsoft Teams connection skipped: $($_.Exception.Message)"
+        } finally {
+            Set-StrictMode -Version Latest
+        }
+    }
+
+    # Verify SharePoint Online session; if not established by Connect-ZtAssessment, auto-connect via SPO Admin URL
+    if (-not $SkipSharePoint -and ($Service -contains 'SharePointOnline')) {
+        $spoConnected = $false
+        try {
+            if (Get-Command Get-SPOTenant -ErrorAction SilentlyContinue) {
+                $null = Get-SPOTenant -ErrorAction Stop
+                $spoConnected = $true
+            }
+        } catch {}
+
+        if (-not $spoConnected) {
+            try {
+                $orgResp = Invoke-MgGraphRequest -Method GET -Uri 'https://graph.microsoft.com/v1.0/organization?$select=verifiedDomains' -ErrorAction Stop
+                $onMs = @($orgResp.value[0].verifiedDomains | Where-Object { $_.name -like '*.onmicrosoft.com' -and $_.name -notlike '*.mail.onmicrosoft.com' } | Select-Object -First 1)
+                $prefix = if ($onMs -and $onMs.name) { ($onMs.name -split '\.')[0] } else { '' }
+                if ($prefix) {
+                    $spoAdminUrl = "https://$prefix-admin.sharepoint.com"
+                    Write-Host "[TenantBrief] Connecting to SharePoint Online ($spoAdminUrl)..." -ForegroundColor Cyan
+                    Set-StrictMode -Off
+                    try {
+                        if ($PSVersionTable.PSVersion.Major -ge 7) {
+                            Import-Module Microsoft.Online.SharePoint.PowerShell -UseWindowsPowerShell -Global -ErrorAction Stop -WarningAction SilentlyContinue 3>$null | Out-Null
+                        } else {
+                            Import-Module Microsoft.Online.SharePoint.PowerShell -Global -ErrorAction Stop -WarningAction SilentlyContinue | Out-Null
+                        }
+                        Connect-SPOService -Url $spoAdminUrl -ErrorAction Stop | Out-Null
+                        Write-Host "[TenantBrief] Connected to SharePoint Online ($spoAdminUrl)." -ForegroundColor Green
+                    } finally {
+                        Set-StrictMode -Version Latest
+                    }
+                }
+            } catch {
+                Write-Warning "[TenantBrief] SharePoint Online auto-connect skipped: $($_.Exception.Message)"
+            }
+        }
+    }
 }
 
 function ConvertTo-TenantBriefTurkish {
@@ -1913,9 +1982,9 @@ function Invoke-TenantBriefAssessment {
             }
         } elseif ($reason -match 'AipService') {
             @{
-                Key = if ($Language -eq 'tr') { 'Bağlantı Eksikliği: AIPService (Purview Şifreleme)' } else { 'Disconnected Service: AIPService' }
-                Category = 'Connection'
-                Note = if ($Language -eq 'tr') { 'AIPService modülü/oturumu bağlı olmadığı için RMS/şifreleme kontrolleri atlandı.' } else { 'AIPService connection was unavailable during the scan.' }
+                Key = if ($Language -eq 'tr') { 'Emekliye Ayrılmış Modül: AIPService (Microsoft Tarafından Kaldırıldı)' } else { 'Retired Module: AIPService (Removed from PSGallery by Microsoft)' }
+                Category = 'Scope'
+                Note = if ($Language -eq 'tr') { 'Microsoft AIPService modülünü emekliye ayırıp PSGallery''den kaldırdığı için bu eski RMS testi çalıştırılamaz; Purview şifreleme kontrolleri Graph üzerinden ölçülür.' } else { 'Microsoft retired and removed the legacy AIPService module from PSGallery; modern Purview controls are evaluated via Graph.' }
                 Search = 'AipService'
             }
         } elseif ($reason -match 'Missing permission scope|Missing Scope|S2SUnauthorized') {
@@ -2094,6 +2163,7 @@ function Invoke-TenantBriefAssessment {
     }
 
     $liveTelemetryPath = Join-Path $rawOut 'tenant-live-telemetry.json'
+    $usageAdoption = $null
     if (-not $InputReportJson) {
         try {
             if (Get-MgContext -ErrorAction SilentlyContinue) {
@@ -2118,6 +2188,11 @@ function Invoke-TenantBriefAssessment {
                     Add-TenantBriefDiagnostic -Diagnostics $diagnostics -Stage 4 -Component 'CopilotReadiness' -Message "Copilot hazirlik degerlendirmesi basarisiz: $($_.Exception.Message)"
                     Write-Warning "[TenantBrief] Copilot readiness evaluation failed: $($_.Exception.Message)"
                 }
+                try {
+                    $usageAdoption = Get-TenantBriefUsageAdoption -Period 'D30' -Language $Language
+                } catch {
+                    Write-Warning "[TenantBrief] Usage & adoption telemetry warning: $($_.Exception.Message)"
+                }
                 $scResp = Invoke-MgGraphRequest -Method GET -Uri 'https://graph.microsoft.com/v1.0/security/secureScores?$top=1' -ErrorAction SilentlyContinue
                 if ($scResp -and $scResp.value -and $scResp.value.Count -gt 0) {
                     $secureCurrent = [Math]::Round([double]$scResp.value[0].currentScore, 1)
@@ -2132,6 +2207,7 @@ function Invoke-TenantBriefAssessment {
                         Skus               = @($skuRoiList)
                         WasteAnalysis      = $licenseWaste
                         CopilotReadiness   = $copilotReadiness
+                        UsageAdoption      = $usageAdoption
                         SecureScoreCurrent = $secureCurrent
                         SecureScoreMax     = $secureMax
                     } | ConvertTo-Json -Depth 6 | Set-Content -Path $liveTelemetryPath -Encoding UTF8
@@ -2149,6 +2225,7 @@ function Invoke-TenantBriefAssessment {
             if ($cachedTel.PSObject.Properties['Skus'] -and $cachedTel.Skus) { $skuRoiList = @($cachedTel.Skus) }
             if ($cachedTel.PSObject.Properties['WasteAnalysis'] -and $cachedTel.WasteAnalysis) { $licenseWaste = $cachedTel.WasteAnalysis }
             if ($cachedTel.PSObject.Properties['CopilotReadiness'] -and $cachedTel.CopilotReadiness) { $copilotReadiness = $cachedTel.CopilotReadiness }
+            if ($cachedTel.PSObject.Properties['UsageAdoption'] -and $cachedTel.UsageAdoption) { $usageAdoption = $cachedTel.UsageAdoption }
             if ($cachedTel.PSObject.Properties['SecureScoreCurrent'] -and $null -ne $cachedTel.SecureScoreCurrent) {
                 $tenantInsightObj.SecureScoreCurrent = $cachedTel.SecureScoreCurrent
                 $tenantInsightObj.SecureScoreMax = $cachedTel.SecureScoreMax
@@ -2189,6 +2266,7 @@ function Invoke-TenantBriefAssessment {
         Language            = $Language
         Framework           = $Framework
         TenantInsights      = $tenantInsightObj
+        UsageAdoption       = $usageAdoption
         SharePointRisk      = $sharePointRiskSummary
         PowerPlatformAgents = $ppAgentsSummary
         Summary          = [PSCustomObject]@{
@@ -3450,5 +3528,229 @@ function Import-TenantBriefPowerPlatformAgents {
     }
 }
 
+function Get-TenantBriefUsageAdoption {
+    <#
+    .SYNOPSIS
+    Read-only executive Usage & Adoption snapshot using existing Microsoft Graph Reader scopes
+    (Reports.Read.All, DeviceManagementManagedDevices.Read.All, SecurityIncident.Read.All, IdentityRiskyUser.Read.All).
+    No per-user surveillance; returns tenant-level aggregate counts and percentages only.
+    #>
+    [CmdletBinding()]
+    param(
+        [Parameter()]
+        [ValidateSet('D7', 'D30', 'D90', 'D180')]
+        [string]$Period = 'D30',
+
+        [Parameter()]
+        [ValidateSet('tr', 'en')]
+        [string]$Language = 'tr'
+    )
+
+    if (-not (Get-MgContext -ErrorAction SilentlyContinue)) { return $null }
+
+    $parseReportRows = {
+        param([string]$Uri)
+        try {
+            $resp = Invoke-MgGraphRequest -Method GET -Uri $Uri -ErrorAction Stop
+            if ($null -eq $resp) { return @() }
+            if ($resp -is [string]) {
+                $clean = $resp.TrimStart([char]0xFEFF).Trim()
+                if (-not $clean) { return @() }
+                if ($clean.StartsWith('{') -or $clean.StartsWith('[')) {
+                    $j = $clean | ConvertFrom-Json
+                    if ($j.PSObject.Properties['value']) { return @($j.value) }
+                    return @($j)
+                }
+                return @($clean | ConvertFrom-Csv)
+            }
+            if ($resp -is [hashtable] -and $resp.ContainsKey('value')) { return @($resp['value']) }
+            if ($resp.PSObject.Properties['value']) { return @($resp.value) }
+            return @($resp)
+        } catch {
+            return @()
+        }
+    }
+    $toIntSafe = {
+        param($Val)
+        $n = 0
+        if ($null -ne $Val -and [int]::TryParse(([string]$Val -replace '[^\d-]', ''), [ref]$n)) { return $n }
+        return 0
+    }
+    $toDoubleSafe = {
+        param($Val)
+        $d = 0.0
+        if ($null -ne $Val -and [double]::TryParse(([string]$Val), [System.Globalization.CultureInfo]::InvariantCulture, [ref]$d)) { return $d }
+        return 0.0
+    }
+
+    # 1. M365 Services Adoption (Assigned vs Active over Period)
+    $services = @()
+    $svcRows = @(& $parseReportRows "https://graph.microsoft.com/v1.0/reports/getOffice365ServicesUserCounts(period='$Period')")
+    if ($svcRows.Count -gt 0) {
+        $latest = $svcRows | Select-Object -Last 1
+        $svcDefs = @(
+            @{ Name = 'Exchange Online';   Active = 'Exchange Active';    Inactive = 'Exchange Inactive' },
+            @{ Name = 'Microsoft Teams';   Active = 'Teams Active';       Inactive = 'Teams Inactive' },
+            @{ Name = 'SharePoint Online'; Active = 'SharePoint Active';  Inactive = 'SharePoint Inactive' },
+            @{ Name = 'OneDrive';          Active = 'OneDrive Active';    Inactive = 'OneDrive Inactive' },
+            @{ Name = 'Viva Engage';       Active = 'Yammer Active';      Inactive = 'Yammer Inactive' }
+        )
+        foreach ($sd in $svcDefs) {
+            $act = & $toIntSafe (Get-TenantBriefPropertyValue -Object $latest -Name $sd.Active)
+            $ina = & $toIntSafe (Get-TenantBriefPropertyValue -Object $latest -Name $sd.Inactive)
+            $tot = $act + $ina
+            if ($tot -gt 0 -or $act -gt 0) {
+                $pct = if ($tot -gt 0) { [Math]::Round(($act / $tot) * 100, 1) } else { 0 }
+                $services += [PSCustomObject]@{
+                    Service       = $sd.Name
+                    ActiveUsers   = $act
+                    InactiveUsers = $ina
+                    TotalEnabled  = $tot
+                    AdoptionPct   = $pct
+                }
+            }
+        }
+    }
+
+    # 2. Microsoft 365 Copilot Real Usage (beta Reports.Read.All)
+    $copilotUsage = $null
+    $copRows = @(& $parseReportRows "https://graph.microsoft.com/beta/reports/getMicrosoft365CopilotUserCountSummary(period='$Period')")
+    if ($copRows.Count -gt 0) {
+        $c = $copRows | Select-Object -Last 1
+        $en = & $toIntSafe (Get-TenantBriefPropertyValue -Object $c -Name 'Any App Enabled Users')
+        if ($en -eq 0) { $en = & $toIntSafe (Get-TenantBriefPropertyValue -Object $c -Name 'enabledUsers') }
+        $ac = & $toIntSafe (Get-TenantBriefPropertyValue -Object $c -Name 'Any App Active Users')
+        if ($ac -eq 0) { $ac = & $toIntSafe (Get-TenantBriefPropertyValue -Object $c -Name 'activeUsers') }
+        $idleCop = [Math]::Max(0, $en - $ac)
+        $copUsagePct = if ($en -gt 0) { [Math]::Round(($ac / $en) * 100, 1) } else { 0 }
+        $copilotUsage = [PSCustomObject]@{
+            EnabledUsers     = $en
+            ActiveUsers      = $ac
+            IdleUsers        = $idleCop
+            AdoptionPct      = $copUsagePct
+            EstIdleUsdMo     = ($idleCop * 30)
+            TeamsActive      = & $toIntSafe (Get-TenantBriefPropertyValue -Object $c -Name 'Teams Active Users')
+            OutlookActive    = & $toIntSafe (Get-TenantBriefPropertyValue -Object $c -Name 'Outlook Active Users')
+            WordActive       = & $toIntSafe (Get-TenantBriefPropertyValue -Object $c -Name 'Word Active Users')
+            ExcelActive      = & $toIntSafe (Get-TenantBriefPropertyValue -Object $c -Name 'Excel Active Users')
+            PowerPointActive = & $toIntSafe (Get-TenantBriefPropertyValue -Object $c -Name 'PowerPoint Active Users')
+            CopilotChatActive = & $toIntSafe (Get-TenantBriefPropertyValue -Object $c -Name 'Copilot Chat (work) Active Users')
+        }
+    }
+
+    # 3. M365 App Platforms (Windows, Mac, Web, iOS, Android)
+    $platforms = @()
+    $platRows = @(& $parseReportRows "https://graph.microsoft.com/v1.0/reports/getM365AppPlatformUserCounts(period='$Period')")
+    if ($platRows.Count -gt 0) {
+        $pl = $platRows | Select-Object -Last 1
+        foreach ($pName in @('Windows', 'Mac', 'Web', 'Mobile', 'iOS', 'Android')) {
+            $cnt = & $toIntSafe (Get-TenantBriefPropertyValue -Object $pl -Name $pName)
+            if ($cnt -gt 0) {
+                $platforms += [PSCustomObject]@{ Platform = $pName; Users = $cnt }
+            }
+        }
+    }
+
+    # 4. SharePoint Site Counts & Storage (GB)
+    $spSites = $null
+    $spSiteRows = @(& $parseReportRows "https://graph.microsoft.com/v1.0/reports/getSharePointSiteUsageSiteCounts(period='$Period')")
+    $spStorRows = @(& $parseReportRows "https://graph.microsoft.com/v1.0/reports/getSharePointSiteUsageStorage(period='$Period')")
+    if ($spSiteRows.Count -gt 0 -or $spStorRows.Count -gt 0) {
+        $sr = if ($spSiteRows.Count -gt 0) { $spSiteRows | Select-Object -Last 1 } else { $null }
+        $st = if ($spStorRows.Count -gt 0) { $spStorRows | Select-Object -Last 1 } else { $null }
+        $bytesUsed = & $toDoubleSafe (Get-TenantBriefPropertyValue -Object $st -Name 'Storage Used (Byte)')
+        $spSites = [PSCustomObject]@{
+            TotalSites    = & $toIntSafe (Get-TenantBriefPropertyValue -Object $sr -Name 'Total')
+            ActiveSites   = & $toIntSafe (Get-TenantBriefPropertyValue -Object $sr -Name 'Active')
+            StorageUsedGB = [Math]::Round($bytesUsed / 1GB, 2)
+        }
+    }
+
+    # 5. Tenant-Wide Auth Methods / Passwordless Adoption
+    $authSummary = $null
+    try {
+        $regRows = @(Get-TenantBriefGraphCollection -Uri 'https://graph.microsoft.com/v1.0/reports/authenticationMethods/userRegistrationDetails?$top=999' -PageLimit 20)
+        if ($regRows.Count -gt 0) {
+            $totReg = $regRows.Count
+            $mfaReg = @($regRows | Where-Object { [bool](Get-TenantBriefPropertyValue -Object $_ -Name 'isMfaRegistered') }).Count
+            $pwlReg = @($regRows | Where-Object { [bool](Get-TenantBriefPropertyValue -Object $_ -Name 'isPasswordlessCapable') }).Count
+            $ssprReg = @($regRows | Where-Object { [bool](Get-TenantBriefPropertyValue -Object $_ -Name 'isSsprRegistered') }).Count
+            $authSummary = [PSCustomObject]@{
+                TotalUsers      = $totReg
+                MfaRegistered   = $mfaReg
+                MfaPct          = [Math]::Round(($mfaReg / $totReg) * 100, 1)
+                Passwordless    = $pwlReg
+                PasswordlessPct = [Math]::Round(($pwlReg / $totReg) * 100, 1)
+                SsprRegistered  = $ssprReg
+                SsprPct         = [Math]::Round(($ssprReg / $totReg) * 100, 1)
+            }
+        }
+    } catch {}
+
+    # 6. Managed Devices OS & Compliance Breakdown
+    $deviceBreakdown = @()
+    try {
+        $devRows = @(Get-TenantBriefGraphCollection -Uri 'https://graph.microsoft.com/v1.0/deviceManagement/managedDevices?$select=operatingSystem,complianceState&$top=500' -PageLimit 10)
+        if ($devRows.Count -gt 0) {
+            $byOs = $devRows | Group-Object {
+                $os = [string](Get-TenantBriefPropertyValue -Object $_ -Name 'operatingSystem')
+                if ($os) { $os } else { 'Other' }
+            }
+            foreach ($g in ($byOs | Sort-Object Count -Descending)) {
+                $comp = @($g.Group | Where-Object { ([string](Get-TenantBriefPropertyValue -Object $_ -Name 'complianceState')) -eq 'compliant' }).Count
+                $deviceBreakdown += [PSCustomObject]@{
+                    OS           = $g.Name
+                    Total        = $g.Count
+                    Compliant    = $comp
+                    NonCompliant = ($g.Count - $comp)
+                    CompliantPct = if ($g.Count -gt 0) { [Math]::Round(($comp / $g.Count) * 100, 1) } else { 0 }
+                }
+            }
+        }
+    } catch {}
+
+    # 7. SecOps Snapshot: Open Defender XDR Incidents & Active Risky Users
+    $secOps = [PSCustomObject]@{
+        ActiveIncidents     = 0
+        HighIncidents       = 0
+        MediumIncidents     = 0
+        LowIncidents        = 0
+        ActiveRiskyUsers    = 0
+        IncidentsAvailable  = $false
+        RiskyUsersAvailable = $false
+    }
+    try {
+        $incResp = Invoke-MgGraphRequest -Method GET -Uri "https://graph.microsoft.com/v1.0/security/incidents?`$top=50&`$filter=status ne 'resolved'" -ErrorAction Stop
+        if ($incResp -and $incResp.PSObject.Properties['value'] -or ($incResp -is [hashtable] -and $incResp.ContainsKey('value'))) {
+            $incList = @(Get-TenantBriefPropertyValue -Object $incResp -Name 'value')
+            $secOps.IncidentsAvailable = $true
+            $secOps.ActiveIncidents = $incList.Count
+            $secOps.HighIncidents   = @($incList | Where-Object { ([string](Get-TenantBriefPropertyValue -Object $_ -Name 'severity')) -eq 'high' }).Count
+            $secOps.MediumIncidents = @($incList | Where-Object { ([string](Get-TenantBriefPropertyValue -Object $_ -Name 'severity')) -eq 'medium' }).Count
+            $secOps.LowIncidents    = @($incList | Where-Object { ([string](Get-TenantBriefPropertyValue -Object $_ -Name 'severity')) -in @('low', 'informational') }).Count
+        }
+    } catch {}
+    try {
+        $ruResp = Invoke-MgGraphRequest -Method GET -Uri "https://graph.microsoft.com/v1.0/identityProtection/riskyUsers?`$filter=riskState eq 'atRisk'&`$top=50" -ErrorAction Stop
+        if ($ruResp -and ($ruResp.PSObject.Properties['value'] -or ($ruResp -is [hashtable] -and $ruResp.ContainsKey('value')))) {
+            $ruList = @(Get-TenantBriefPropertyValue -Object $ruResp -Name 'value')
+            $secOps.RiskyUsersAvailable = $true
+            $secOps.ActiveRiskyUsers = $ruList.Count
+        }
+    } catch {}
+
+    return [PSCustomObject]@{
+        Period          = $Period
+        CapturedAtUtc   = (Get-Date).ToUniversalTime().ToString('o')
+        Services        = @($services)
+        CopilotUsage    = $copilotUsage
+        Platforms       = @($platforms)
+        SharePointUsage = $spSites
+        AuthAdoption    = $authSummary
+        ManagedDevices  = @($deviceBreakdown)
+        SecOps          = $secOps
+    }
+}
+
 Export-ModuleMember `
-    -Function Connect-TenantBrief, Invoke-TenantBriefAssessment, Get-TenantBriefFrameworks, Get-TenantBriefLicenseRoi, Get-TenantBriefLicenseWaste, Get-TenantBriefCopilotReadiness, Import-TenantBriefSharePointRisk, Import-TenantBriefPowerPlatformAgents, Compare-TenantBriefReports, Export-TenantBriefExecutiveSummary
+    -Function Connect-TenantBrief, Invoke-TenantBriefAssessment, Get-TenantBriefFrameworks, Get-TenantBriefLicenseRoi, Get-TenantBriefLicenseWaste, Get-TenantBriefCopilotReadiness, Get-TenantBriefUsageAdoption, Import-TenantBriefSharePointRisk, Import-TenantBriefPowerPlatformAgents, Compare-TenantBriefReports, Export-TenantBriefExecutiveSummary

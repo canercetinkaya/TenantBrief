@@ -11,6 +11,7 @@ Describe 'TenantBrief Module' {
         $cmds | Should -Contain 'Get-TenantBriefLicenseRoi'
         $cmds | Should -Contain 'Get-TenantBriefLicenseWaste'
         $cmds | Should -Contain 'Get-TenantBriefCopilotReadiness'
+        $cmds | Should -Contain 'Get-TenantBriefUsageAdoption'
         $cmds | Should -Contain 'Import-TenantBriefSharePointRisk'
         $cmds | Should -Contain 'Import-TenantBriefPowerPlatformAgents'
         $cmds | Should -Contain 'Compare-TenantBriefReports'
@@ -499,6 +500,74 @@ Describe 'TenantBrief Module' {
             ($cr.Checks | Where-Object { $_.Id -eq 'COP-MANUAL-FT' }).Status | Should -Be 'Warning'
         } finally {
             Remove-Item -Path $tmpFt -Force -ErrorAction SilentlyContinue
+        }
+    }
+
+    It 'collects executive Usage & Adoption snapshot via Get-TenantBriefUsageAdoption using existing Reader Graph scopes' {
+        InModuleScope TenantBrief {
+            function Get-MgContext { param($ErrorAction) return [PSCustomObject]@{ Account = 'reader@contoso.onmicrosoft.com' } }
+            function Invoke-MgGraphRequest {
+                param($Method, $Uri, $ErrorAction)
+                switch -Wildcard ($Uri) {
+                    '*getOffice365ServicesUserCounts*' {
+                        return "Report Refresh Date,Exchange Active,Exchange Inactive,Teams Active,Teams Inactive,SharePoint Active,SharePoint Inactive,OneDrive Active,OneDrive Inactive,Yammer Active,Yammer Inactive`n2026-11-18,80,20,75,25,60,40,70,30,10,90"
+                    }
+                    '*getMicrosoft365CopilotUserCountSummary*' {
+                        return "Report Refresh Date,Any App Enabled Users,Any App Active Users,Teams Active Users,Outlook Active Users,Word Active Users,Excel Active Users,PowerPoint Active Users,Copilot Chat (work) Active Users`n2026-11-18,50,35,30,22,18,12,10,28"
+                    }
+                    '*getM365AppPlatformUserCounts*' {
+                        return "Report Refresh Date,Windows,Mac,Web,Mobile,iOS,Android`n2026-11-18,85,15,40,25,15,10"
+                    }
+                    '*getSharePointSiteUsageSiteCounts*' {
+                        return "Report Refresh Date,Total,Active`n2026-11-18,120,45"
+                    }
+                    '*getSharePointSiteUsageStorage*' {
+                        return "Report Refresh Date,Storage Used (Byte)`n2026-11-18,107374182400"
+                    }
+                    '*userRegistrationDetails*' {
+                        return [PSCustomObject]@{ value = @(
+                            [PSCustomObject]@{ isMfaRegistered = $true; isPasswordlessCapable = $true; isSsprRegistered = $true },
+                            [PSCustomObject]@{ isMfaRegistered = $true; isPasswordlessCapable = $false; isSsprRegistered = $false }
+                        ) }
+                    }
+                    '*managedDevices*' {
+                        return [PSCustomObject]@{ value = @(
+                            [PSCustomObject]@{ operatingSystem = 'Windows'; complianceState = 'compliant' },
+                            [PSCustomObject]@{ operatingSystem = 'Windows'; complianceState = 'noncompliant' },
+                            [PSCustomObject]@{ operatingSystem = 'iOS'; complianceState = 'compliant' }
+                        ) }
+                    }
+                    '*security/incidents*' {
+                        return [PSCustomObject]@{ value = @(
+                            [PSCustomObject]@{ severity = 'high' },
+                            [PSCustomObject]@{ severity = 'medium' }
+                        ) }
+                    }
+                    '*riskyUsers*' {
+                        return [PSCustomObject]@{ value = @(
+                            [PSCustomObject]@{ id = 'u1'; riskState = 'atRisk' }
+                        ) }
+                    }
+                    default { return [PSCustomObject]@{ value = @() } }
+                }
+            }
+            try {
+                $ua = Get-TenantBriefUsageAdoption -Period D30 -Language tr
+                $ua | Should -Not -BeNullOrEmpty
+                $ua.Services.Count | Should -Be 5
+                ($ua.Services | Where-Object { $_.Service -eq 'Exchange Online' }).AdoptionPct | Should -Be 80
+                $ua.CopilotUsage.EnabledUsers | Should -Be 50
+                $ua.CopilotUsage.ActiveUsers | Should -Be 35
+                $ua.CopilotUsage.IdleUsers | Should -Be 15
+                $ua.CopilotUsage.EstIdleUsdMo | Should -Be 450
+                $ua.SharePointUsage.StorageUsedGB | Should -Be 100
+                $ua.AuthAdoption.MfaPct | Should -Be 100
+                $ua.AuthAdoption.PasswordlessPct | Should -Be 50
+                $ua.SecOps.HighIncidents | Should -Be 1
+                $ua.SecOps.ActiveRiskyUsers | Should -Be 1
+            } finally {
+                Remove-Item function:Get-MgContext, function:Invoke-MgGraphRequest -ErrorAction SilentlyContinue
+            }
         }
     }
 }

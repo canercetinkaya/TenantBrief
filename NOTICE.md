@@ -24,6 +24,7 @@ We gratefully acknowledge the maintainers and contributors of the following upst
 | **Microsoft FastTrack (`Agents Cost Calculator`)** | [microsoft.github.io/FastTrack](https://microsoft.github.io/FastTrack/#agents-cost-calculator) | Browser-local Copilot Credits & Microsoft Foundry agent cost planning model (replacing earlier third-party ROI calculators) |
 | **M365 Copilot Automated Readiness** | [github.com/microsoft/m365-copilot-automated-readiness-assessment](https://github.com/microsoft/m365-copilot-automated-readiness-assessment) | Graph-based readiness checks adapted to preserve active MSAL context without calling `Disconnect-MgGraph` |
 | **M365 License Review** | [github.com/samuelgtetteh/m365-license-review](https://github.com/samuelgtetteh/m365-license-review) | R1–R7 enterprise license waste categories (disabled accounts, 90+ day inactive seats, unassigned licenses, redundant overlaps, and licensed guests) |
+| **PS.M365UsageReport** | [github.com/junecastillote/PS.M365UsageReport](https://github.com/junecastillote/PS.M365UsageReport) | Microsoft Graph `/reports/*` aggregate usage & adoption reporting pattern adapted for `Get-TenantBriefUsageAdoption` |
 
 ---
 
