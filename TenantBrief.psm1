@@ -1976,7 +1976,9 @@ function Invoke-TenantBriefAssessment {
         }
     }
     $rawAllTests = @((@($ztTests) + @($collectedTests)) | Where-Object { $null -ne $_ })
-    $tests = New-TenantBriefCorrelatedTests -Tests $rawAllTests
+    $allCorrelatedTests = @(New-TenantBriefCorrelatedTests -Tests $rawAllTests)
+    $plannedTests = @($allCorrelatedTests | Where-Object { $_.TestStatus -eq 'Planned' })
+    $tests = @($allCorrelatedTests | Where-Object { $_.TestStatus -ne 'Planned' })
     $progressState.Stage = 4
     & $markStage 4 'Correlation & scoring' 'started' ''
     & $addLog "[Stage 4/5] Computing License ROI, Secure Score & Multi-Framework Scores..."
@@ -1985,7 +1987,8 @@ function Invoke-TenantBriefAssessment {
     $failedCount = @($tests | Where-Object { $_.TestStatus -eq 'Failed' }).Count
     $investigateCount = @($tests | Where-Object { $_.TestStatus -eq 'Investigate' }).Count
     $skippedCount = @($tests | Where-Object { $_.TestStatus -eq 'Skipped' }).Count
-    $plannedCount = @($tests | Where-Object { $_.TestStatus -eq 'Planned' }).Count
+    $plannedCount = 0
+    $plannedExcludedCount = $plannedTests.Count
     $errorCount = @($tests | Where-Object { $_.TestStatus -eq 'Error' }).Count
     $highRiskFailed = @($tests | Where-Object { $_.TestStatus -eq 'Failed' -and $_.TestRisk -eq 'High' }).Count
     $medRiskFailed = @($tests | Where-Object { $_.TestStatus -eq 'Failed' -and $_.TestRisk -eq 'Medium' }).Count
@@ -2192,7 +2195,8 @@ function Invoke-TenantBriefAssessment {
         }
     }
 
-    $findings = New-TenantBriefFindings -Tests $tests -PillarMap $pillarMap -Language $Language -TranslationCache $trCache
+    $findings = @(New-TenantBriefFindings -Tests $tests -PillarMap $pillarMap -Language $Language -TranslationCache $trCache)
+    $plannedFindings = @(New-TenantBriefFindings -Tests $plannedTests -PillarMap $pillarMap -Language $Language -TranslationCache $trCache)
 
     $tenantDisplay = if ($Anonymize) { 'contoso.onmicrosoft.com (Anonymized)' } else { [string]$raw.Domain }
     $ti = $raw.PSObject.Properties['TenantInfo'].Value
@@ -2346,16 +2350,17 @@ function Invoke-TenantBriefAssessment {
         SharePointRisk      = $sharePointRiskSummary
         PowerPlatformAgents = $ppAgentsSummary
         Summary          = [PSCustomObject]@{
-            Total          = $tests.Count
-            UniqueControls = $tests.Count
-            SourceControls = $rawAllTests.Count
-            Passed         = $passedCount
-            Failed         = $failedCount
-            Investigate    = $investigateCount
-            Skipped        = $skippedCount
-            Planned        = $plannedCount
-            Error          = $errorCount
-            HighRiskFailed = $highRiskFailed
+            Total           = $tests.Count
+            UniqueControls  = $tests.Count
+            SourceControls  = $rawAllTests.Count
+            Passed          = $passedCount
+            Failed          = $failedCount
+            Investigate     = $investigateCount
+            Skipped         = $skippedCount
+            Planned         = $plannedCount
+            PlannedExcluded = $plannedExcludedCount
+            Error           = $errorCount
+            HighRiskFailed  = $highRiskFailed
         }
         Run              = [PSCustomObject]@{
             Status        = $runStatus
@@ -2378,6 +2383,7 @@ function Invoke-TenantBriefAssessment {
         CopilotReadiness = $copilotReadiness
         Roadmap          = @($roadmap)
         Findings         = @($findings)
+        PlannedFindings  = @($plannedFindings)
         Labels     = if ($Language -eq 'tr') {
             [PSCustomObject]@{
                 TotalChecks        = 'Toplam Kontrol'
