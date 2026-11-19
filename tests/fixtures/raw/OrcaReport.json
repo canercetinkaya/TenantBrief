@@ -1,0 +1,22 @@
+{
+  "Results": [
+    {
+      "Control": "ORCA-108",
+      "Name": "Anti-Phishing policy spoof intelligence enabled",
+      "Area": "Anti-Phishing",
+      "Result": "Fail",
+      "ChiValue": 100,
+      "FailRecommendation": "Enable spoof intelligence in default Anti-Phishing policy.",
+      "Importance": "Critical spoof protection check"
+    },
+    {
+      "Control": "ORCA-120",
+      "Name": "Safe Attachments policy enabled",
+      "Area": "Safe Attachments",
+      "Result": "Pass",
+      "ChiValue": 15,
+      "PassText": "Safe Attachments is enabled.",
+      "Importance": "High attachment protection check"
+    }
+  ]
+}
