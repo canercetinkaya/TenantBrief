@@ -1,0 +1,37 @@
+{
+  "Results": {
+    "AAD": [
+      {
+        "Controls": [
+          {
+            "Control ID": "MS.AAD.3.2v1",
+            "Requirement": "Alternative methods shall be used for MFA where phishing-resistant MFA is not feasible.",
+            "Result": "Fail",
+            "Criticality": "Shall",
+            "Details": "Conditional Access policy requiring MFA for all users is not enforced."
+          },
+          {
+            "Control ID": "MS.AAD.1.1v1",
+            "Requirement": "Legacy authentication shall be blocked.",
+            "Result": "Pass",
+            "Criticality": "Shall",
+            "Details": "Legacy authentication is blocked by policy."
+          }
+        ]
+      }
+    ],
+    "SECURITYSUITE": [
+      {
+        "Controls": [
+          {
+            "Control ID": "MS.SECURITYSUITE.1.1v1",
+            "Requirement": "Safe Links protection shall be enabled for email and Teams.",
+            "Result": "Fail",
+            "Criticality": "Shall",
+            "Details": "Safe Links policy is not configured."
+          }
+        ]
+      }
+    ]
+  }
+}
