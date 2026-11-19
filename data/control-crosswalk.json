@@ -1,0 +1,491 @@
+{
+  "schemaVersion": "1.0.0",
+  "description": "Canonical cross-engine security control crosswalk verified against ZeroTrustAssessment 3.1.0, CISA ScubaGear 2.0.0 (including mappings/scuba-baseline-policy-migrations.csv), Maester 2.3.0 (MT/CIS/EIDSCA), and Microsoft ORCA 2.8.1.",
+  "controls": [
+    {
+      "canonicalId": "TB-ID-LEGACY-AUTH",
+      "pillar": "Identity",
+      "titleEn": "Block legacy authentication protocols",
+      "titleTr": "Eski (legacy) kimlik doğrulama protokollerini engelle",
+      "ids": ["21796", "SCUBA-MS.AAD.1.1v1", "MT.1009", "MT.1010", "MT.1044"],
+      "sources": [
+        "https://github.com/cisagov/ScubaGear/blob/main/PowerShell/ScubaGear/baselines/aad.md#msaad11v1",
+        "https://maester.dev/docs/tests/MT.1009",
+        "https://microsoft.github.io/zerotrustassessment/"
+      ]
+    },
+    {
+      "canonicalId": "TB-ID-HIGH-RISK-USERS",
+      "pillar": "Identity",
+      "titleEn": "Block or remediate high-risk users via Conditional Access",
+      "titleTr": "Yüksek riskli kullanıcıları Koşullu Erişim ile engelle veya iyileştir",
+      "ids": ["21797", "SCUBA-MS.AAD.2.1v1", "MT.1013"],
+      "sources": [
+        "https://github.com/cisagov/ScubaGear/blob/main/PowerShell/ScubaGear/baselines/aad.md#msaad21v1",
+        "https://maester.dev/docs/tests/MT.1013"
+      ]
+    },
+    {
+      "canonicalId": "TB-ID-HIGH-RISK-SIGNINS",
+      "pillar": "Identity",
+      "titleEn": "Block or challenge high-risk sign-ins via Conditional Access",
+      "titleTr": "Yüksek riskli oturum açmaları Koşullu Erişim ile engelle veya MFA iste",
+      "ids": ["21863", "SCUBA-MS.AAD.2.3v1", "MT.1012"],
+      "sources": [
+        "https://github.com/cisagov/ScubaGear/blob/main/PowerShell/ScubaGear/baselines/aad.md#msaad23v1",
+        "https://maester.dev/docs/tests/MT.1012"
+      ]
+    },
+    {
+      "canonicalId": "TB-ID-PHISH-RESISTANT-MFA-ALL",
+      "pillar": "Identity",
+      "titleEn": "Enforce phishing-resistant MFA for all users",
+      "titleTr": "Tüm kullanıcılar için kimlik avına dayanıklı (phishing-resistant) MFA zorunlu kıl",
+      "ids": ["21784", "SCUBA-MS.AAD.3.1v1", "EIDSCA.AF01"],
+      "sources": [
+        "https://github.com/cisagov/ScubaGear/blob/main/PowerShell/ScubaGear/baselines/aad.md#msaad31v1",
+        "https://maester.dev/docs/tests/EIDSCA.AF01"
+      ]
+    },
+    {
+      "canonicalId": "TB-ID-MFA-ALL-USERS",
+      "pillar": "Identity",
+      "titleEn": "Enforce MFA for all users",
+      "titleTr": "Tüm kullanıcılar için MFA zorunlu kıl",
+      "ids": ["SCUBA-MS.AAD.3.2v1", "SCUBA-MS.AAD.3.2v2", "MT.1007"],
+      "sources": [
+        "ScubaGear/mappings/scuba-baseline-policy-migrations.csv (MS.AAD.3.2v1 -> MS.AAD.3.2v2)",
+        "https://maester.dev/docs/tests/MT.1007"
+      ]
+    },
+    {
+      "canonicalId": "TB-ID-AUTHENTICATOR-CONTEXT",
+      "pillar": "Identity",
+      "titleEn": "Configure Microsoft Authenticator to show sign-in context (number matching, app, location)",
+      "titleTr": "Microsoft Authenticator bildirimlerinde oturum bağlamını (sayı eşleştirme, uygulama, konum) göster",
+      "ids": ["21802", "SCUBA-MS.AAD.3.3v2", "EIDSCA.AM03", "EIDSCA.AM06", "EIDSCA.AM09"],
+      "sources": [
+        "https://github.com/cisagov/ScubaGear/blob/main/PowerShell/ScubaGear/baselines/aad.md#msaad33v2",
+        "https://maester.dev/docs/tests/EIDSCA.AM03"
+      ]
+    },
+    {
+      "canonicalId": "TB-ID-AUTH-METHODS-MIGRATION",
+      "pillar": "Identity",
+      "titleEn": "Complete migration from legacy MFA and SSPR policies to converged Authentication Methods",
+      "titleTr": "Eski MFA ve SSPR politikalarından birleşik Kimlik Doğrulama Yöntemlerine geçişi tamamla",
+      "ids": ["21803", "SCUBA-MS.AAD.3.4v1", "EIDSCA.AG01"],
+      "sources": [
+        "https://github.com/cisagov/ScubaGear/blob/main/PowerShell/ScubaGear/baselines/aad.md#msaad34v1",
+        "https://maester.dev/docs/tests/EIDSCA.AG01"
+      ]
+    },
+    {
+      "canonicalId": "TB-ID-DISABLE-WEAK-MFA",
+      "pillar": "Identity",
+      "titleEn": "Disable weak authentication methods (SMS, voice call, email OTP)",
+      "titleTr": "Zayıf kimlik doğrulama yöntemlerini (SMS, sesli arama, e-posta OTP) devre dışı bırak",
+      "ids": ["SCUBA-MS.AAD.3.5v1", "SCUBA-MS.AAD.3.5v2", "CIS.M365.5.2.3.5", "EIDSCA.AS04", "EIDSCA.AV01"],
+      "sources": [
+        "ScubaGear/mappings/scuba-baseline-policy-migrations.csv (MS.AAD.3.5v1 -> MS.AAD.3.5v2)",
+        "https://maester.dev/docs/tests/CIS.M365.5.2.3.5"
+      ]
+    },
+    {
+      "canonicalId": "TB-ID-PHISH-RESISTANT-MFA-ADMINS",
+      "pillar": "Identity",
+      "titleEn": "Require phishing-resistant MFA for privileged administrative roles",
+      "titleTr": "Ayrıcalıklı yönetici rolleri için kimlik avına dayanıklı MFA zorunlu kıl",
+      "ids": ["21783", "SCUBA-MS.AAD.3.6v1", "MT.1006"],
+      "sources": [
+        "https://github.com/cisagov/ScubaGear/blob/main/PowerShell/ScubaGear/baselines/aad.md#msaad36v1",
+        "https://maester.dev/docs/tests/MT.1006"
+      ]
+    },
+    {
+      "canonicalId": "TB-ID-MANAGED-DEVICE-AUTH",
+      "pillar": "Devices",
+      "titleEn": "Require compliant or managed devices for authentication",
+      "titleTr": "Kimlik doğrulama için uyumlu veya yönetilen cihaz zorunlu kıl",
+      "ids": ["SCUBA-MS.AAD.3.7v1", "MT.1001", "MT.1014"],
+      "sources": [
+        "https://github.com/cisagov/ScubaGear/blob/main/PowerShell/ScubaGear/baselines/aad.md#msaad37v1",
+        "https://maester.dev/docs/tests/MT.1001"
+      ]
+    },
+    {
+      "canonicalId": "TB-ID-SECURE-MFA-REGISTRATION",
+      "pillar": "Identity",
+      "titleEn": "Protect security info and MFA registration with trusted locations or managed devices",
+      "titleTr": "Güvenlik bilgisi ve MFA kaydını güvenilir konum veya yönetilen cihazla koru",
+      "ids": ["SCUBA-MS.AAD.3.8v1", "MT.1011"],
+      "sources": [
+        "https://github.com/cisagov/ScubaGear/blob/main/PowerShell/ScubaGear/baselines/aad.md#msaad38v1",
+        "https://maester.dev/docs/tests/MT.1011"
+      ]
+    },
+    {
+      "canonicalId": "TB-ID-DEVICE-CODE-FLOW",
+      "pillar": "Identity",
+      "titleEn": "Block Device Code authentication flow via Conditional Access",
+      "titleTr": "Cihaz Kodu (Device Code) kimlik doğrulama akışını Koşullu Erişim ile engelle",
+      "ids": ["21808", "SCUBA-MS.AAD.3.9v1", "MT.1052"],
+      "sources": [
+        "https://github.com/cisagov/ScubaGear/blob/main/PowerShell/ScubaGear/baselines/aad.md#msaad39v1",
+        "https://maester.dev/docs/tests/MT.1052"
+      ]
+    },
+    {
+      "canonicalId": "TB-ID-APP-REGISTRATION-RESTRICT",
+      "pillar": "Identity",
+      "titleEn": "Restrict application registration to administrators only",
+      "titleTr": "Uygulama kaydını yalnızca yöneticilerle sınırla",
+      "ids": ["SCUBA-MS.AAD.5.1v1", "CIS.M365.5.1.2.2", "EIDSCA.AP10"],
+      "sources": [
+        "https://github.com/cisagov/ScubaGear/blob/main/PowerShell/ScubaGear/baselines/aad.md#msaad51v1",
+        "https://maester.dev/docs/tests/CIS.M365.5.1.2.2"
+      ]
+    },
+    {
+      "canonicalId": "TB-ID-USER-CONSENT-RESTRICT",
+      "pillar": "Identity",
+      "titleEn": "Restrict user consent to third-party applications",
+      "titleTr": "Kullanıcıların üçüncü taraf uygulamalara izin (consent) vermesini kısıtla",
+      "ids": ["21776", "SCUBA-MS.AAD.5.2v1", "CIS.M365.5.1.5.1", "EIDSCA.AP08", "MT.1024.integratedApps"],
+      "sources": [
+        "https://github.com/cisagov/ScubaGear/blob/main/PowerShell/ScubaGear/baselines/aad.md#msaad52v1",
+        "https://maester.dev/docs/tests/CIS.M365.5.1.5.1"
+      ]
+    },
+    {
+      "canonicalId": "TB-ID-ADMIN-CONSENT-WORKFLOW",
+      "pillar": "Identity",
+      "titleEn": "Enable administrative consent workflow for application requests",
+      "titleTr": "Uygulama izin talepleri için yönetici onay iş akışını etkinleştir",
+      "ids": ["21809", "SCUBA-MS.AAD.5.3v1", "CIS.M365.5.1.5.2", "EIDSCA.CR01", "EIDSCA.CP04"],
+      "sources": [
+        "https://github.com/cisagov/ScubaGear/blob/main/PowerShell/ScubaGear/baselines/aad.md#msaad53v1",
+        "https://maester.dev/docs/tests/CIS.M365.5.1.5.2"
+      ]
+    },
+    {
+      "canonicalId": "TB-ID-RISK-BASED-CONSENT",
+      "pillar": "Identity",
+      "titleEn": "Block user consent to risk-based applications",
+      "titleTr": "Risk tabanlı uygulamalara kullanıcı onayını engelle",
+      "ids": ["EIDSCA.AP09", "EIDSCA.CP03"],
+      "sources": [
+        "https://maester.dev/docs/tests/EIDSCA.AP09",
+        "https://maester.dev/docs/tests/EIDSCA.CP03"
+      ]
+    },
+    {
+      "canonicalId": "TB-ID-APP-CREDENTIAL-POLICY",
+      "pillar": "Identity",
+      "titleEn": "Restrict application password credential addition and enforce lifetime limits",
+      "titleTr": "Uygulama parola/sertifika kimlik bilgisi eklemeyi ve yaşam süresini sınırla",
+      "ids": ["SCUBA-MS.AAD.5.5v1", "MT.1002"],
+      "sources": [
+        "https://github.com/cisagov/ScubaGear/blob/main/PowerShell/ScubaGear/baselines/aad.md#msaad55v1",
+        "https://maester.dev/docs/tests/MT.1002"
+      ]
+    },
+    {
+      "canonicalId": "TB-ID-PASSWORD-NO-EXPIRE",
+      "pillar": "Identity",
+      "titleEn": "Set user passwords to never expire (NIST SP 800-63B)",
+      "titleTr": "Kullanıcı parolalarının süresinin dolmamasını yapılandır",
+      "ids": ["21811", "SCUBA-MS.AAD.6.1v1", "CIS.M365.1.3.1", "MT.1024.pwagePolicyNew"],
+      "sources": [
+        "https://github.com/cisagov/ScubaGear/blob/main/PowerShell/ScubaGear/baselines/aad.md#msaad61v1",
+        "https://maester.dev/docs/tests/CIS.M365.1.3.1"
+      ]
+    },
+    {
+      "canonicalId": "TB-ID-GLOBAL-ADMIN-COUNT",
+      "pillar": "Identity",
+      "titleEn": "Limit Global Administrator role count (minimum 2, maximum 4-8)",
+      "titleTr": "Genel Yönetici (Global Administrator) sayısını sınırla (en az 2, en fazla 4-8)",
+      "ids": ["21812", "SCUBA-MS.AAD.7.1v1", "CIS.M365.1.1.3", "MT.1024.oneAdmin"],
+      "sources": [
+        "https://github.com/cisagov/ScubaGear/blob/main/PowerShell/ScubaGear/baselines/aad.md#msaad71v1",
+        "https://maester.dev/docs/tests/CIS.M365.1.1.3"
+      ]
+    },
+    {
+      "canonicalId": "TB-ID-LEAST-PRIVILEGED-ROLES",
+      "pillar": "Identity",
+      "titleEn": "Use least-privileged administrative roles instead of Global Administrator",
+      "titleTr": "Genel Yönetici yerine en az ayrıcalıklı yönetici rollerini kullan",
+      "ids": ["21813", "SCUBA-MS.AAD.7.2v1", "MT.1024.roleOverlap"],
+      "sources": [
+        "https://github.com/cisagov/ScubaGear/blob/main/PowerShell/ScubaGear/baselines/aad.md#msaad72v1",
+        "https://maester.dev/docs/tests/MT.1024.roleOverlap"
+      ]
+    },
+    {
+      "canonicalId": "TB-ID-CLOUD-ONLY-ADMINS",
+      "pillar": "Identity",
+      "titleEn": "Ensure privileged administrative accounts are cloud-only",
+      "titleTr": "Ayrıcalıklı yönetici hesaplarının yalnızca bulut (cloud-only) olmasını sağla",
+      "ids": ["SCUBA-MS.AAD.7.3v1", "CIS.M365.1.1.1", "MT.1026"],
+      "sources": [
+        "https://github.com/cisagov/ScubaGear/blob/main/PowerShell/ScubaGear/baselines/aad.md#msaad73v1",
+        "https://maester.dev/docs/tests/CIS.M365.1.1.1"
+      ]
+    },
+    {
+      "canonicalId": "TB-ID-JIT-PRIVILEGED-ROLES",
+      "pillar": "Identity",
+      "titleEn": "Eliminate permanent active assignments for highly privileged roles (enforce PIM JIT)",
+      "titleTr": "Ayrıcalıklı rollerde kalıcı aktif atamaları kaldır ve PIM JIT zorunlu kıl",
+      "ids": ["21815", "SCUBA-MS.AAD.7.4v1", "MT.1025"],
+      "sources": [
+        "https://github.com/cisagov/ScubaGear/blob/main/PowerShell/ScubaGear/baselines/aad.md#msaad74v1",
+        "https://maester.dev/docs/tests/MT.1025"
+      ]
+    },
+    {
+      "canonicalId": "TB-ID-GA-ACTIVATION-APPROVAL",
+      "pillar": "Identity",
+      "titleEn": "Require approval workflow for Global Administrator role activation",
+      "titleTr": "Genel Yönetici rol etkinleştirmesi için onay iş akışı zorunlu kıl",
+      "ids": ["21817", "SCUBA-MS.AAD.7.6v1"],
+      "sources": [
+        "https://github.com/cisagov/ScubaGear/blob/main/PowerShell/ScubaGear/baselines/aad.md#msaad76v1",
+        "https://microsoft.github.io/zerotrustassessment/"
+      ]
+    },
+    {
+      "canonicalId": "TB-ID-GA-ACTIVATION-ALERT",
+      "pillar": "Identity",
+      "titleEn": "Send alert notifications upon Global Administrator role activation",
+      "titleTr": "Genel Yönetici rol etkinleştirmelerinde uyarı bildirimi gönder",
+      "ids": ["21819", "SCUBA-MS.AAD.7.8v1"],
+      "sources": [
+        "https://github.com/cisagov/ScubaGear/blob/main/PowerShell/ScubaGear/baselines/aad.md#msaad78v1",
+        "https://microsoft.github.io/zerotrustassessment/"
+      ]
+    },
+    {
+      "canonicalId": "TB-ID-GUEST-ACCESS-RESTRICT",
+      "pillar": "Identity",
+      "titleEn": "Restrict guest user access to Entra ID directory objects",
+      "titleTr": "Misafir kullanıcıların Entra ID dizin nesnelerine erişimini sınırla",
+      "ids": ["21821", "SCUBA-MS.AAD.8.1v1", "CIS.M365.5.1.6.2", "EIDSCA.AP07"],
+      "sources": [
+        "https://github.com/cisagov/ScubaGear/blob/main/PowerShell/ScubaGear/baselines/aad.md#msaad81v1",
+        "https://maester.dev/docs/tests/CIS.M365.5.1.6.2"
+      ]
+    },
+    {
+      "canonicalId": "TB-ID-GUEST-INVITE-RESTRICT",
+      "pillar": "Identity",
+      "titleEn": "Restrict guest invitations to Guest Inviter role or administrators",
+      "titleTr": "Misafir davet yetkisini yalnızca Guest Inviter rolü veya yöneticilerle sınırla",
+      "ids": ["21791", "SCUBA-MS.AAD.8.2v1", "EIDSCA.AP04"],
+      "sources": [
+        "https://github.com/cisagov/ScubaGear/blob/main/PowerShell/ScubaGear/baselines/aad.md#msaad82v1",
+        "https://maester.dev/docs/tests/EIDSCA.AP04"
+      ]
+    },
+    {
+      "canonicalId": "TB-ID-EMERGENCY-BREAKGLASS",
+      "pillar": "Identity",
+      "titleEn": "Configure and exclude emergency break-glass accounts from Conditional Access",
+      "titleTr": "Acil durum (break-glass) hesaplarını yapılandır ve Koşullu Erişim kapsamından hariç tut",
+      "ids": ["21835", "MT.1005"],
+      "sources": [
+        "https://maester.dev/docs/tests/MT.1005",
+        "https://microsoft.github.io/zerotrustassessment/"
+      ]
+    },
+    {
+      "canonicalId": "TB-ID-RESTRICT-TENANT-CREATION",
+      "pillar": "Identity",
+      "titleEn": "Restrict non-admin users from creating new Microsoft Entra tenants",
+      "titleTr": "Yönetici olmayan kullanıcıların yeni Entra kiracısı oluşturmasını kısıtla",
+      "ids": ["21787", "CIS.M365.5.1.2.3", "MT.1068"],
+      "sources": [
+        "https://maester.dev/docs/tests/CIS.M365.5.1.2.3",
+        "https://maester.dev/docs/tests/MT.1068"
+      ]
+    },
+    {
+      "canonicalId": "TB-ID-REPORT-SUSPICIOUS-ACTIVITY",
+      "pillar": "Identity",
+      "titleEn": "Enable Microsoft Authenticator report suspicious activity setting",
+      "titleTr": "Microsoft Authenticator şüpheli etkinlik bildirme ayarını etkinleştir",
+      "ids": ["21841", "EIDSCA.AG02", "EIDSCA.AG03"],
+      "sources": [
+        "https://maester.dev/docs/tests/EIDSCA.AG02",
+        "https://microsoft.github.io/zerotrustassessment/"
+      ]
+    },
+    {
+      "canonicalId": "TB-ID-PASSWORD-PROTECTION",
+      "pillar": "Identity",
+      "titleEn": "Enable Entra Password Protection custom banned list and on-premises agent",
+      "titleTr": "Entra Parola Koruması özel yasaklı liste ve şirket içi korumasını etkinleştir",
+      "ids": ["21847", "21848", "EIDSCA.PR01", "EIDSCA.PR02", "EIDSCA.PR03"],
+      "sources": [
+        "https://maester.dev/docs/tests/EIDSCA.PR01",
+        "https://microsoft.github.io/zerotrustassessment/"
+      ]
+    },
+    {
+      "canonicalId": "TB-ID-SSPR-ENABLED",
+      "pillar": "Identity",
+      "titleEn": "Enable Self-Service Password Reset (SSPR) and administrator reset notifications",
+      "titleTr": "Self-Servis Parola Sıfırlama (SSPR) ve yönetici parola sıfırlama bildirimlerini etkinleştir",
+      "ids": ["21891", "MT.1024.selfServicePasswordReset", "EIDSCA.AP01"],
+      "sources": [
+        "https://maester.dev/docs/tests/MT.1024.selfServicePasswordReset",
+        "https://maester.dev/docs/tests/EIDSCA.AP01"
+      ]
+    },
+    {
+      "canonicalId": "TB-DEV-BITLOCKER-RECOVERY-RESTRICT",
+      "pillar": "Devices",
+      "titleEn": "Restrict non-admin users from recovering BitLocker keys for owned devices",
+      "titleTr": "Yönetici olmayan kullanıcıların BitLocker kurtarma anahtarlarına erişimini kısıtla",
+      "ids": ["21954", "CIS.M365.5.1.4.6"],
+      "sources": [
+        "https://maester.dev/docs/tests/CIS.M365.5.1.4.6",
+        "https://microsoft.github.io/zerotrustassessment/"
+      ]
+    },
+    {
+      "canonicalId": "TB-DEV-DEFAULT-NONCOMPLIANT",
+      "pillar": "Devices",
+      "titleEn": "Mark devices without an assigned compliance policy as Not Compliant",
+      "titleTr": "Uyumluluk politikası atanmamış cihazları uyumlu değil olarak işaretle",
+      "ids": ["CIS.M365.4.1", "MT.1054"],
+      "sources": [
+        "https://maester.dev/docs/tests/CIS.M365.4.1",
+        "https://maester.dev/docs/tests/MT.1054"
+      ]
+    },
+    {
+      "canonicalId": "TB-SECOPS-DKIM-ENABLED",
+      "pillar": "SecOps",
+      "titleEn": "Enable DKIM signing for all Exchange Online custom domains",
+      "titleTr": "Tüm Exchange Online alan adları için DKIM imzalamayı etkinleştir",
+      "ids": ["SCUBA-MS.EXO.3.1v1", "CIS.M365.2.1.9", "ORCA-108", "ORCA-108-1"],
+      "sources": [
+        "https://github.com/cisagov/ScubaGear/blob/main/PowerShell/ScubaGear/baselines/exo.md#msexo31v1",
+        "https://maester.dev/docs/tests/CIS.M365.2.1.9"
+      ]
+    },
+    {
+      "canonicalId": "TB-SECOPS-SAFE-LINKS",
+      "pillar": "SecOps",
+      "titleEn": "Configure Defender for Office 365 Safe Links policies for email and Office apps",
+      "titleTr": "Defender for Office 365 Güvenli Bağlantılar (Safe Links) politikalarını yapılandır",
+      "ids": ["41032", "CIS.M365.2.1.1", "ORCA-105", "ORCA-113", "ORCA-156", "ORCA-179"],
+      "sources": [
+        "https://maester.dev/docs/tests/CIS.M365.2.1.1",
+        "https://github.com/cammurray/orca"
+      ]
+    },
+    {
+      "canonicalId": "TB-SECOPS-SAFE-ATTACHMENTS",
+      "pillar": "SecOps",
+      "titleEn": "Configure Defender for Office 365 Safe Attachments detonation and blocking",
+      "titleTr": "Defender for Office 365 Güvenli Ekler (Safe Attachments) tarama ve engelleme politikasını yapılandır",
+      "ids": ["41031", "CIS.M365.2.1.4", "ORCA-124"],
+      "sources": [
+        "https://maester.dev/docs/tests/CIS.M365.2.1.4",
+        "https://github.com/cammurray/orca"
+      ]
+    },
+    {
+      "canonicalId": "TB-SECOPS-SAFE-ATTACHMENTS-SPO-TEAMS",
+      "pillar": "Data",
+      "titleEn": "Enable Safe Attachments for SharePoint, OneDrive, and Microsoft Teams",
+      "titleTr": "SharePoint, OneDrive ve Microsoft Teams için Güvenli Ekler korumasını etkinleştir",
+      "ids": ["CIS.M365.2.1.5", "ORCA-158"],
+      "sources": [
+        "https://maester.dev/docs/tests/CIS.M365.2.1.5",
+        "https://github.com/cammurray/orca"
+      ]
+    },
+    {
+      "canonicalId": "TB-SECOPS-ZAP-EMAIL",
+      "pillar": "SecOps",
+      "titleEn": "Enable Zero-hour Auto Purge (ZAP) for malware, phishing, and spam",
+      "titleTr": "Zararlı yazılım, kimlik avı ve spam için Sıfırıncı Saat Otomatik Temizleme (ZAP) etkinleştir",
+      "ids": ["41039", "SCUBA-MS.EXO.10.3v1", "SCUBA-MS.SECURITYSUITE.1.2v1", "ORCA-120-malware", "ORCA-120-phish", "ORCA-120-spam"],
+      "sources": [
+        "ScubaGear/mappings/scuba-baseline-policy-migrations.csv (MS.EXO.10.3v1 -> MS.SECURITYSUITE.1.2v1)",
+        "https://github.com/cammurray/orca"
+      ]
+    },
+    {
+      "canonicalId": "TB-SECOPS-COMMON-ATTACHMENT-FILTER",
+      "pillar": "SecOps",
+      "titleEn": "Enable Common Attachment Types Filter in Anti-Malware policy",
+      "titleTr": "Anti-Malware politikasında Yaygın Ek Türleri Filtresini etkinleştir",
+      "ids": ["41029", "SCUBA-MS.EXO.9.1v2", "SCUBA-MS.SECURITYSUITE.1.1v1", "CIS.M365.2.1.2", "CIS.M365.2.1.11", "ORCA-205"],
+      "sources": [
+        "ScubaGear/mappings/scuba-baseline-policy-migrations.csv (MS.EXO.9.1v2 -> MS.SECURITYSUITE.1.1v1)",
+        "https://maester.dev/docs/tests/CIS.M365.2.1.2"
+      ]
+    },
+    {
+      "canonicalId": "TB-SECOPS-ANTI-PHISHING-SPOOF",
+      "pillar": "SecOps",
+      "titleEn": "Configure Anti-Phishing impersonation, spoof intelligence, and mailbox intelligence",
+      "titleTr": "Kimlik Avı Önleme (Anti-Phishing) taklit, spoof ve posta kutusu zekâsı korumasını yapılandır",
+      "ids": ["41033", "SCUBA-MS.EXO.11.1v1", "SCUBA-MS.SECURITYSUITE.2.1v1", "CIS.M365.2.1.7", "ORCA-112", "ORCA-115", "ORCA-180"],
+      "sources": [
+        "ScubaGear/mappings/scuba-baseline-policy-migrations.csv (MS.EXO.11.1v1 -> MS.SECURITYSUITE.2.1v1)",
+        "https://maester.dev/docs/tests/CIS.M365.2.1.7"
+      ]
+    },
+    {
+      "canonicalId": "TB-SECOPS-IP-ALLOWLIST-UNUSED",
+      "pillar": "SecOps",
+      "titleEn": "Avoid static IP Allow Lists in Exchange Online connection filter policy",
+      "titleTr": "Exchange Online bağlantı filtresinde statik IP izin listesi kullanımından kaçın",
+      "ids": ["CIS.M365.2.1.12", "ORCA-114"],
+      "sources": [
+        "https://maester.dev/docs/tests/CIS.M365.2.1.12",
+        "https://github.com/cammurray/orca"
+      ]
+    },
+    {
+      "canonicalId": "TB-SECOPS-INTERNAL-MALWARE-NOTIFY",
+      "pillar": "SecOps",
+      "titleEn": "Notify administrators when internal users send malware",
+      "titleTr": "İç kullanıcılar zararlı yazılım gönderdiğinde yöneticilere bildirim gönder",
+      "ids": ["CIS.M365.2.1.3", "ORCA-110"],
+      "sources": [
+        "https://maester.dev/docs/tests/CIS.M365.2.1.3",
+        "https://github.com/cammurray/orca"
+      ]
+    },
+    {
+      "canonicalId": "TB-SECOPS-AUDIT-LOG-ENABLED",
+      "pillar": "SecOps",
+      "titleEn": "Enable Microsoft 365 unified audit log search",
+      "titleTr": "Microsoft 365 birleşik denetim günlüğü (audit log) aramasını etkinleştir",
+      "ids": ["SCUBA-MS.EXO.13.1v1", "CIS.M365.3.1.1"],
+      "sources": [
+        "https://github.com/cisagov/ScubaGear/blob/main/PowerShell/ScubaGear/baselines/exo.md#msexo131v1",
+        "https://maester.dev/docs/tests/CIS.M365.3.1.1"
+      ]
+    },
+    {
+      "canonicalId": "TB-SECOPS-TEAMS-LOBBY-BYPASS",
+      "pillar": "SecOps",
+      "titleEn": "Restrict Microsoft Teams meeting lobby bypass to organization users",
+      "titleTr": "Microsoft Teams toplantılarında lobi atlamayı yalnızca kurum içi kullanıcılarla sınırla",
+      "ids": ["SCUBA-MS.TEAMS.1.2v2", "CIS.M365.8.5.3", "MT.1045"],
+      "sources": [
+        "https://github.com/cisagov/ScubaGear/blob/main/PowerShell/ScubaGear/baselines/teams.md#msteams12v2",
+        "https://maester.dev/docs/tests/CIS.M365.8.5.3"
+      ]
+    }
+  ]
+}
