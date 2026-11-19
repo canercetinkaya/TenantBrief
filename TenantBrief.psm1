@@ -408,6 +408,26 @@ function Connect-TenantBrief {
     }
 }
 
+function Protect-TenantBriefSensitiveText {
+    [CmdletBinding()]
+    param(
+        [AllowEmptyString()]
+        [string]$Text,
+        [string]$TenantDomain = ''
+    )
+    if ([string]::IsNullOrEmpty($Text)) { return $Text }
+    $out = $Text
+    # Mask email addresses / UPNs
+    $out = $out -replace '\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}\b', 'redacted-user@contoso.onmicrosoft.com'
+    # Mask GUIDs
+    $out = $out -replace '\b[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}\b', '00000000-0000-0000-0000-000000000000'
+    # Mask explicit tenant domain if supplied
+    if ($TenantDomain -and $TenantDomain.Length -ge 4 -and $TenantDomain -notmatch '^contoso\.onmicrosoft\.com') {
+        $out = $out -replace [regex]::Escape($TenantDomain), 'contoso.onmicrosoft.com'
+    }
+    return $out
+}
+
 function ConvertTo-TenantBriefTurkish {
     [CmdletBinding()]
     param([string]$Text)
@@ -2357,6 +2377,17 @@ function Invoke-TenantBriefAssessment {
     $findings = @(New-TenantBriefFindings -Tests $tests -PillarMap $pillarMap -Language $Language -TranslationCache $trCache)
     $plannedFindings = @(New-TenantBriefFindings -Tests $plannedTests -PillarMap $pillarMap -Language $Language -TranslationCache $trCache)
 
+    if ($Anonymize) {
+        $rawDomainForMask = if ($raw -and $raw.PSObject.Properties['Domain'] -and $raw.Domain) { [string]$raw.Domain } else { '' }
+        foreach ($item in (@($findings) + @($plannedFindings))) {
+            foreach ($propName in @('Title', 'Result', 'Description', 'SkippedReason', 'Remediation', 'RemediationTr', 'ErrorRemedy')) {
+                if ($item.PSObject.Properties[$propName] -and $item.$propName) {
+                    $item.$propName = Protect-TenantBriefSensitiveText -Text ([string]$item.$propName) -TenantDomain $rawDomainForMask
+                }
+            }
+        }
+    }
+
     $buildPhaseFocus = {
         param([object[]]$Items, [string]$EmptyText)
         if (-not $Items -or $Items.Count -eq 0) { return $EmptyText }
@@ -2399,6 +2430,9 @@ function Invoke-TenantBriefAssessment {
     $mfaDesc = if ($ti -and $ti.PSObject.Properties['OverviewCaMfaAllUsers'].Value) { [string]$ti.OverviewCaMfaAllUsers.description } else { '' }
     if ($Language -eq 'tr' -and $mfaDesc -match 'Over the past (\d+) days,\s*([\d.,]+)%\s*of sign-ins were protected by conditional access policies enforcing multifactor') {
         $mfaDesc = "Son $($Matches[1]) günde oturum açmaların %$($Matches[2]) kadarı çok faktörlü kimlik doğrulama (MFA) zorunlu kılan Koşullu Erişim politikaları ile korundu."
+    }
+    if ($Anonymize -and $mfaDesc) {
+        $mfaDesc = Protect-TenantBriefSensitiveText -Text $mfaDesc -TenantDomain ([string]$raw.Domain)
     }
     $devComp = if ($ti -and $ti.PSObject.Properties['DeviceOverview'].Value -and $ti.DeviceOverview.PSObject.Properties['DeviceCompliance'].Value) { $ti.DeviceOverview.DeviceCompliance } else { $null }
     $agentOv = if ($ti -and $ti.PSObject.Properties['AgentOverview'].Value) { $ti.AgentOverview } else { $null }
@@ -2952,6 +2986,7 @@ function Export-TenantBriefExecutiveSummary {
 <html lang="$Language">
 <head>
 <meta charset="UTF-8" />
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; connect-src 'none'; img-src 'self' data:; style-src 'unsafe-inline'; script-src 'none'; font-src 'none'; base-uri 'none'; form-action 'none';" />
 <title>TenantBrief - $title</title>
 <style>
   body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; color: #0f172a; margin: 32px; }
