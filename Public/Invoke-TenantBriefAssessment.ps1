@@ -70,6 +70,9 @@
         [string]$InputEntraFalconJsonPath,
 
         [Parameter()]
+        [string]$PreviousReportJson,
+
+        [Parameter()]
         [switch]$SkipMaester,
 
         [Parameter()]
@@ -812,10 +815,54 @@
     $reportJsonPath = Join-Path $OutputPath "TenantBriefReport-$($Language.ToUpper()).json"
     $reportObj | ConvertTo-Json -Depth 12 | Set-Content -Path $reportJsonPath -Encoding UTF8
 
+    if ($PreviousReportJson -and (Test-Path -LiteralPath $PreviousReportJson)) {
+        try {
+            $cmp = Compare-TenantBriefReports -BaselineJsonPath $PreviousReportJson -CurrentJsonPath $reportJsonPath
+            $prevDoc = Get-Content -LiteralPath $PreviousReportJson -Raw -Encoding UTF8 | ConvertFrom-Json
+            $prevPassed = if ($prevDoc.Summary -and $prevDoc.Summary.PSObject.Properties['Passed']) { [int]$prevDoc.Summary.Passed } else { 0 }
+            $prevTotal  = if ($prevDoc.Summary -and $prevDoc.Summary.PSObject.Properties['Total']) { [int]$prevDoc.Summary.Total } else { 0 }
+            $prevScore  = if ($prevTotal -gt 0) { [math]::Round(($prevPassed / $prevTotal) * 100, 1) } else { 0 }
+            $currScore  = if ($tests.Count -gt 0) { [math]::Round(($passedCount / $tests.Count) * 100, 1) } else { 0 }
+            $trendObj = [PSCustomObject]@{
+                PreviousDate  = if ($prevDoc.PSObject.Properties['GeneratedAt']) { [string]$prevDoc.GeneratedAt } else { '' }
+                PreviousScore = $prevScore
+                CurrentScore  = $currScore
+                ScoreDelta    = [math]::Round($currScore - $prevScore, 1)
+                Improved      = @($cmp.Improved)
+                Regressed     = @($cmp.Regressed)
+                NewFailed     = @($cmp.Regressed | Where-Object { $_.To -eq 'Failed' })
+                Resolved      = @($cmp.Improved | Where-Object { $_.To -eq 'Passed' })
+            }
+            $reportObj | Add-Member -NotePropertyName 'Trend' -NotePropertyValue $trendObj -Force
+            $reportObj | ConvertTo-Json -Depth 12 | Set-Content -Path $reportJsonPath -Encoding UTF8
+        } catch {
+            Add-TenantBriefDiagnostic -Diagnostics $diagnostics -Stage 5 -Component 'TrendCompare' -Message "PreviousReportJson comparison skipped: $($_.Exception.Message)" -Severity 'Warning'
+        }
+    }
+
     $template = Get-Content -Path $script:ReportTemplatePath -Raw -Encoding UTF8
     $isTr = $Language -eq 'tr'
     $tenantDisplayHtml = [System.Net.WebUtility]::HtmlEncode([string]$tenantDisplay)
-    $embeddedJson = ($reportObj | ConvertTo-Json -Depth 12 -Compress -EscapeHandling EscapeHtml)
+
+    # S7.4: Build compact HTML-embedded projection (preserves full schema in JSON file on disk while stripping redundant/empty fields in HTML)
+    $compactFindings = [System.Collections.Generic.List[object]]::new()
+    foreach ($cf in @($reportObj.Findings)) {
+        $entry = [ordered]@{}
+        foreach ($p in $cf.PSObject.Properties) {
+            $val = $p.Value
+            if ($p.Name -eq 'RemediationTr' -and $cf.PSObject.Properties['Remediation'] -and [string]$val -eq [string]$cf.Remediation) { continue }
+            if ($p.Name -in @('SkippedReason', 'ErrorRemedy', 'CanonicalId', 'MinimumLicense', 'Impact') -and [string]::IsNullOrEmpty([string]$val)) { continue }
+            if ($p.Name -in @('Result', 'Description') -and $val -is [string] -and $val.Length -gt 4000) {
+                $val = $val.Substring(0, 4000) + "`n..."
+            }
+            $entry[$p.Name] = $val
+        }
+        $compactFindings.Add([PSCustomObject]$entry)
+    }
+    $htmlObj = $reportObj.PSObject.Copy()
+    $htmlObj.Findings = $compactFindings.ToArray()
+
+    $embeddedJson = ($htmlObj | ConvertTo-Json -Depth 12 -Compress -EscapeHandling EscapeHtml)
     $embeddedJson = $embeddedJson.Replace([string][char]0x2028, '\u2028').Replace([string][char]0x2029, '\u2029')
     $replacements = @{
         '{{LANG}}'               = $Language
