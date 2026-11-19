@@ -10,6 +10,16 @@ All notable changes to **TenantBrief** are documented in this file.
   - `schemas/tenantbrief-report.schema.json` JSON Schema for `TenantBriefReport-*.json`.
   - `PSScriptAnalyzerSettings.psd1` pinned with `PSScriptAnalyzer 1.25.0` in `.github/workflows/ci.yml`.
   - `docs/improvement/CLAIMS.md` claim-verification audit table.
+- **Sprint 1 Data Model & Real Cross-Engine Correlation (`S1.1–S1.7`):**
+  - `data/control-crosswalk.json`: 42 upstream-verified canonical controls mapping ZeroTrustAssessment, CISA ScubaGear 2.0 (including `scuba-baseline-policy-migrations.csv`), Maester (`MT.*`, `CIS.M365.*`, `EIDSCA.*`), and Microsoft ORCA.
+  - Crosswalk-only correlation in `New-TenantBriefCorrelatedTests` with `CanonicalId`, `SourceStatuses`, `StatusConflict`, pre-correlation framework scorecards, and separate `Summary.UniqueControls` / `Summary.SourceControls`.
+  - Status ranking `Failed (4) > Error (3) > Investigate (2) > Skipped/Planned (1) > Passed (0)` and separation of upstream `Planned` controls into `PlannedFindings` (`Q11 = 0`).
+  - Canonical 6-pillar normalization (`Pillar`/`PrimaryPillar`/`DomainPillar`, `EngineLabel`, ScubaGear 2.0 `MS.SECURITYSUITE.*` support) and source/ID-based portal & least-privilege role routing.
+  - ORCA `ChiValue` (`ORCACHI` enum) risk mapping (`Critical`/`High`/`Medium`/`Low`), `Critical` risk filter/badge in `assets/report-template.html` and schema, and optional offline `-InputScubaJsonPath` / `-InputOrcaJsonPath` parameters.
+  - New `UserImpact` field separating end-user disruption impact from security `Risk`.
+
+### Deprecated
+- **`Finding.Impact`:** Retained for one release for backward compatibility; use `Finding.UserImpact` instead.
 
 ## [1.0.1] - 2026-11-19
 
