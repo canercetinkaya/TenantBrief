@@ -173,8 +173,11 @@ TenantBrief stands on top of trusted Microsoft and community open-source securit
 ## Security & Privacy Guarantees
 
 - **Zero Telemetry & Zero External AI Exposure:** `TenantBrief` sends no telemetry and never forwards tenant findings, user UPNs, or SKU inventories to any external LLM/AI endpoint.
+- **Optional Azure AI Translator Data Flow (`-TranslatorKey` / `AZURE_TRANSLATOR_KEY`):** No text leaves the machine unless `-Language tr` is run with `-TranslatorKey` (accepts `[SecureString]` or `[string]`) or `$env:AZURE_TRANSLATOR_KEY`. Before any uncached control title/description is sent to `api.cognitive.microsofttranslator.com`, `Protect-TenantBriefSensitiveText` strips UPNs/emails, GUIDs, and tenant domains. Keys are never logged or written to HTML, JSON, or `run-manifest.json`.
 - **Strict Read-Only Surface:** Executes only read-only Graph GET endpoints and read-only PowerShell assessment cmdlets.
-- **Anonymization (`-Anonymize`):** Masks primary tenant domains before generating shareable reports.
+- **Offline CSP & XSS Hardening:** Both the interactive HTML report and the print-to-PDF Executive Summary ship with a strict offline `Content-Security-Policy` (`default-src 'none'; connect-src 'none'`), HTML-escaped embedded JSON, and automated headless Chromium XSS CI checks.
+- **Deep Anonymization (`-Anonymize`):** Masks primary tenant domains, GUIDs, and UPN/email addresses across findings, planned controls, and summary text before generating shareable reports.
+- **Vulnerability Disclosure:** See [SECURITY.md](SECURITY.md).
 
 ## Local Machine Changes (Yerel Değişiklikler)
 
