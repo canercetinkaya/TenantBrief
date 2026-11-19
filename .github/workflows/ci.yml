@@ -2,7 +2,7 @@ name: TenantBrief CI
 
 on:
   push:
-    branches: [ master ]
+    branches: [ master, 'sprint-*' ]
   pull_request:
     branches: [ master ]
 
@@ -18,3 +18,19 @@ jobs:
             Install-Module Pester -Force -SkipPublisherCheck -Scope CurrentUser
           }
           Invoke-Pester -Path ./tests -CI
+      - name: Run PSScriptAnalyzer (Advisory - Sprint 0)
+        shell: pwsh
+        continue-on-error: true
+        run: |
+          if (-not (Get-Module -ListAvailable -Name PSScriptAnalyzer)) {
+            Install-Module PSScriptAnalyzer -Force -Scope CurrentUser
+          }
+          $findings = @(Invoke-ScriptAnalyzer -Path . -Recurse -Settings ./PSScriptAnalyzerSettings.psd1)
+          Write-Host "PSScriptAnalyzer findings: $($findings.Count) (Error: $(@($findings | Where-Object Severity -eq 'Error').Count), Warning: $(@($findings | Where-Object Severity -eq 'Warning').Count))"
+          $findings | Group-Object RuleName | Sort-Object Count -Descending | Format-Table Name, Count -AutoSize
+      - name: Run Report Quality Metrics (Advisory - Sprint 0)
+        shell: pwsh
+        continue-on-error: true
+        run: |
+          $res = ./tools/Measure-TenantBriefQuality.ps1 -Path ./demo/TenantBriefReport-TR.json -HtmlPath ./demo/TenantBriefReport-TR.html
+          $res.Metrics | Format-Table Code, Metric, Value, Target -AutoSize
