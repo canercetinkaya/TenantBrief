@@ -2,6 +2,15 @@
 
 All notable changes to **TenantBrief** are documented in this file.
 
+## [Unreleased]
+
+### Added
+- **Sprint 0 Quality & Governance Tooling (`#1`):**
+  - `tools/Measure-TenantBriefQuality.ps1` and `tests/Measure-TenantBriefQuality.Tests.ps1` for deterministic Q01–Q15 report quality metrics (including `Q04a`/`Q04b`, `Q08a`/`Q08b`, `Q10a`/`Q10b`).
+  - `schemas/tenantbrief-report.schema.json` JSON Schema for `TenantBriefReport-*.json`.
+  - `PSScriptAnalyzerSettings.psd1` pinned with `PSScriptAnalyzer 1.25.0` in `.github/workflows/ci.yml`.
+  - `docs/improvement/CLAIMS.md` claim-verification audit table.
+
 ## [1.0.1] - 2026-11-19
 
 ### Security
