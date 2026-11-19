@@ -29,6 +29,11 @@ All notable changes to **TenantBrief** are documented in this file.
   - Single-source-of-truth Turkish glossary (`data/i18n/glossary-tr.json`), CI denylist (`tests/i18n-denylist.txt`), and `ConvertTo-TenantBriefTurkish` wired as post-processor (`Q09 = 0`).
   - Migrated `data/tr-translation-cache.json` to `Source|TestId` schema (`tools/Migrate-TranslationCache.ps1`, 0 loss) and added 259 machine translations (`Reviewed = false`) with `Summary.UnreviewedTranslations` counter (`Q08a < 5`, `Q08b < 5`).
   - Sentence-boundary remediation extraction without mid-word ellipsis (`...`) or `Learn`/`öğrenin` artifacts, plus language-aware `Remediation` field (`RemediationTr` retained for backward compatibility, `Q10 = 0`).
+- **Sprint 4 Scoring, Dynamic Roadmap & Executive Narrative (`S4.1–S4.4`):**
+  - Copilot Readiness L1 maturity gate on `COP-LIC-01` fail and `0.5` Warning weight configured in `data/scoring.json` (`Q13 = 0`).
+  - Dynamic 30-60-90 Roadmap phases with `PriorityScore`-ordered `FindingIds[]` and category-driven `Focus` text.
+  - Enhanced `Export-TenantBriefExecutiveSummary`: Test/Lab tenant banner (`UserCount < 25`), `N/A`/`Uygulanamaz` ROI when no SKUs are present, Secure Score, active high-severity SecOps incidents, and Copilot maturity cards.
+  - Documented pre-correlation per-source framework scoring rule in `README.md`.
 
 ### Deprecated
 - **`Finding.Impact`:** Retained for one release for backward compatibility; use `Finding.UserImpact` instead.

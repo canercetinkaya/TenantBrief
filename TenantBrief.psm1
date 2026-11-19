@@ -2908,6 +2908,45 @@ function Export-TenantBriefExecutiveSummary {
     $thRatio   = if ($isTr) { 'Geçen / Ölçülen' } else { 'Passed / Total' }
     $thScore   = if ($isTr) { 'Puan' } else { 'Score' }
 
+    # Lab/Test tenant banner when UserCount < 25
+    $tiProp = $data.PSObject.Properties['TenantInsights']
+    $tiObj = if ($tiProp) { $tiProp.Value } else { $null }
+    $labBanner = ''
+    if ($tiObj -and $tiObj.PSObject.Properties['UserCount'] -and $null -ne $tiObj.UserCount -and [int]$tiObj.UserCount -gt 0 -and [int]$tiObj.UserCount -lt 25) {
+        $uCountInt = [int]$tiObj.UserCount
+        $labTxt = if ($isTr) { "Test / Lab Kiracısı Uyarısı: Kiracıda yalnızca $uCountInt kullanıcı tespit edildi; skorlar ve lisans metrikleri üretim ortamını temsil etmeyebilir." } else { "Test / Lab Tenant Notice: Only $uCountInt user(s) detected; scores and license metrics may not represent production scale." }
+        $labBanner = "<div style='border:1px solid #38bdf8;background:#f0f9ff;color:#0369a1;padding:8px 12px;border-radius:6px;font-size:12.5px;margin-bottom:14px;'>$(& $htmlEncode $labTxt)</div>"
+    }
+
+    # Idle License ROI: show N/A (Uygulanamaz) when Skus is empty and TotalIdleUsdYr is 0
+    $roiObj = if ($data.PSObject.Properties['LicenseROI']) { $data.LicenseROI } else { $null }
+    $hasSkus = ($roiObj -and $roiObj.PSObject.Properties['Skus'] -and @($roiObj.Skus).Count -gt 0)
+    $idleUsdYr = if ($roiObj -and $roiObj.PSObject.Properties['TotalIdleUsdYr'] -and $null -ne $roiObj.TotalIdleUsdYr) { $roiObj.TotalIdleUsdYr } else { 0 }
+    $idleDisplay = if (-not $hasSkus -and [double]$idleUsdYr -eq 0) {
+        if ($isTr) { 'Uygulanamaz' } else { 'N/A' }
+    } else {
+        "`$$idleUsdYr"
+    }
+
+    # Executive Signals strip (Secure Score, High Incidents, Copilot Maturity, MFA/CA)
+    $sigCards = New-Object System.Collections.Generic.List[string]
+    if ($tiObj -and $tiObj.PSObject.Properties['SecureScoreCurrent'] -and $null -ne $tiObj.SecureScoreCurrent -and $tiObj.PSObject.Properties['SecureScoreMax'] -and $null -ne $tiObj.SecureScoreMax -and [double]$tiObj.SecureScoreMax -gt 0) {
+        $ssLbl = if ($isTr) { 'Microsoft Secure Score' } else { 'Microsoft Secure Score' }
+        $sigCards.Add("<div class='card'><div>$ssLbl</div><div class='val' style='font-size:18px;'>$(& $htmlEncode $tiObj.SecureScoreCurrent) / $(& $htmlEncode $tiObj.SecureScoreMax)</div></div>")
+    }
+    $uaProp = $data.PSObject.Properties['UsageAdoption']
+    $secObj = if ($uaProp -and $uaProp.Value -and $uaProp.Value.PSObject.Properties['SecOps']) { $uaProp.Value.SecOps } else { $null }
+    if ($secObj -and $secObj.PSObject.Properties['IncidentsAvailable'] -and $secObj.IncidentsAvailable) {
+        $incLbl = if ($isTr) { 'Aktif Yüksek Olay (SecOps)' } else { 'Active High Incidents' }
+        $sigCards.Add("<div class='card'><div>$incLbl</div><div class='val' style='font-size:18px;'>$(& $htmlEncode $secObj.HighIncidents)</div></div>")
+    }
+    $copProp = $data.PSObject.Properties['CopilotReadiness']
+    if ($copProp -and $copProp.Value -and $copProp.Value.PSObject.Properties['MaturityLevel'] -and $copProp.Value.MaturityLevel) {
+        $copLbl = if ($isTr) { 'Copilot Olgunluk Seviyesi' } else { 'Copilot Readiness Maturity' }
+        $sigCards.Add("<div class='card'><div>$copLbl</div><div class='val' style='font-size:15px;'>$(& $htmlEncode $copProp.Value.MaturityLevel)</div></div>")
+    }
+    $signalsHtml = if ($sigCards.Count -gt 0) { "<div class='grid' style='grid-template-columns:repeat($($sigCards.Count),1fr);'>$($sigCards -join '')</div>" } else { '' }
+
     $html = @"
 <!DOCTYPE html>
 <html lang="$Language">
@@ -2932,12 +2971,14 @@ function Export-TenantBriefExecutiveSummary {
   <h1>TenantBrief — $title</h1>
   <div class="sub">$subLine</div>
   $diagNote
+  $labBanner
   <div class="grid">
     <div class="card"><div>$lblTotal</div><div class="val">$($data.Summary.Total)</div></div>
     <div class="card"><div>$lblPass</div><div class="val">$($data.Summary.Passed)</div></div>
     <div class="card"><div>$lblFail</div><div class="val">$($data.Summary.Failed) ($($data.Summary.HighRiskFailed))</div></div>
-    <div class="card"><div>$lblIdle</div><div class="val">`$$($data.LicenseROI.TotalIdleUsdYr)</div></div>
+    <div class="card"><div>$lblIdle</div><div class="val">$(& $htmlEncode $idleDisplay)</div></div>
   </div>
+  $signalsHtml
   <table>
     <thead><tr><th>$thFw</th><th>$thRatio</th><th>$thScore</th></tr></thead>
     <tbody>$fwRows</tbody>
