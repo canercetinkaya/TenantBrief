@@ -96,12 +96,14 @@ $q03Items = @($findings | Where-Object {
     $dp -like '*,*'
 })
 
-# Q04: RiskImpactConflict
-$q04Items = @($findings | Where-Object {
-    $r = [string](& $getProp $_ 'Risk')
-    $i = [string](& $getProp $_ 'Impact')
-    ($r -eq 'High' -and $i -in @('Low', 'Düşük')) -or ($r -eq 'Low' -and $i -in @('High', 'Yüksek'))
+# Q04a / Q04b / Q04: RiskImpactConflict
+$q04aItems = @($findings | Where-Object {
+    ([string](& $getProp $_ 'Risk')) -eq 'High' -and ([string](& $getProp $_ 'Impact')) -in @('Low', 'Düşük')
 })
+$q04bItems = @($findings | Where-Object {
+    ([string](& $getProp $_ 'Risk')) -eq 'Low' -and ([string](& $getProp $_ 'Impact')) -in @('High', 'Yüksek')
+})
+$q04Items = @($q04aItems) + @($q04bItems)
 
 # Q05: StatusConflictUnflagged
 $q05List = New-Object System.Collections.Generic.List[object]
@@ -128,10 +130,13 @@ $q07Items = @($findings | Where-Object {
     ([string](& $getProp $_ 'Status')) -eq 'Failed' -and [string]::IsNullOrWhiteSpace([string](& $getProp $_ 'MinimumLicense'))
 })
 
-# Q08: EnglishTitlesInTR
-$enRx = '(?i)\b(SHALL|SHOULD|MUST|is|are|the|enabled|configured)\b'
-$q08Items = if ($lang -eq 'tr') {
-    @($findings | Where-Object { ([string](& $getProp $_ 'Title')) -match $enRx })
+# Q08a (case-sensitive narrow) & Q08b (SKILL.md case-insensitive)
+$enRxCore = '\b(SHALL|SHOULD|MUST|is|are|the|enabled|configured)\b'
+$q08aItems = if ($lang -eq 'tr') {
+    @($findings | Where-Object { ([string](& $getProp $_ 'Title')) -cmatch $enRxCore })
+} else { @() }
+$q08bItems = if ($lang -eq 'tr') {
+    @($findings | Where-Object { ([string](& $getProp $_ 'Title')) -match $enRxCore })
 } else { @() }
 
 # Q09: DenylistHits
@@ -152,7 +157,17 @@ foreach ($f in $findings) {
 }
 $q09Items = $q09List.ToArray()
 
-# Q10: TruncatedRemediation
+# Q10a ('...'), Q10b ('öğrenin/Learn/Related links'), Q10 (union)
+$q10aItems = @($findings | Where-Object {
+    $rem = [string](& $getProp $_ 'Remediation')
+    if (-not $rem) { $rem = [string](& $getProp $_ 'RemediationTr') }
+    $rem -and ($rem -match '\.\.\.')
+})
+$q10bItems = @($findings | Where-Object {
+    $rem = [string](& $getProp $_ 'Remediation')
+    if (-not $rem) { $rem = [string](& $getProp $_ 'RemediationTr') }
+    $rem -and ($rem -cmatch '(öğrenin|Learn|Related links)')
+})
 $q10Items = @($findings | Where-Object {
     $rem = [string](& $getProp $_ 'Remediation')
     if (-not $rem) { $rem = [string](& $getProp $_ 'RemediationTr') }
@@ -219,23 +234,28 @@ if ($ReadmePath -and (Test-Path -LiteralPath $ReadmePath)) {
     }
 }
 
-$totalFindings = $findings.Count
+$totalFindings = @($findings).Count
 $metrics = @(
-    [PSCustomObject]@{ Code = 'Q01'; Metric = 'MultiSourceFindings';     Value = $q01Items.Count;  Target = '> 0';   SampleIds = (& $sampleIds $q01Items) },
-    [PSCustomObject]@{ Code = 'Q02'; Metric = 'PillarOutsideSix';        Value = $q02Items.Count;  Target = '0';     SampleIds = (& $sampleIds $q02Items) },
-    [PSCustomObject]@{ Code = 'Q03'; Metric = 'CommaJoinedPillar';       Value = $q03Items.Count;  Target = '0';     SampleIds = (& $sampleIds $q03Items) },
-    [PSCustomObject]@{ Code = 'Q04'; Metric = 'RiskImpactConflict';      Value = $q04Items.Count;  Target = '0';     SampleIds = (& $sampleIds $q04Items) },
-    [PSCustomObject]@{ Code = 'Q05'; Metric = 'StatusConflictUnflagged'; Value = $q05Items.Count;  Target = '0';     SampleIds = (& $sampleIds $q05Items) },
-    [PSCustomObject]@{ Code = 'Q06'; Metric = 'CostUnknown';             Value = $q06Items.Count;  Target = '< 5%';  SampleIds = (& $sampleIds $q06Items) },
-    [PSCustomObject]@{ Code = 'Q07'; Metric = 'FailedWithoutLicense';    Value = $q07Items.Count;  Target = '< 10%'; SampleIds = (& $sampleIds $q07Items) },
-    [PSCustomObject]@{ Code = 'Q08'; Metric = 'EnglishTitlesInTR';       Value = $q08Items.Count;  Target = '< 5';   SampleIds = (& $sampleIds $q08Items) },
-    [PSCustomObject]@{ Code = 'Q09'; Metric = 'DenylistHits';            Value = $q09Items.Count;  Target = '0';     SampleIds = (& $sampleIds $q09Items) },
-    [PSCustomObject]@{ Code = 'Q10'; Metric = 'TruncatedRemediation';    Value = $q10Items.Count;  Target = '0';     SampleIds = (& $sampleIds $q10Items) },
-    [PSCustomObject]@{ Code = 'Q11'; Metric = 'PlannedInScore';          Value = $q11Items.Count;  Target = '0';     SampleIds = (& $sampleIds $q11Items) },
-    [PSCustomObject]@{ Code = 'Q12'; Metric = 'ScubaProductsCovered';    Value = $scubaCats.Count; Target = '>= 5';  SampleIds = @($scubaCats | Select-Object -First 3) },
-    [PSCustomObject]@{ Code = 'Q13'; Metric = 'CopilotGateViolation';    Value = $q13Count;        Target = '0';     SampleIds = $q13Samples.ToArray() },
-    [PSCustomObject]@{ Code = 'Q14'; Metric = 'UnescapedHtml';           Value = if ($null -eq $q14Val) { 'NotEvaluated' } else { $q14Val }; Target = '0'; SampleIds = $q14Samples.ToArray() },
-    [PSCustomObject]@{ Code = 'Q15'; Metric = 'ClaimMismatch';           Value = $q15Missing.Count; Target = '0';    SampleIds = @($q15Missing.ToArray() | Select-Object -First 3) }
+    [PSCustomObject]@{ Code = 'Q01';  Metric = 'MultiSourceFindings';      Value = @($q01Items).Count;  Target = '> 0';   SampleIds = (& $sampleIds $q01Items) },
+    [PSCustomObject]@{ Code = 'Q02';  Metric = 'PillarOutsideSix';         Value = @($q02Items).Count;  Target = '0';     SampleIds = (& $sampleIds $q02Items) },
+    [PSCustomObject]@{ Code = 'Q03';  Metric = 'CommaJoinedPillar';        Value = @($q03Items).Count;  Target = '0';     SampleIds = (& $sampleIds $q03Items) },
+    [PSCustomObject]@{ Code = 'Q04a'; Metric = 'RiskHighImpactLow';        Value = @($q04aItems).Count; Target = '0';     SampleIds = (& $sampleIds $q04aItems) },
+    [PSCustomObject]@{ Code = 'Q04b'; Metric = 'RiskLowImpactHigh';        Value = @($q04bItems).Count; Target = '0';     SampleIds = (& $sampleIds $q04bItems) },
+    [PSCustomObject]@{ Code = 'Q04';  Metric = 'RiskImpactConflict';       Value = @($q04Items).Count;  Target = '0';     SampleIds = (& $sampleIds $q04Items) },
+    [PSCustomObject]@{ Code = 'Q05';  Metric = 'StatusConflictUnflagged';  Value = @($q05Items).Count;  Target = '0';     SampleIds = (& $sampleIds $q05Items) },
+    [PSCustomObject]@{ Code = 'Q06';  Metric = 'CostUnknown';              Value = @($q06Items).Count;  Target = '< 5%';  SampleIds = (& $sampleIds $q06Items) },
+    [PSCustomObject]@{ Code = 'Q07';  Metric = 'FailedWithoutLicense';     Value = @($q07Items).Count;  Target = '< 10%'; SampleIds = (& $sampleIds $q07Items) },
+    [PSCustomObject]@{ Code = 'Q08a'; Metric = 'EnglishTitlesInTR_Narrow'; Value = @($q08aItems).Count; Target = '< 5';   SampleIds = (& $sampleIds $q08aItems) },
+    [PSCustomObject]@{ Code = 'Q08b'; Metric = 'EnglishTitlesInTR';        Value = @($q08bItems).Count; Target = '< 5';   SampleIds = (& $sampleIds $q08bItems) },
+    [PSCustomObject]@{ Code = 'Q09';  Metric = 'DenylistHits';             Value = @($q09Items).Count;  Target = '0';     SampleIds = (& $sampleIds $q09Items) },
+    [PSCustomObject]@{ Code = 'Q10a'; Metric = 'TruncatedWithEllipsis';    Value = @($q10aItems).Count; Target = '0';     SampleIds = (& $sampleIds $q10aItems) },
+    [PSCustomObject]@{ Code = 'Q10b'; Metric = 'RemediationLearnArtifact'; Value = @($q10bItems).Count; Target = '0';     SampleIds = (& $sampleIds $q10bItems) },
+    [PSCustomObject]@{ Code = 'Q10';  Metric = 'TruncatedRemediation';     Value = @($q10Items).Count;  Target = '0';     SampleIds = (& $sampleIds $q10Items) },
+    [PSCustomObject]@{ Code = 'Q11';  Metric = 'PlannedInScore';           Value = @($q11Items).Count;  Target = '0';     SampleIds = (& $sampleIds $q11Items) },
+    [PSCustomObject]@{ Code = 'Q12';  Metric = 'ScubaProductsCovered';     Value = @($scubaCats).Count; Target = '>= 5';  SampleIds = @($scubaCats | Select-Object -First 3) },
+    [PSCustomObject]@{ Code = 'Q13';  Metric = 'CopilotGateViolation';     Value = $q13Count;           Target = '0';     SampleIds = $q13Samples.ToArray() },
+    [PSCustomObject]@{ Code = 'Q14';  Metric = 'UnescapedHtml';            Value = if ($null -eq $q14Val) { 'NotEvaluated' } else { $q14Val }; Target = '0'; SampleIds = $q14Samples.ToArray() },
+    [PSCustomObject]@{ Code = 'Q15';  Metric = 'ClaimMismatch';            Value = $q15Missing.Count;   Target = '0';     SampleIds = @($q15Missing.ToArray() | Select-Object -First 3) }
 )
 
 $resultObj = [PSCustomObject]@{

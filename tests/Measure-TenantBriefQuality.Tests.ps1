@@ -55,11 +55,16 @@ Describe 'tools/Measure-TenantBriefQuality.ps1 (Q01-Q15)' {
             $byCode['Q01'].SampleIds | Should -Contain 'F1'
             $byCode['Q02'].Value | Should -Be 1
             $byCode['Q03'].Value | Should -Be 1
+            $byCode['Q04a'].Value | Should -Be 1
+            $byCode['Q04b'].Value | Should -Be 0
             $byCode['Q04'].Value | Should -Be 1
             $byCode['Q06'].Value | Should -Be 1
             $byCode['Q07'].Value | Should -Be 1
-            $byCode['Q08'].Value | Should -Be 1
+            $byCode['Q08a'].Value | Should -Be 1
+            $byCode['Q08b'].Value | Should -Be 1
             $byCode['Q09'].Value | Should -Be 1
+            $byCode['Q10a'].Value | Should -Be 1
+            $byCode['Q10b'].Value | Should -Be 1
             $byCode['Q10'].Value | Should -Be 1
             $byCode['Q11'].Value | Should -Be 1
             $byCode['Q12'].Value | Should -Be 1
@@ -75,7 +80,30 @@ Describe 'tools/Measure-TenantBriefQuality.ps1 (Q01-Q15)' {
         $jsonOut = & $script:MeasureScript -Path $script:DemoTrJson -AsJson
         $parsed = $jsonOut | ConvertFrom-Json
         $parsed.TotalFindings | Should -BeGreaterThan 0
-        $parsed.Metrics.Count | Should -Be 15
+        $parsed.Metrics.Count | Should -Be 20
+    }
+
+    It 'does not produce false positives on natural Turkish titles for Q08b' {
+        $tmpJson = Join-Path ([System.IO.Path]::GetTempPath()) ("tb-q08-" + [guid]::NewGuid().ToString('N').Substring(0, 8) + '.json')
+        try {
+            [PSCustomObject]@{
+                Tenant   = 'turkish.onmicrosoft.com'
+                Language = 'tr'
+                Findings = @(
+                    [PSCustomObject]@{ Id = 'TR1'; Pillar = 'Identity'; DomainPillar = 'Identity'; Sources = @('ZeroTrust'); Status = 'Passed'; Risk = 'High'; Impact = 'High'; ImplementationCost = 'Low'; MinimumLicense = 'P1'; Title = 'Eski kimlik doğrulama protokolleri engellenmelidir'; RemediationTr = '' },
+                    [PSCustomObject]@{ Id = 'TR2'; Pillar = 'Data'; DomainPillar = 'Data'; Sources = @('ZeroTrust'); Status = 'Passed'; Risk = 'Medium'; Impact = 'Medium'; ImplementationCost = 'Low'; MinimumLicense = 'P1'; Title = 'Hassasiyet etiketleri ve DLP ilkeleri yapılandırılmalıdır'; RemediationTr = '' },
+                    [PSCustomObject]@{ Id = 'EN1'; Pillar = 'SecOps'; DomainPillar = 'SecOps'; Sources = @('MDO / ORCA'); Status = 'Failed'; Risk = 'Medium'; Impact = 'Medium'; ImplementationCost = 'Unknown'; MinimumLicense = ''; Title = 'Zero Hour Autopurge Enabled for Malware'; RemediationTr = '' }
+                )
+            } | ConvertTo-Json -Depth 5 | Set-Content -Path $tmpJson -Encoding UTF8
+
+            $res = & $script:MeasureScript -Path $tmpJson
+            $byCode = @{}
+            foreach ($m in $res.Metrics) { $byCode[$m.Code] = $m }
+            $byCode['Q08b'].Value | Should -Be 1
+            $byCode['Q08b'].SampleIds | Should -Contain 'EN1'
+        } finally {
+            Remove-Item -Path $tmpJson -Force -ErrorAction SilentlyContinue
+        }
     }
 
     It 'validates demo TR and EN reports against schemas/tenantbrief-report.schema.json' {
