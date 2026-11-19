@@ -417,15 +417,23 @@ function Add-TenantBriefDiagnostic {
         [string]$Component,
 
         [Parameter(Mandatory = $true)]
-        [string]$Message
+        [string]$Message,
+
+        [Parameter(Mandatory = $false)]
+        [ValidateSet('Info', 'Warning', 'Error')]
+        [string]$Severity = 'Warning',
+
+        [Parameter(Mandatory = $false)]
+        [string]$Remedy = ''
     )
 
     if ($null -eq $Diagnostics) { return }
     $Diagnostics.Add([PSCustomObject]@{
         Stage     = $Stage
         Component = $Component
-        Severity  = 'Warning'
+        Severity  = $Severity
         Message   = $Message
+        Remedy    = $Remedy
         Timestamp = (Get-Date).ToString('o')
     })
     Write-Verbose "[TenantBrief] Stage $Stage / ${Component}: $Message"
