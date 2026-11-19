@@ -132,6 +132,8 @@
       <div class="card" id="pillarMatrixCard" style="margin-bottom:20px;"></div>
       <div class="card" id="sourceCoverageCard" style="margin-bottom:20px;"></div>
       <div class="card" id="prereqCoverageCard" style="display:none;margin-bottom:20px;"></div>
+      <div class="card" id="errorActionCard" style="display:none;margin-bottom:20px;border-color:rgba(239,68,68,.45);background:rgba(239,68,68,.06);"></div>
+      <div class="card" id="plannedUpstreamCard" style="display:none;margin-bottom:20px;"></div>
       <div class="card" id="execActionDigest" style="margin-bottom:20px;"></div>
     </section>
 
@@ -462,6 +464,30 @@
       prereqEl.innerHTML = `
         <h3 style="margin-bottom:6px;">${isTr ? 'Kapsam ve Kör Noktalar (Preflight Ön Kontrol)' : 'Scope & Blind Spots (Preflight Check)'}</h3>
         <table class="md-table"><thead><tr><th>${isTr ? 'Kategori' : 'Category'}</th><th>${isTr ? 'Bileşen' : 'Component'}</th><th>${isTr ? 'Durum' : 'Status'}</th><th>${isTr ? 'Sürüm' : 'Version'}</th><th>${isTr ? 'Detay' : 'Details'}</th></tr></thead><tbody>${pRows}</tbody></table>
+      `;
+    }
+
+    const errItems = F.filter(x => x.Status === 'Error');
+    const errEl = document.getElementById('errorActionCard');
+    if (errItems.length > 0 && errEl) {
+      errEl.style.display = 'block';
+      const eRows = errItems.map(x => `<tr><td><code>${esc(x.Id)}</code></td><td><strong>${esc(x.Title)}</strong></td><td style="font-size:12px;">${esc(x.ErrorRemedy || x.Result || '')}</td></tr>`).join('');
+      errEl.innerHTML = `
+        <h3 style="margin-bottom:6px;color:var(--fail);">${isTr ? 'Eksik İzin / Motor Hataları (' + errItems.length + ')' : 'Missing Permissions & Engine Errors (' + errItems.length + ')'}</h3>
+        <table class="md-table"><thead><tr><th>ID</th><th>${isTr ? 'Kontrol' : 'Control'}</th><th>${isTr ? 'Önerilen Aksiyon' : 'Recommended Action'}</th></tr></thead><tbody>${eRows}</tbody></table>
+      `;
+    }
+
+    const plannedList = DATA.PlannedFindings || [];
+    const planEl = document.getElementById('plannedUpstreamCard');
+    if (plannedList.length > 0 && planEl) {
+      planEl.style.display = 'block';
+      const plRows = plannedList.slice(0, 50).map(x => `<tr><td><code>${esc(x.Id)}</code></td><td>${esc(x.DomainPillar || x.Pillar || '')}</td><td>${esc(x.Title)}</td></tr>`).join('');
+      planEl.innerHTML = `
+        <details>
+          <summary style="cursor:pointer;font-weight:600;">${isTr ? 'Yakında (Upstream Planned — Skordan Dışlanan ' + plannedList.length + ' Kontrol)' : 'Upcoming (Upstream Planned — ' + plannedList.length + ' Controls Excluded from Score)'}</summary>
+          <table class="md-table" style="margin-top:10px;"><thead><tr><th>ID</th><th>${isTr ? 'Sütun' : 'Pillar'}</th><th>${isTr ? 'Kontrol' : 'Control'}</th></tr></thead><tbody>${plRows}</tbody></table>
+        </details>
       `;
     }
 

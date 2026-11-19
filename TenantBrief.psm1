@@ -1678,6 +1678,25 @@ function New-TenantBriefFindings {
         $riskRaw     = Get-TenantBriefPropertyValue -Object $t -Name 'TestRisk'
         $resultRaw   = Get-TenantBriefPropertyValue -Object $t -Name 'TestResult'
         $skippedRaw  = Get-TenantBriefPropertyValue -Object $t -Name 'SkippedReason'
+        $errRemedy = ''
+        if ($statusRaw -eq 'Error') {
+            $resStr = [string]$resultRaw
+            $scopeMatch = [regex]::Match($resStr, '\b([A-Za-z][A-Za-z0-9]+\.(?:Read|ReadBasic)(?:\.All)?)\b')
+            $scopeHint = if ($scopeMatch.Success) { " ($($scopeMatch.Groups[1].Value))" } else { '' }
+            if ($resStr -match '403|Forbidden|Authorization_RequestDenied|Insufficient privileges|Missing.*scope|Unauthorized') {
+                $errRemedy = if ($Language -eq 'tr') {
+                    "HTTP 403 / Yetki eksikliği tespit edildi$scopeHint. Oturumu gerekli salt okunur Graph/M365 izniyle yeniden bağlayın (Connect-TenantBrief) ve yönetici onayını doğrulayın."
+                } else {
+                    "HTTP 403 / Missing permission detected$scopeHint. Reconnect with the required read-only Graph/M365 scope (Connect-TenantBrief) and verify admin consent."
+                }
+            } else {
+                $errRemedy = if ($Language -eq 'tr') {
+                    "Denetim motoru hata döndürdü; ayrıntı için run-manifest.json ve ham motor günlüklerini inceleyin."
+                } else {
+                    "Assessment engine returned an error; inspect run-manifest.json and raw engine logs."
+                }
+            }
+        }
 
         $canonicalRaw = [string](Get-TenantBriefPropertyValue -Object $t -Name 'CanonicalId')
         $srcStatusesRaw = Get-TenantBriefPropertyValue -Object $t -Name 'SourceStatuses'
@@ -1716,6 +1735,7 @@ function New-TenantBriefFindings {
             Impact             = $fImp
             Description        = $fDesc
             SkippedReason      = [string]$skippedRaw
+            ErrorRemedy        = $errRemedy
             RemediationTr      = $remTr
         }
     }
