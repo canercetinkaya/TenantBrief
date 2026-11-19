@@ -113,7 +113,7 @@
   },
   "ZeroTrust|21788": {
     "Title": "Global Yöneticilerin, kiracıdaki tüm Azure aboneliklerine sürekli yükseltilmiş erişimi yoktur",
-    "Desc": "Azure aboneliklerine kalıcı erişimi olan Global Yöneticiler, tehdit aktörleri için saldırı yüzeyini genişletir. Bir Global Yönetici hesabı ele geçirilirse, saldırganlar hemen kaynakları sayabilir, yapılandırmaları değiştirebilir, roller atabilir ve tüm abonelikler boyunca hassas verileri sızdırabilir. Abonelik erişimi için tam zamanında yükseltme gerektirmek, tespit edilebilir sinyaller oluşturur, saldırganın hızını yavaşlatır ve yüksek etkili işlemleri gözlemlenebilir kontrol noktaları üzerinden yönlendirir. \r\n\r\n**Düzeltme işlemi** \r\n\r\n- [Oltalamaya karşı dayanıklı şifresiz kimlik doğrulama dağıtımına başlayın](https://learn.microsoft.com/entra/identity/authentication/how-to-plan-prerequisites-phishing-resistant-passwordless-authentication?wt.mc_id=zerotrustrecommendations_automation_content_cnl_csasci)\r\n\r\n- [Ayrıcalıklı hesapların kayıt yapmasını ve oltalama dirençli yöntemleri kullanmasını sağlamak](https://learn.microsoft.com/entra/identity/authentication/concept-authentication-strengths?wt.mc_id=zerotrustrecommendations_a",
+    "Desc": "Azure aboneliklerine kalıcı erişimi olan Global Yöneticiler, tehdit aktörleri için saldırı yüzeyini genişletir. Bir Global Yönetici hesabı ele geçirilirse, saldırganlar hemen kaynakları sayabilir, yapılandırmaları değiştirebilir, roller atabilir ve tüm abonelikler boyunca hassas verileri sızdırabilir. Abonelik erişimi için tam zamanında yükseltme gerektirmek, tespit edilebilir sinyaller oluşturur, saldırganın hızını yavaşlatır ve yüksek etkili işlemleri gözlemlenebilir kontrol noktaları üzerinden yönlendirir. \r\n\r\n**Düzeltme işlemi** \r\n\r\n- [Oltalamaya karşı dayanıklı şifresiz kimlik doğrulama dağıtımına başlayın](https://learn.microsoft.com/entra/identity/authentication/how-to-plan-prerequisites-oltalamaya dayanıklı-passwordless-authentication?wt.mc_id=zerotrustrecommendations_automation_content_cnl_csasci)\r\n\r\n- [Ayrıcalıklı hesapların kayıt yapmasını ve oltalama dirençli yöntemleri kullanmasını sağlamak](https://learn.microsoft.com/entra/identity/authentication/concept-authentication-strengths?wt.mc_id=zerotrustrecommendations_a",
     "Remediation": "",
     "Reviewed": false,
     "Source": "machine"
@@ -2023,7 +2023,7 @@
     "Source": "machine"
   },
   "ZeroTrust|21840": {
-    "Title": "Güvenlik anahtarı tasdiqi uygulanır",
+    "Title": "Güvenlik anahtarı doğrulaması uygulanır",
     "Desc": "Güvenlik anahtarı doğrulaması uygulanmadığında, tehdit aktörleri zayıf veya ele geçirilmiş kimlik doğrulama donanımını kullanarak kurumsal ortamlarda kalıcı varlık kurabilir. Doğrulama doğrulaması olmadan, kötü niyetli aktörler donanım destekli güvenlik kontrollerini atlayan yetkisiz veya sahte FIDO2 güvenlik anahtarları kaydedebilir ve böylece meşru güvenlik anahtarlarını taklit eden yapay kimlik doğrulama cihazları kullanarak kimlik bilgisi doldurma saldırıları gerçekleştirebilirler. Bu ilk erişim, tehdit aktörlerinin donanım kimlik doğrulama yöntemlerinin güvenilir doğasını kullanarak ayrıcalıklarını yükseltmesine ve ardından yüksek ayrıcalıklı hesaplarda daha fazla ele geçirilmiş güvenlik anahtarı kaydederek ortamda yatay hareket etmelerine olanak tanır. Doğrulama uygulamasının olmaması, tehdit aktörlerinin kalıcı donanım tabanlı kimlik doğrulama yöntemleriyle komuta ve kontrol kurmaları için bir yol açar; bu da nihayetinde veri sızdırmasına veya sistem ele geçirilmesine yol açarken meşru donanım korumalı kimlik doğrulama görünümü korunur",
     "Remediation": "",
     "Reviewed": false,
@@ -2486,7 +2486,7 @@
   },
   "ZeroTrust|21784": {
     "Title": "Tüm kullanıcı oturum açma etkinlikleri oltalama dirençli kimlik doğrulama yöntemleri kullanır",
-    "Desc": "Geçiş anahtarları ve FIDO2 güvenlik anahtarları gibi oltalama dirençli kimlik doğrulama yöntemleri, kimlik bilgisi hırsızlığına ve gelişmiş oltalama saldırılarına karşı en güçlü korumayı sağlar. Geleneksel MFA yöntemleri, ortada saldırgan saldırılarına ve sosyal mühendisliğe karşı savunmasızdır. Koşullu Erişim politikalarıyla tüm kullanıcılar için oltalama dirençli yöntemlerin uygulanması, saldırganların kimlik doğrulama akışlarını engellemeye çalışsa bile yetkisiz erişimi önlemeye yardımcı olur. \r\n\r\n**Düzeltme işlemi** \r\n\r\n- [MFA gücüne sahip tüm kullanıcılar için Koşullu Erişimi yapılandır](https://learn.microsoft.com/entra/identity/conditional-access/policy-all-users-mfa-strength?wt.mc_id=zerotrustrecommendations_automation_content_cnl_csasci)\r\n- [Oltalamaya dayanıklı şifresiz kimlik doğrulama uygula](https://learn.microsoft.com/entra/identity/authentication/how-to-deploy-phishing-resistant-passwordless-authentication?wt.mc_id=zerotrustrecommendations_automation_content_cnl_csasci)",
+    "Desc": "Geçiş anahtarları ve FIDO2 güvenlik anahtarları gibi oltalama dirençli kimlik doğrulama yöntemleri, kimlik bilgisi hırsızlığına ve gelişmiş oltalama saldırılarına karşı en güçlü korumayı sağlar. Geleneksel MFA yöntemleri, ortada saldırgan saldırılarına ve sosyal mühendisliğe karşı savunmasızdır. Koşullu Erişim politikalarıyla tüm kullanıcılar için oltalama dirençli yöntemlerin uygulanması, saldırganların kimlik doğrulama akışlarını engellemeye çalışsa bile yetkisiz erişimi önlemeye yardımcı olur. \r\n\r\n**Düzeltme işlemi** \r\n\r\n- [MFA gücüne sahip tüm kullanıcılar için Koşullu Erişimi yapılandır](https://learn.microsoft.com/entra/identity/conditional-access/policy-all-users-mfa-strength?wt.mc_id=zerotrustrecommendations_automation_content_cnl_csasci)\r\n- [Oltalamaya dayanıklı şifresiz kimlik doğrulama uygula](https://learn.microsoft.com/entra/identity/authentication/how-to-deploy-oltalamaya dayanıklı-passwordless-authentication?wt.mc_id=zerotrustrecommendations_automation_content_cnl_csasci)",
     "Remediation": "",
     "Reviewed": false,
     "Source": "machine"
@@ -2515,6 +2515,1819 @@
   "ZeroTrust|35035": {
     "Title": "Otomatik Etiketleme ve DLP Politikalarında Adlandırılmış Varlık SIT'lerinin Kullanımı",
     "Desc": "Adlandırılmış varlık hassas bilgi türleri (SIT'ler), kişinin isimleri, fiziksel adresleri ve tıbbi terminoloji gibi yaygın hassas varlıkları tespit eden önceden oluşturulmuş Microsoft sınıflandırıcılarıdır. Veri korumasını desen eşleştirmenin ötesine çıkarıp bağlam farkında sınıflandırmaya genişletir ve herhangi bir özel geliştirme olmadan otomatik etiketleme politikaları ve DLP kurallarında kullanılabilirler. \r\n\r\n**Düzeltme işlemi** \r\n\r\n- [Adlandırılmış varlıklar hakkında bilgi edinin](https://learn.microsoft.com/purview/sit-named-entities-learn?wt.mc_id=zerotrustrecommendations_automation_content_cnl_csasci)\r\n- [Veri kaybı önleme politikalarınızda adlandırılmış varlıkları kullanın](https://learn.microsoft.com/purview/sit-named-entities-use?wt.mc_id=zerotrustrecommendations_automation_content_cnl_csasci)",
+    "Remediation": "",
+    "Reviewed": false,
+    "Source": "machine"
+  },
+  "ZeroTrust|41062": {
+    "Title": "Automated Investigation and Response (AIR) recommendations reviewed and actioned",
+    "Desc": "",
+    "Remediation": "",
+    "Reviewed": false,
+    "Source": "machine"
+  },
+  "CISA SCuBA|SCUBA-MS.AAD.1.1v1": {
+    "Title": "Eski (legacy) kimlik doğrulama protokollerini engelle",
+    "Desc": "",
+    "Remediation": "",
+    "Reviewed": false,
+    "Source": "machine"
+  },
+  "CISA SCuBA|SCUBA-MS.AAD.2.1v1": {
+    "Title": "Yüksek riskli kullanıcıları Koşullu Erişim ile engelle veya iyileştir",
+    "Desc": "",
+    "Remediation": "",
+    "Reviewed": false,
+    "Source": "machine"
+  },
+  "CISA SCuBA|SCUBA-MS.AAD.2.2v1": {
+    "Title": "A notification olması önerilir: sent to administrator when high-risk users detected.",
+    "Desc": "",
+    "Remediation": "",
+    "Reviewed": false,
+    "Source": "machine"
+  },
+  "CISA SCuBA|SCUBA-MS.AAD.2.3v1": {
+    "Title": "Yüksek riskli oturum açmaları Koşullu Erişim ile engelle veya MFA iste",
+    "Desc": "",
+    "Remediation": "",
+    "Reviewed": false,
+    "Source": "machine"
+  },
+  "CISA SCuBA|SCUBA-MS.AAD.3.1v1": {
+    "Title": "Tüm kullanıcılar için kimlik avına dayanıklı (phishing-resistant) MFA zorunlu kıl",
+    "Desc": "",
+    "Remediation": "",
+    "Reviewed": false,
+    "Source": "machine"
+  },
+  "CISA SCuBA|SCUBA-MS.AAD.3.2v2": {
+    "Title": "Tüm kullanıcılar için MFA zorunlu kıl",
+    "Desc": "",
+    "Remediation": "",
+    "Reviewed": false,
+    "Source": "machine"
+  },
+  "CISA SCuBA|SCUBA-MS.AAD.3.3v2": {
+    "Title": "Microsoft Authenticator bildirimlerinde oturum bağlamını (sayı eşleştirme, uygulama, konum) göster",
+    "Desc": "",
+    "Remediation": "",
+    "Reviewed": false,
+    "Source": "machine"
+  },
+  "CISA SCuBA|SCUBA-MS.AAD.3.4v1": {
+    "Title": "Eski MFA ve SSPR politikalarından birleşik Kimlik Doğrulama Yöntemlerine geçişi tamamla",
+    "Desc": "",
+    "Remediation": "",
+    "Reviewed": false,
+    "Source": "machine"
+  },
+  "CISA SCuBA|SCUBA-MS.AAD.3.5v2": {
+    "Title": "Zayıf kimlik doğrulama yöntemlerini (SMS, sesli arama, e-posta OTP) devre dışı bırak",
+    "Desc": "",
+    "Remediation": "",
+    "Reviewed": false,
+    "Source": "machine"
+  },
+  "CISA SCuBA|SCUBA-MS.AAD.3.6v1": {
+    "Title": "Ayrıcalıklı yönetici rolleri için kimlik avına dayanıklı MFA zorunlu kıl",
+    "Desc": "",
+    "Remediation": "",
+    "Reviewed": false,
+    "Source": "machine"
+  },
+  "CISA SCuBA|SCUBA-MS.AAD.3.7v1": {
+    "Title": "Kimlik doğrulama için uyumlu veya yönetilen cihaz zorunlu kıl",
+    "Desc": "",
+    "Remediation": "",
+    "Reviewed": false,
+    "Source": "machine"
+  },
+  "CISA SCuBA|SCUBA-MS.AAD.3.8v1": {
+    "Title": "Güvenlik bilgisi ve MFA kaydını güvenilir konum veya yönetilen cihazla koru",
+    "Desc": "",
+    "Remediation": "",
+    "Reviewed": false,
+    "Source": "machine"
+  },
+  "CISA SCuBA|SCUBA-MS.AAD.3.9v1": {
+    "Title": "Cihaz Kodu (Device Code) kimlik doğrulama akışını Koşullu Erişim ile engelle",
+    "Desc": "",
+    "Remediation": "",
+    "Reviewed": false,
+    "Source": "machine"
+  },
+  "CISA SCuBA|SCUBA-MS.AAD.4.1v1": {
+    "Title": "Security logs olması zorunludur: sent to agency's security operations center for monitoring.",
+    "Desc": "",
+    "Remediation": "",
+    "Reviewed": false,
+    "Source": "machine"
+  },
+  "CISA SCuBA|SCUBA-MS.AAD.5.1v1": {
+    "Title": "Uygulama kaydını yalnızca yöneticilerle sınırla",
+    "Desc": "",
+    "Remediation": "",
+    "Reviewed": false,
+    "Source": "machine"
+  },
+  "CISA SCuBA|SCUBA-MS.AAD.5.2v1": {
+    "Title": "Kullanıcıların üçüncü taraf uygulamalara izin (consent) vermesini kısıtla",
+    "Desc": "",
+    "Remediation": "",
+    "Reviewed": false,
+    "Source": "machine"
+  },
+  "CISA SCuBA|SCUBA-MS.AAD.5.3v1": {
+    "Title": "Uygulama izin talepleri için yönetici onay iş akışını etkinleştir",
+    "Desc": "",
+    "Remediation": "",
+    "Reviewed": false,
+    "Source": "machine"
+  },
+  "CISA SCuBA|SCUBA-MS.AAD.5.5v1": {
+    "Title": "Uygulama parola/sertifika kimlik bilgisi eklemeyi ve yaşam süresini sınırla",
+    "Desc": "",
+    "Remediation": "",
+    "Reviewed": false,
+    "Source": "machine"
+  },
+  "CISA SCuBA|SCUBA-MS.AAD.5.6v1": {
+    "Title": "Application password lifetime olması önerilir: restricted to 180 days or less.",
+    "Desc": "",
+    "Remediation": "",
+    "Reviewed": false,
+    "Source": "machine"
+  },
+  "CISA SCuBA|SCUBA-MS.AAD.5.7v1": {
+    "Title": "Application certificate lifetime olması önerilir: restricted to 365 days or less.",
+    "Desc": "",
+    "Remediation": "",
+    "Reviewed": false,
+    "Source": "machine"
+  },
+  "CISA SCuBA|SCUBA-MS.AAD.6.1v1": {
+    "Title": "Kullanıcı parolalarının süresinin dolmamasını yapılandır",
+    "Desc": "",
+    "Remediation": "",
+    "Reviewed": false,
+    "Source": "machine"
+  },
+  "CISA SCuBA|SCUBA-MS.AAD.7.1v1": {
+    "Title": "Genel Yönetici (Global Administrator) sayısını sınırla (en az 2, en fazla 4-8)",
+    "Desc": "",
+    "Remediation": "",
+    "Reviewed": false,
+    "Source": "machine"
+  },
+  "CISA SCuBA|SCUBA-MS.AAD.7.2v1": {
+    "Title": "Genel Yönetici yerine en az ayrıcalıklı yönetici rollerini kullan",
+    "Desc": "",
+    "Remediation": "",
+    "Reviewed": false,
+    "Source": "machine"
+  },
+  "CISA SCuBA|SCUBA-MS.AAD.7.3v1": {
+    "Title": "Ayrıcalıklı yönetici hesaplarının yalnızca bulut (cloud-only) olmasını sağla",
+    "Desc": "",
+    "Remediation": "",
+    "Reviewed": false,
+    "Source": "machine"
+  },
+  "CISA SCuBA|SCUBA-MS.AAD.7.4v1": {
+    "Title": "Ayrıcalıklı rollerde kalıcı aktif atamaları kaldır ve PIM JIT zorunlu kıl",
+    "Desc": "",
+    "Remediation": "",
+    "Reviewed": false,
+    "Source": "machine"
+  },
+  "CISA SCuBA|SCUBA-MS.AAD.7.5v1": {
+    "Title": "Provisioning users to highly privileged roles yapılmaması zorunludur: occur outside — a PAM system.",
+    "Desc": "",
+    "Remediation": "",
+    "Reviewed": false,
+    "Source": "machine"
+  },
+  "CISA SCuBA|SCUBA-MS.AAD.7.6v1": {
+    "Title": "Genel Yönetici rol etkinleştirmesi için onay iş akışı zorunlu kıl",
+    "Desc": "",
+    "Remediation": "",
+    "Reviewed": false,
+    "Source": "machine"
+  },
+  "CISA SCuBA|SCUBA-MS.AAD.7.7v1": {
+    "Title": "Eligible and active highly privileged role assignments zorunludur: trigger an alert.",
+    "Desc": "",
+    "Remediation": "",
+    "Reviewed": false,
+    "Source": "machine"
+  },
+  "CISA SCuBA|SCUBA-MS.AAD.7.8v1": {
+    "Title": "Genel Yönetici rol etkinleştirmelerinde uyarı bildirimi gönder",
+    "Desc": "",
+    "Remediation": "",
+    "Reviewed": false,
+    "Source": "machine"
+  },
+  "CISA SCuBA|SCUBA-MS.AAD.7.9v1": {
+    "Title": "User activation — other highly privileged roles önerilir: trigger an alert.",
+    "Desc": "",
+    "Remediation": "",
+    "Reviewed": false,
+    "Source": "machine"
+  },
+  "CISA SCuBA|SCUBA-MS.AAD.8.1v1": {
+    "Title": "Misafir kullanıcıların Entra ID dizin nesnelerine erişimini sınırla",
+    "Desc": "",
+    "Remediation": "",
+    "Reviewed": false,
+    "Source": "machine"
+  },
+  "CISA SCuBA|SCUBA-MS.AAD.8.2v1": {
+    "Title": "Misafir davet yetkisini yalnızca Guest Inviter rolü veya yöneticilerle sınırla",
+    "Desc": "",
+    "Remediation": "",
+    "Reviewed": false,
+    "Source": "machine"
+  },
+  "CISA SCuBA|SCUBA-MS.AAD.8.3v1": {
+    "Title": "Guest invites önerilir: Yalnızca be İzin verilen: be sent to specific external domains that have been authorized by agency for legitimate business purposes.",
+    "Desc": "",
+    "Remediation": "",
+    "Reviewed": false,
+    "Source": "machine"
+  },
+  "CISA SCuBA|SCUBA-MS.AAD.9.1v1": {
+    "Title": "Risky AI agents olması zorunludur: blocked.",
+    "Desc": "",
+    "Remediation": "",
+    "Reviewed": false,
+    "Source": "machine"
+  },
+  "MDO / ORCA|ORCA-113": {
+    "Title": "Defender for Office 365 Güvenli Bağlantılar (Safe Links) politikalarını yapılandır",
+    "Desc": "",
+    "Remediation": "",
+    "Reviewed": false,
+    "Source": "machine"
+  },
+  "MDO / ORCA|ORCA-114": {
+    "Title": "Exchange Online bağlantı filtresinde statik IP izin listesi kullanımından kaçın",
+    "Desc": "",
+    "Remediation": "",
+    "Reviewed": false,
+    "Source": "machine"
+  },
+  "MDO / ORCA|ORCA-118-2": {
+    "Title": "Domain İzin ver: Listing",
+    "Desc": "",
+    "Remediation": "",
+    "Reviewed": false,
+    "Source": "machine"
+  },
+  "MDO / ORCA|ORCA-120-malware": {
+    "Title": "Zararlı yazılım, kimlik avı ve spam için Sıfırıncı Saat Otomatik Temizleme (ZAP) etkinleştir",
+    "Desc": "",
+    "Remediation": "",
+    "Reviewed": false,
+    "Source": "machine"
+  },
+  "MDO / ORCA|ORCA-120-phish": {
+    "Title": "Zararlı yazılım, kimlik avı ve spam için Sıfırıncı Saat Otomatik Temizleme (ZAP) etkinleştir",
+    "Desc": "",
+    "Remediation": "",
+    "Reviewed": false,
+    "Source": "machine"
+  },
+  "MDO / ORCA|ORCA-120-spam": {
+    "Title": "Zararlı yazılım, kimlik avı ve spam için Sıfırıncı Saat Otomatik Temizleme (ZAP) etkinleştir",
+    "Desc": "",
+    "Remediation": "",
+    "Reviewed": false,
+    "Source": "machine"
+  },
+  "MDO / ORCA|ORCA-189-2": {
+    "Title": "Safe Links İzin ver: Listing",
+    "Desc": "",
+    "Remediation": "",
+    "Reviewed": false,
+    "Source": "machine"
+  },
+  "MDO / ORCA|ORCA-189": {
+    "Title": "Safe Attachments İzin ver: listing",
+    "Desc": "",
+    "Remediation": "",
+    "Reviewed": false,
+    "Source": "machine"
+  },
+  "MDO / ORCA|ORCA-221": {
+    "Title": "Mailbox Intelligence Etkin",
+    "Desc": "",
+    "Remediation": "",
+    "Reviewed": false,
+    "Source": "machine"
+  },
+  "MDO / ORCA|ORCA-224": {
+    "Title": "Similar Users Safety Tips",
+    "Desc": "",
+    "Remediation": "",
+    "Reviewed": false,
+    "Source": "machine"
+  },
+  "MDO / ORCA|ORCA-234": {
+    "Title": "Yapma: let users click through Safe Documents for Office clients",
+    "Desc": "",
+    "Remediation": "",
+    "Reviewed": false,
+    "Source": "machine"
+  },
+  "CIS M365|CIS.M365.1.1.1": {
+    "Title": "Ayrıcalıklı yönetici hesaplarının yalnızca bulut (cloud-only) olmasını sağla",
+    "Desc": "",
+    "Remediation": "",
+    "Reviewed": false,
+    "Source": "machine"
+  },
+  "CIS M365|CIS.M365.1.1.3": {
+    "Title": "Genel Yönetici (Global Administrator) sayısını sınırla (en az 2, en fazla 4-8)",
+    "Desc": "",
+    "Remediation": "",
+    "Reviewed": false,
+    "Source": "machine"
+  },
+  "CIS M365|CIS.M365.1.2.1": {
+    "Title": "Şu güvenlik kontrolünün sağlandığını doğrulayın: Yalnızca organizationally managed/approved public groups exist",
+    "Desc": "",
+    "Remediation": "",
+    "Reviewed": false,
+    "Source": "machine"
+  },
+  "CIS M365|CIS.M365.1.3.1": {
+    "Title": "Kullanıcı parolalarının süresinin dolmamasını yapılandır",
+    "Desc": "",
+    "Remediation": "",
+    "Reviewed": false,
+    "Source": "machine"
+  },
+  "CIS M365|CIS.M365.1.3.3": {
+    "Title": "Şu yapılandırmanın etkin olduğunu doğrulayın: 'External sharing' — calendars not available",
+    "Desc": "",
+    "Remediation": "",
+    "Reviewed": false,
+    "Source": "machine"
+  },
+  "CIS M365|CIS.M365.1.3.6": {
+    "Title": "Şu yapılandırmanın etkin olduğunu doğrulayın: customer lockbox feature etkinleştirilmiş",
+    "Desc": "",
+    "Remediation": "",
+    "Reviewed": false,
+    "Source": "machine"
+  },
+  "CIS M365|CIS.M365.1.3.7": {
+    "Title": "Şu yapılandırmanın etkin olduğunu doğrulayın: 'third-party storage services' kısıtlanmış in 'Microsoft 365 on web'",
+    "Desc": "",
+    "Remediation": "",
+    "Reviewed": false,
+    "Source": "machine"
+  },
+  "CIS M365|CIS.M365.2.1.1": {
+    "Title": "Defender for Office 365 Güvenli Bağlantılar (Safe Links) politikalarını yapılandır",
+    "Desc": "",
+    "Remediation": "",
+    "Reviewed": false,
+    "Source": "machine"
+  },
+  "CIS M365|CIS.M365.2.1.11": {
+    "Title": "Anti-Malware politikasında Yaygın Ek Türleri Filtresini etkinleştir",
+    "Desc": "",
+    "Remediation": "",
+    "Reviewed": false,
+    "Source": "machine"
+  },
+  "CIS M365|CIS.M365.2.1.12": {
+    "Title": "Exchange Online bağlantı filtresinde statik IP izin listesi kullanımından kaçın",
+    "Desc": "",
+    "Remediation": "",
+    "Reviewed": false,
+    "Source": "machine"
+  },
+  "CIS M365|CIS.M365.2.1.13": {
+    "Title": "Şu yapılandırmanın etkin olduğunu doğrulayın: connection filter safe list kapalıdır (Yalnızca Checks Default Policy)",
+    "Desc": "",
+    "Remediation": "",
+    "Reviewed": false,
+    "Source": "machine"
+  },
+  "CIS M365|CIS.M365.2.1.2": {
+    "Title": "Anti-Malware politikasında Yaygın Ek Türleri Filtresini etkinleştir",
+    "Desc": "",
+    "Remediation": "",
+    "Reviewed": false,
+    "Source": "machine"
+  },
+  "CIS M365|CIS.M365.2.1.3": {
+    "Title": "İç kullanıcılar zararlı yazılım gönderdiğinde yöneticilere bildirim gönder",
+    "Desc": "",
+    "Remediation": "",
+    "Reviewed": false,
+    "Source": "machine"
+  },
+  "CIS M365|CIS.M365.2.1.4": {
+    "Title": "Defender for Office 365 Güvenli Ekler (Safe Attachments) tarama ve engelleme politikasını yapılandır",
+    "Desc": "",
+    "Remediation": "",
+    "Reviewed": false,
+    "Source": "machine"
+  },
+  "CIS M365|CIS.M365.2.1.5": {
+    "Title": "SharePoint, OneDrive ve Microsoft Teams için Güvenli Ekler korumasını etkinleştir",
+    "Desc": "",
+    "Remediation": "",
+    "Reviewed": false,
+    "Source": "machine"
+  },
+  "CIS M365|CIS.M365.2.1.6": {
+    "Title": "Şu yapılandırmanın etkin olduğunu doğrulayın: Exchange Online Spam Policies set to notify administrators (Yalnızca Checks Default Policy)",
+    "Desc": "",
+    "Remediation": "",
+    "Reviewed": false,
+    "Source": "machine"
+  },
+  "CIS M365|CIS.M365.2.1.7": {
+    "Title": "Kimlik Avı Önleme (Anti-Phishing) taklit, spoof ve posta kutusu zekâsı korumasını yapılandır",
+    "Desc": "",
+    "Remediation": "",
+    "Reviewed": false,
+    "Source": "machine"
+  },
+  "CIS M365|CIS.M365.2.1.9": {
+    "Title": "Tüm Exchange Online alan adları için DKIM imzalamayı etkinleştir",
+    "Desc": "",
+    "Remediation": "",
+    "Reviewed": false,
+    "Source": "machine"
+  },
+  "CIS M365|CIS.M365.3.1.1": {
+    "Title": "Microsoft 365 birleşik denetim günlüğü (audit log) aramasını etkinleştir",
+    "Desc": "",
+    "Remediation": "",
+    "Reviewed": false,
+    "Source": "machine"
+  },
+  "CIS M365|CIS.M365.4.1": {
+    "Title": "Uyumluluk politikası atanmamış cihazları uyumlu değil olarak işaretle",
+    "Desc": "",
+    "Remediation": "",
+    "Reviewed": false,
+    "Source": "machine"
+  },
+  "CIS M365|CIS.M365.5.1.2.2": {
+    "Title": "Uygulama kaydını yalnızca yöneticilerle sınırla",
+    "Desc": "",
+    "Remediation": "",
+    "Reviewed": false,
+    "Source": "machine"
+  },
+  "CIS M365|CIS.M365.5.1.2.3": {
+    "Title": "Yönetici olmayan kullanıcıların yeni Entra kiracısı oluşturmasını kısıtla",
+    "Desc": "",
+    "Remediation": "",
+    "Reviewed": false,
+    "Source": "machine"
+  },
+  "CIS M365|CIS.M365.5.1.4.6": {
+    "Title": "Yönetici olmayan kullanıcıların BitLocker kurtarma anahtarlarına erişimini kısıtla",
+    "Desc": "",
+    "Remediation": "",
+    "Reviewed": false,
+    "Source": "machine"
+  },
+  "CIS M365|CIS.M365.5.1.5.1": {
+    "Title": "Kullanıcıların üçüncü taraf uygulamalara izin (consent) vermesini kısıtla",
+    "Desc": "",
+    "Remediation": "",
+    "Reviewed": false,
+    "Source": "machine"
+  },
+  "CIS M365|CIS.M365.5.1.5.2": {
+    "Title": "Uygulama izin talepleri için yönetici onay iş akışını etkinleştir",
+    "Desc": "",
+    "Remediation": "",
+    "Reviewed": false,
+    "Source": "machine"
+  },
+  "CIS M365|CIS.M365.5.1.6.2": {
+    "Title": "Misafir kullanıcıların Entra ID dizin nesnelerine erişimini sınırla",
+    "Desc": "",
+    "Remediation": "",
+    "Reviewed": false,
+    "Source": "machine"
+  },
+  "CIS M365|CIS.M365.5.2.3.5": {
+    "Title": "Zayıf kimlik doğrulama yöntemlerini (SMS, sesli arama, e-posta OTP) devre dışı bırak",
+    "Desc": "",
+    "Remediation": "",
+    "Reviewed": false,
+    "Source": "machine"
+  },
+  "CIS M365|CIS.M365.6.5.3": {
+    "Title": "Şu yapılandırmanın etkin olduğunu doğrulayın: additional storage providers kısıtlanmış in Outlook on web",
+    "Desc": "",
+    "Remediation": "",
+    "Reviewed": false,
+    "Source": "machine"
+  },
+  "EIDSCA|EIDSCA.AG03": {
+    "Title": "Microsoft Authenticator şüpheli etkinlik bildirme ayarını etkinleştir",
+    "Desc": "",
+    "Remediation": "",
+    "Reviewed": false,
+    "Source": "machine"
+  },
+  "EIDSCA|EIDSCA.AM02": {
+    "Title": "Kimlik Doğrulama Yöntemi — Microsoft Authenticator — İzin ver: use — Microsoft Authenticator OTP.",
+    "Desc": "",
+    "Remediation": "",
+    "Reviewed": false,
+    "Source": "machine"
+  },
+  "EIDSCA|EIDSCA.AM03": {
+    "Title": "Microsoft Authenticator bildirimlerinde oturum bağlamını (sayı eşleştirme, uygulama, konum) göster",
+    "Desc": "",
+    "Remediation": "",
+    "Reviewed": false,
+    "Source": "machine"
+  },
+  "EIDSCA|EIDSCA.AM04": {
+    "Title": "Kimlik Doğrulama Yöntemi — Microsoft Authenticator — Included users/groups — number matching for push notifications.",
+    "Desc": "",
+    "Remediation": "",
+    "Reviewed": false,
+    "Source": "machine"
+  },
+  "EIDSCA|EIDSCA.AM07": {
+    "Title": "Kimlik Doğrulama Yöntemi — Microsoft Authenticator — Included users/groups to show application name in push and passwordless notifications.",
+    "Desc": "",
+    "Remediation": "",
+    "Reviewed": false,
+    "Source": "machine"
+  },
+  "EIDSCA|EIDSCA.AM10": {
+    "Title": "Kimlik Doğrulama Yöntemi — Microsoft Authenticator — Included users/groups to show geographic location in push and passwordless notifications.",
+    "Desc": "",
+    "Remediation": "",
+    "Reviewed": false,
+    "Source": "machine"
+  },
+  "EIDSCA|EIDSCA.AP01": {
+    "Title": "Self-Servis Parola Sıfırlama (SSPR) ve yönetici parola sıfırlama bildirimlerini etkinleştir",
+    "Desc": "",
+    "Remediation": "",
+    "Reviewed": false,
+    "Source": "machine"
+  },
+  "EIDSCA|EIDSCA.AP06": {
+    "Title": "Varsayılan Yetkilendirme Ayarları — User can join tenant by email validation.",
+    "Desc": "",
+    "Remediation": "",
+    "Reviewed": false,
+    "Source": "machine"
+  },
+  "EIDSCA|EIDSCA.AP09": {
+    "Title": "Risk tabanlı uygulamalara kullanıcı onayını engelle",
+    "Desc": "",
+    "Remediation": "",
+    "Reviewed": false,
+    "Source": "machine"
+  },
+  "EIDSCA|EIDSCA.AP14": {
+    "Title": "Varsayılan Yetkilendirme Ayarları — Default User Role Permissions - İzin verilen: read other users.",
+    "Desc": "",
+    "Remediation": "",
+    "Reviewed": false,
+    "Source": "machine"
+  },
+  "EIDSCA|EIDSCA.CP03": {
+    "Title": "Risk tabanlı uygulamalara kullanıcı onayını engelle",
+    "Desc": "",
+    "Remediation": "",
+    "Reviewed": false,
+    "Source": "machine"
+  },
+  "EIDSCA|EIDSCA.CP04": {
+    "Title": "Uygulama izin talepleri için yönetici onay iş akışını etkinleştir",
+    "Desc": "",
+    "Remediation": "",
+    "Reviewed": false,
+    "Source": "machine"
+  },
+  "EIDSCA|EIDSCA.CR01": {
+    "Title": "Uygulama izin talepleri için yönetici onay iş akışını etkinleştir",
+    "Desc": "",
+    "Remediation": "",
+    "Reviewed": false,
+    "Source": "machine"
+  },
+  "EIDSCA|EIDSCA.PR02": {
+    "Title": "Entra Parola Koruması özel yasaklı liste ve şirket içi korumasını etkinleştir",
+    "Desc": "",
+    "Remediation": "",
+    "Reviewed": false,
+    "Source": "machine"
+  },
+  "EIDSCA|EIDSCA.ST08": {
+    "Title": "Varsayılan Ayarlar — Classification and M365 Groups - M365 groups - İzin ver: Guests to become Group Owner.",
+    "Desc": "",
+    "Remediation": "",
+    "Reviewed": false,
+    "Source": "machine"
+  },
+  "EIDSCA|EIDSCA.ST09": {
+    "Title": "Varsayılan Ayarlar — Classification and M365 Groups - M365 groups - İzin ver: Guests to have access to groups content.",
+    "Desc": "",
+    "Remediation": "",
+    "Reviewed": false,
+    "Source": "machine"
+  },
+  "Maester|MT.1001": {
+    "Title": "Kimlik doğrulama için uyumlu veya yönetilen cihaz zorunlu kıl",
+    "Desc": "",
+    "Remediation": "",
+    "Reviewed": false,
+    "Source": "machine"
+  },
+  "Maester|MT.1002": {
+    "Title": "Uygulama parola/sertifika kimlik bilgisi eklemeyi ve yaşam süresini sınırla",
+    "Desc": "",
+    "Remediation": "",
+    "Reviewed": false,
+    "Source": "machine"
+  },
+  "Maester|MT.1003": {
+    "Title": "At least one Koşullu Erişim politikası yapılandırılmış with Tüm Apps.",
+    "Desc": "",
+    "Remediation": "",
+    "Reviewed": false,
+    "Source": "machine"
+  },
+  "Maester|MT.1004": {
+    "Title": "At least one Koşullu Erişim politikası yapılandırılmış with Tüm Apps and Tüm Users.",
+    "Desc": "",
+    "Remediation": "",
+    "Reviewed": false,
+    "Source": "machine"
+  },
+  "Maester|MT.1005": {
+    "Title": "Acil durum (break-glass) hesaplarını yapılandır ve Koşullu Erişim kapsamından hariç tut",
+    "Desc": "",
+    "Remediation": "",
+    "Reviewed": false,
+    "Source": "machine"
+  },
+  "Maester|MT.1006": {
+    "Title": "Ayrıcalıklı yönetici rolleri için kimlik avına dayanıklı MFA zorunlu kıl",
+    "Desc": "",
+    "Remediation": "",
+    "Reviewed": false,
+    "Source": "machine"
+  },
+  "Maester|MT.1007": {
+    "Title": "Tüm kullanıcılar için MFA zorunlu kıl",
+    "Desc": "",
+    "Remediation": "",
+    "Reviewed": false,
+    "Source": "machine"
+  },
+  "Maester|MT.1008": {
+    "Title": "En az bir Koşullu Erişim politikası şu amaçla yapılandırılmalıdır: Zorunlu kıl: MFA for Azure management.",
+    "Desc": "",
+    "Remediation": "",
+    "Reviewed": false,
+    "Source": "machine"
+  },
+  "Maester|MT.1009": {
+    "Title": "Eski (legacy) kimlik doğrulama protokollerini engelle",
+    "Desc": "",
+    "Remediation": "",
+    "Reviewed": false,
+    "Source": "machine"
+  },
+  "Maester|MT.1010": {
+    "Title": "Eski (legacy) kimlik doğrulama protokollerini engelle",
+    "Desc": "",
+    "Remediation": "",
+    "Reviewed": false,
+    "Source": "machine"
+  },
+  "Maester|MT.1011": {
+    "Title": "Güvenlik bilgisi ve MFA kaydını güvenilir konum veya yönetilen cihazla koru",
+    "Desc": "",
+    "Remediation": "",
+    "Reviewed": false,
+    "Source": "machine"
+  },
+  "Maester|MT.1012": {
+    "Title": "Yüksek riskli oturum açmaları Koşullu Erişim ile engelle veya MFA iste",
+    "Desc": "",
+    "Remediation": "",
+    "Reviewed": false,
+    "Source": "machine"
+  },
+  "Maester|MT.1013": {
+    "Title": "Yüksek riskli kullanıcıları Koşullu Erişim ile engelle veya iyileştir",
+    "Desc": "",
+    "Remediation": "",
+    "Reviewed": false,
+    "Source": "machine"
+  },
+  "Maester|MT.1014": {
+    "Title": "Kimlik doğrulama için uyumlu veya yönetilen cihaz zorunlu kıl",
+    "Desc": "",
+    "Remediation": "",
+    "Reviewed": false,
+    "Source": "machine"
+  },
+  "Maester|MT.1015": {
+    "Title": "En az bir Koşullu Erişim politikası şu amaçla yapılandırılmalıdır: Engelle: access for unknown or unsupported device platforms.",
+    "Desc": "",
+    "Remediation": "",
+    "Reviewed": false,
+    "Source": "machine"
+  },
+  "Maester|MT.1016": {
+    "Title": "En az bir Koşullu Erişim politikası şu amaçla yapılandırılmalıdır: Zorunlu kıl: MFA (misafir erişimi için).",
+    "Desc": "",
+    "Remediation": "",
+    "Reviewed": false,
+    "Source": "machine"
+  },
+  "Maester|MT.1017": {
+    "Title": "En az bir Koşullu Erişim politikası şu amaçla yapılandırılmalıdır: enforce non persistent browser session for non-corporate devices.",
+    "Desc": "",
+    "Remediation": "",
+    "Reviewed": false,
+    "Source": "machine"
+  },
+  "Maester|MT.1018": {
+    "Title": "En az bir Koşullu Erişim politikası şu amaçla yapılandırılmalıdır: enforce sign-in frequency for non-corporate devices.",
+    "Desc": "",
+    "Remediation": "",
+    "Reviewed": false,
+    "Source": "machine"
+  },
+  "Maester|MT.1019": {
+    "Title": "En az bir Koşullu Erişim politikası şu amaçla yapılandırılmalıdır: Etkinleştir: application enforced restrictions.",
+    "Desc": "",
+    "Remediation": "",
+    "Reviewed": false,
+    "Source": "machine"
+  },
+  "Maester|MT.1020": {
+    "Title": "Tüm Koşullu Erişim politikaları şu şekilde yapılandırılmalıdır: exclude Directory/OnPremises synchronization accounts or Yapma: scope them.",
+    "Desc": "",
+    "Remediation": "",
+    "Reviewed": false,
+    "Source": "machine"
+  },
+  "Maester|MT.1022": {
+    "Title": "Tüm users utilizing a P1 license olması önerilir: licensed.",
+    "Desc": "",
+    "Remediation": "",
+    "Reviewed": false,
+    "Source": "machine"
+  },
+  "Maester|MT.1023": {
+    "Title": "Tüm users utilizing a P2 license olması önerilir: licensed.",
+    "Desc": "",
+    "Remediation": "",
+    "Reviewed": false,
+    "Source": "machine"
+  },
+  "Maester|MT.1024.insiderRiskPolicy": {
+    "Title": "Koru: your tenant with Insider Risk condition in Koşullu Erişim politikası.",
+    "Desc": "",
+    "Remediation": "",
+    "Reviewed": false,
+    "Source": "machine"
+  },
+  "Maester|MT.1024.integratedApps": {
+    "Title": "Kullanıcıların üçüncü taraf uygulamalara izin (consent) vermesini kısıtla",
+    "Desc": "",
+    "Remediation": "",
+    "Reviewed": false,
+    "Source": "machine"
+  },
+  "Maester|MT.1024.passwordHashSync": {
+    "Title": "Etkinleştir: password hash sync if hybrid.",
+    "Desc": "",
+    "Remediation": "",
+    "Reviewed": false,
+    "Source": "machine"
+  },
+  "Maester|MT.1024.pwagePolicyNew": {
+    "Title": "Kullanıcı parolalarının süresinin dolmamasını yapılandır",
+    "Desc": "",
+    "Remediation": "",
+    "Reviewed": false,
+    "Source": "machine"
+  },
+  "Maester|MT.1024.roleOverlap": {
+    "Title": "Genel Yönetici yerine en az ayrıcalıklı yönetici rollerini kullan",
+    "Desc": "",
+    "Remediation": "",
+    "Reviewed": false,
+    "Source": "machine"
+  },
+  "Maester|MT.1024.selfServicePasswordReset": {
+    "Title": "Self-Servis Parola Sıfırlama (SSPR) ve yönetici parola sıfırlama bildirimlerini etkinleştir",
+    "Desc": "",
+    "Remediation": "",
+    "Reviewed": false,
+    "Source": "machine"
+  },
+  "Maester|MT.1025": {
+    "Title": "Ayrıcalıklı rollerde kalıcı aktif atamaları kaldır ve PIM JIT zorunlu kıl",
+    "Desc": "",
+    "Remediation": "",
+    "Reviewed": false,
+    "Source": "machine"
+  },
+  "Maester|MT.1026": {
+    "Title": "Ayrıcalıklı yönetici hesaplarının yalnızca bulut (cloud-only) olmasını sağla",
+    "Desc": "",
+    "Remediation": "",
+    "Reviewed": false,
+    "Source": "machine"
+  },
+  "Maester|MT.1027": {
+    "Title": "Olmamalı: Service Principal with Client Secret and permanent role assignment on Control Plane.",
+    "Desc": "",
+    "Remediation": "",
+    "Reviewed": false,
+    "Source": "machine"
+  },
+  "Maester|MT.1028": {
+    "Title": "Olmamalı: user with mailbox and permanent role assignment on Control Plane.",
+    "Desc": "",
+    "Remediation": "",
+    "Reviewed": false,
+    "Source": "machine"
+  },
+  "Maester|MT.1035": {
+    "Title": "Tüm security groups assigned to Koşullu Erişim politikaları olması önerilir: protected by RMAU.",
+    "Desc": "",
+    "Remediation": "",
+    "Reviewed": false,
+    "Source": "machine"
+  },
+  "Maester|MT.1036": {
+    "Title": "Tüm excluded objects önerilir: have a fallback include in another policy.",
+    "Desc": "",
+    "Remediation": "",
+    "Reviewed": false,
+    "Source": "machine"
+  },
+  "Maester|MT.1038": {
+    "Title": "Koşullu Erişim politikaları şu yapılandırmayı içermemelidir: include or exclude deleted groups.",
+    "Desc": "",
+    "Remediation": "",
+    "Reviewed": false,
+    "Source": "machine"
+  },
+  "Maester|MT.1039": {
+    "Title": "Şu yapılandırmanın etkin olduğunu doğrulayın: MailTips etkinleştirilmiş for end users",
+    "Desc": "",
+    "Remediation": "",
+    "Reviewed": false,
+    "Source": "machine"
+  },
+  "Maester|MT.1041": {
+    "Title": "Şu yapılandırmanın etkin olduğunu doğrulayın: users installing Outlook add-ins izin verilmemelidir",
+    "Desc": "",
+    "Remediation": "",
+    "Reviewed": false,
+    "Source": "machine"
+  },
+  "Maester|MT.1043": {
+    "Title": "Şu yapılandırmanın etkin olduğunu doğrulayın: Spam confidence level (SCL) yapılandırılmış in mail transport rules with specific domains",
+    "Desc": "",
+    "Remediation": "",
+    "Reviewed": false,
+    "Source": "machine"
+  },
+  "Maester|MT.1044": {
+    "Title": "Eski (legacy) kimlik doğrulama protokollerini engelle",
+    "Desc": "",
+    "Remediation": "",
+    "Reviewed": false,
+    "Source": "machine"
+  },
+  "Maester|MT.1045": {
+    "Title": "Microsoft Teams toplantılarında lobi atlamayı yalnızca kurum içi kullanıcılarla sınırla",
+    "Desc": "",
+    "Remediation": "",
+    "Reviewed": false,
+    "Source": "machine"
+  },
+  "Maester|MT.1052": {
+    "Title": "Cihaz Kodu (Device Code) kimlik doğrulama akışını Koşullu Erişim ile engelle",
+    "Desc": "",
+    "Remediation": "",
+    "Reviewed": false,
+    "Source": "machine"
+  },
+  "Maester|MT.1053": {
+    "Title": "Şu yapılandırmanın etkin olduğunu doğrulayın: intune device clean-up rule yapılandırılmış",
+    "Desc": "",
+    "Remediation": "",
+    "Reviewed": false,
+    "Source": "machine"
+  },
+  "Maester|MT.1054": {
+    "Title": "Uyumluluk politikası atanmamış cihazları uyumlu değil olarak işaretle",
+    "Desc": "",
+    "Remediation": "",
+    "Reviewed": false,
+    "Source": "machine"
+  },
+  "Maester|MT.1055": {
+    "Title": "Microsoft 365 Group (and Team) creation olması önerilir: restricted to approved users.",
+    "Desc": "",
+    "Remediation": "",
+    "Reviewed": false,
+    "Source": "machine"
+  },
+  "Maester|MT.1056": {
+    "Title": "Şu güvenlik kontrolünün sağlandığını doğrulayın: Olmamalı: person has permanent access to Tüm Azure subscriptions at root scope",
+    "Desc": "",
+    "Remediation": "",
+    "Reviewed": false,
+    "Source": "machine"
+  },
+  "Maester|MT.1061": {
+    "Title": "Device registration MFA control conflicts with Koşullu Erişim politikaları.",
+    "Desc": "",
+    "Remediation": "",
+    "Reviewed": false,
+    "Source": "machine"
+  },
+  "Maester|MT.1062": {
+    "Title": "Şu yapılandırmanın etkin olduğunu doğrulayın: Direct Send şu değere ayarlı be rejected",
+    "Desc": "",
+    "Remediation": "",
+    "Reviewed": false,
+    "Source": "machine"
+  },
+  "Maester|MT.1064": {
+    "Title": "Şu güvenlik kontrolünün sağlandığını doğrulayın: write permissions gereklidir to create new management groups",
+    "Desc": "",
+    "Remediation": "",
+    "Reviewed": false,
+    "Source": "machine"
+  },
+  "Maester|MT.1065": {
+    "Title": "Şu yapılandırmanın etkin olduğunu doğrulayın: Tüm Recovery Services Vaults have soft delete Etkin",
+    "Desc": "",
+    "Remediation": "",
+    "Reviewed": false,
+    "Source": "machine"
+  },
+  "Maester|MT.1066": {
+    "Title": "Koşullu Erişim politikaları şu yapılandırmayı içermemelidir: reference non-existent users, groups, or roles.",
+    "Desc": "",
+    "Remediation": "",
+    "Reviewed": false,
+    "Source": "machine"
+  },
+  "Maester|MT.1067": {
+    "Title": "Kimlik doğrulama yöntemi politikaları şu yapılandırmayı içermemelidir: reference non-existent groups.",
+    "Desc": "",
+    "Remediation": "",
+    "Reviewed": false,
+    "Source": "machine"
+  },
+  "Maester|MT.1068": {
+    "Title": "Yönetici olmayan kullanıcıların yeni Entra kiracısı oluşturmasını kısıtla",
+    "Desc": "",
+    "Remediation": "",
+    "Reviewed": false,
+    "Source": "machine"
+  },
+  "Maester|MT.1069": {
+    "Title": "Kısıtla: non-admin users from creating security groups.",
+    "Desc": "",
+    "Remediation": "",
+    "Reviewed": false,
+    "Source": "machine"
+  },
+  "Maester|MT.1070": {
+    "Title": "Kısıtla: device join to selected users/groups or none.",
+    "Desc": "",
+    "Remediation": "",
+    "Reviewed": false,
+    "Source": "machine"
+  },
+  "Maester|MT.1071": {
+    "Title": "At least one Koşullu Erişim politikası explicitly includes Azure DevOps.",
+    "Desc": "",
+    "Remediation": "",
+    "Reviewed": false,
+    "Source": "machine"
+  },
+  "Maester|MT.1072": {
+    "Title": "Koşullu Erişim politikaları şu yapılandırmayı içermemelidir: use deprecated Approved Client App grant.",
+    "Desc": "",
+    "Remediation": "",
+    "Reviewed": false,
+    "Source": "machine"
+  },
+  "Maester|MT.1074": {
+    "Title": "Şu yapılandırmanın etkin olduğunu doğrulayın: Olmamalı: more than 100 outbound mails per day sent using .onmicrosoft.com domain",
+    "Desc": "",
+    "Remediation": "",
+    "Reviewed": false,
+    "Source": "machine"
+  },
+  "Maester|MT.1085": {
+    "Title": "Pending approvals for Critical Asset Management olmaması önerilir: present.",
+    "Desc": "",
+    "Remediation": "",
+    "Reviewed": false,
+    "Source": "machine"
+  },
+  "Maester|MT.1090": {
+    "Title": "Global Administrator role olmaması önerilir: added as local administrator on device during Microsoft Entra join",
+    "Desc": "",
+    "Remediation": "",
+    "Reviewed": false,
+    "Source": "machine"
+  },
+  "Maester|MT.1091": {
+    "Title": "Registering user olmaması önerilir: added as local administrator on device during Microsoft Entra join",
+    "Desc": "",
+    "Remediation": "",
+    "Reviewed": false,
+    "Source": "machine"
+  },
+  "Maester|MT.1096": {
+    "Title": "Şu yapılandırmanın etkin olduğunu doğrulayın: at least one Intune Multi Admin Approval policy yapılandırılmış",
+    "Desc": "",
+    "Remediation": "",
+    "Reviewed": false,
+    "Source": "machine"
+  },
+  "Maester|MT.1099": {
+    "Title": "Windows Diagnostic Data Processing olması önerilir: Etkin",
+    "Desc": "",
+    "Remediation": "",
+    "Reviewed": false,
+    "Source": "machine"
+  },
+  "Maester|MT.1100": {
+    "Title": "Intune Diagnostic Settings önerilir: include Audit Logs",
+    "Desc": "",
+    "Remediation": "",
+    "Reviewed": false,
+    "Source": "machine"
+  },
+  "Maester|MT.1101": {
+    "Title": "Default Branding Profile olması önerilir: customized",
+    "Desc": "",
+    "Remediation": "",
+    "Reviewed": false,
+    "Source": "machine"
+  },
+  "Maester|MT.1103": {
+    "Title": "Şu yapılandırmanın etkin olduğunu doğrulayın: Intune RBAC groups protected by Restricted Management Administrative Units or Role Assignable groups",
+    "Desc": "",
+    "Remediation": "",
+    "Reviewed": false,
+    "Source": "machine"
+  },
+  "Maester|MT.1105": {
+    "Title": "Şu yapılandırmanın etkin olduğunu doğrulayın: MDM Authority şu değere ayarlı Intune",
+    "Desc": "",
+    "Remediation": "",
+    "Reviewed": false,
+    "Source": "machine"
+  },
+  "Maester|MT.1106": {
+    "Title": "Catalog resources zorunludur: have valid roles (Olmamalı: stale / removed app roles or SPNs).",
+    "Desc": "",
+    "Remediation": "",
+    "Reviewed": false,
+    "Source": "machine"
+  },
+  "Maester|MT.1107": {
+    "Title": "Access packages and catalogs yapılmaması önerilir: reference deleted groups.",
+    "Desc": "",
+    "Remediation": "",
+    "Reviewed": false,
+    "Source": "machine"
+  },
+  "Maester|MT.1108": {
+    "Title": "Access packages yapılmaması önerilir: reference inactive or orphaned assignment policies.",
+    "Desc": "",
+    "Remediation": "",
+    "Reviewed": false,
+    "Source": "machine"
+  },
+  "Maester|MT.1109": {
+    "Title": "Access package approval workflows zorunludur: have valid approvers.",
+    "Desc": "",
+    "Remediation": "",
+    "Reviewed": false,
+    "Source": "machine"
+  },
+  "Maester|MT.1110": {
+    "Title": "Olmamalı: catalog önerilir: contain resources without any associated access packages.",
+    "Desc": "",
+    "Remediation": "",
+    "Reviewed": false,
+    "Source": "machine"
+  },
+  "Maester|MT.1123": {
+    "Title": "Şu yapılandırmanın etkin olduğunu doğrulayın: BitLocker full disk encryption yapılandırılmış",
+    "Desc": "",
+    "Remediation": "",
+    "Reviewed": false,
+    "Source": "machine"
+  },
+  "Maester|MT.1172": {
+    "Title": "Unified audit log ingestion etkinleştirilmiş.",
+    "Desc": "",
+    "Remediation": "",
+    "Reviewed": false,
+    "Source": "machine"
+  },
+  "Maester|MT.1173": {
+    "Title": "hassasiyet etiketleri published for files used by Microsoft 365 Copilot.",
+    "Desc": "",
+    "Remediation": "",
+    "Reviewed": false,
+    "Source": "machine"
+  },
+  "Maester|MT.1174": {
+    "Title": "Insider Risk Management policy for Risky AI usage etkinleştirilmiş.",
+    "Desc": "",
+    "Remediation": "",
+    "Reviewed": false,
+    "Source": "machine"
+  },
+  "Maester|MT.1175": {
+    "Title": "DLP policy yapılandırılmış for Microsoft 365 Copilot location.",
+    "Desc": "",
+    "Remediation": "",
+    "Reviewed": false,
+    "Source": "machine"
+  },
+  "Maester|MT.1176": {
+    "Title": "Retention policy yapılandırılmış for Microsoft Copilot location.",
+    "Desc": "",
+    "Remediation": "",
+    "Reviewed": false,
+    "Source": "machine"
+  },
+  "Maester|MT.1177": {
+    "Title": "Şu yapılandırmanın etkin olduğunu doğrulayın: LAPS Configuration Policy properly set.",
+    "Desc": "",
+    "Remediation": "",
+    "Reviewed": false,
+    "Source": "machine"
+  },
+  "Maester|MT.1178": {
+    "Title": "Şu yapılandırmanın etkin olduğunu doğrulayın: ASR Rules yapılandırılmış correctly.",
+    "Desc": "",
+    "Remediation": "",
+    "Reviewed": false,
+    "Source": "machine"
+  },
+  "Maester|MT.1179": {
+    "Title": "Şu yapılandırmanın etkin olduğunu doğrulayın: App Control for Business etkinleştirilmiş.",
+    "Desc": "",
+    "Remediation": "",
+    "Reviewed": false,
+    "Source": "machine"
+  },
+  "Maester|MT.1180": {
+    "Title": "Şu yapılandırmanın etkin olduğunu doğrulayın: Managed Installer Rules yapılandırılmış correctly.",
+    "Desc": "",
+    "Remediation": "",
+    "Reviewed": false,
+    "Source": "machine"
+  },
+  "Maester|MT.1181": {
+    "Title": "Koşullu Erişim politikası present that blocks high agent risk sign-ins.",
+    "Desc": "",
+    "Remediation": "",
+    "Reviewed": false,
+    "Source": "machine"
+  },
+  "Maester|MT.1182": {
+    "Title": "Mature DMARC policy olması zorunludur: published for every Entra managed and verified domain.",
+    "Desc": "",
+    "Remediation": "",
+    "Reviewed": false,
+    "Source": "machine"
+  },
+  "Maester|MT.1184": {
+    "Title": "Koşullu Erişim politikası without any target resources .",
+    "Desc": "",
+    "Remediation": "",
+    "Reviewed": false,
+    "Source": "machine"
+  },
+  "Maester|MT.1185": {
+    "Title": "Engelle: legacy MSOnline (MSOL) PowerShell module.",
+    "Desc": "",
+    "Remediation": "",
+    "Reviewed": false,
+    "Source": "machine"
+  },
+  "Maester|MT.1186": {
+    "Title": "Zorunlu kıl: explicit assignment — high-privilege first-party Entra Apps.",
+    "Desc": "",
+    "Remediation": "",
+    "Reviewed": false,
+    "Source": "machine"
+  },
+  "Maester|MT.1196": {
+    "Title": "Review who can change attributes used by dynamic group rules.",
+    "Desc": "",
+    "Remediation": "",
+    "Reviewed": false,
+    "Source": "machine"
+  },
+  "Maester|MT.1214": {
+    "Title": "Şu yapılandırmanın etkin olduğunu doğrulayın: macOS compliance policy requires System Integrity Protection.",
+    "Desc": "",
+    "Remediation": "",
+    "Reviewed": false,
+    "Source": "machine"
+  },
+  "Maester|MT.1215": {
+    "Title": "Şu yapılandırmanın etkin olduğunu doğrulayın: Gatekeeper restricts macOS app download locations.",
+    "Desc": "",
+    "Remediation": "",
+    "Reviewed": false,
+    "Source": "machine"
+  },
+  "Maester|MT.1216": {
+    "Title": "Şu yapılandırmanın etkin olduğunu doğrulayın: macOS compliance policy requires a Defender machine risk score level.",
+    "Desc": "",
+    "Remediation": "",
+    "Reviewed": false,
+    "Source": "machine"
+  },
+  "Maester|MT.1217": {
+    "Title": "Şu yapılandırmanın etkin olduğunu doğrulayın: macOS LAPS yapılandırılmış on Automated Device Enrollment profiles.",
+    "Desc": "",
+    "Remediation": "",
+    "Reviewed": false,
+    "Source": "machine"
+  },
+  "CIS M365|CIS.M365.1.2.2": {
+    "Title": "Şu yapılandırmanın etkin olduğunu doğrulayın: sign-in to shared mailboxes engellenmiş",
+    "Desc": "",
+    "Remediation": "",
+    "Reviewed": false,
+    "Source": "machine"
+  },
+  "CIS M365|CIS.M365.1.3.4": {
+    "Title": "Şu yapılandırmanın etkin olduğunu doğrulayın: 'User owned apps and services' kısıtlanmış",
+    "Desc": "",
+    "Remediation": "",
+    "Reviewed": false,
+    "Source": "machine"
+  },
+  "CIS M365|CIS.M365.1.3.5": {
+    "Title": "Şu yapılandırmanın etkin olduğunu doğrulayın: internal phishing protection for Forms etkinleştirilmiş",
+    "Desc": "",
+    "Remediation": "",
+    "Reviewed": false,
+    "Source": "machine"
+  },
+  "CIS M365|CIS.M365.2.4.4": {
+    "Title": "Şu yapılandırmanın etkin olduğunu doğrulayın: Zero-hour auto purge for Microsoft Teams açıktır (Yalnızca Checks ZAP etkinleştirilmiş)",
+    "Desc": "",
+    "Remediation": "",
+    "Reviewed": false,
+    "Source": "machine"
+  },
+  "CIS M365|CIS.M365.7.2.11": {
+    "Title": "Şu yapılandırmanın etkin olduğunu doğrulayın: SharePoint default sharing link permission set",
+    "Desc": "",
+    "Remediation": "",
+    "Reviewed": false,
+    "Source": "machine"
+  },
+  "CIS M365|CIS.M365.7.2.2": {
+    "Title": "Şu yapılandırmanın etkin olduğunu doğrulayın: SharePoint and OneDrive integration with Azure AD B2B etkinleştirilmiş",
+    "Desc": "",
+    "Remediation": "",
+    "Reviewed": false,
+    "Source": "machine"
+  },
+  "CIS M365|CIS.M365.7.2.5": {
+    "Title": "Şu güvenlik kontrolünün sağlandığını doğrulayın: SharePoint guest users cannot share items they don't own",
+    "Desc": "",
+    "Remediation": "",
+    "Reviewed": false,
+    "Source": "machine"
+  },
+  "CIS M365|CIS.M365.7.2.7": {
+    "Title": "Şu yapılandırmanın etkin olduğunu doğrulayın: link sharing kısıtlanmış in SharePoint and OneDrive",
+    "Desc": "",
+    "Remediation": "",
+    "Reviewed": false,
+    "Source": "machine"
+  },
+  "CIS M365|CIS.M365.7.2.9": {
+    "Title": "Şu yapılandırmanın etkin olduğunu doğrulayın: guest access to a site or OneDrive will expire automatically",
+    "Desc": "",
+    "Remediation": "",
+    "Reviewed": false,
+    "Source": "machine"
+  },
+  "CIS M365|CIS.M365.7.3.1": {
+    "Title": "Şu yapılandırmanın etkin olduğunu doğrulayın: Office 365 SharePoint infected files disallowed for download",
+    "Desc": "",
+    "Remediation": "",
+    "Reviewed": false,
+    "Source": "machine"
+  },
+  "CIS M365|CIS.M365.8.1.1": {
+    "Title": "Şu yapılandırmanın etkin olduğunu doğrulayın: external file sharing in Teams etkinleştirilmiş for Yalnızca approved cloud storage services",
+    "Desc": "",
+    "Remediation": "",
+    "Reviewed": false,
+    "Source": "machine"
+  },
+  "CIS M365|CIS.M365.8.2.2": {
+    "Title": "Şu yapılandırmanın etkin olduğunu doğrulayın: communication with unmanaged Teams users devre dışı",
+    "Desc": "",
+    "Remediation": "",
+    "Reviewed": false,
+    "Source": "machine"
+  },
+  "CIS M365|CIS.M365.8.2.3": {
+    "Title": "Şu yapılandırmanın etkin olduğunu doğrulayın: external Teams users cannot initiate conversations",
+    "Desc": "",
+    "Remediation": "",
+    "Reviewed": false,
+    "Source": "machine"
+  },
+  "CIS M365|CIS.M365.8.4.1": {
+    "Title": "Şu yapılandırmanın etkin olduğunu doğrulayın: app permission policies yapılandırılmış",
+    "Desc": "",
+    "Remediation": "",
+    "Reviewed": false,
+    "Source": "machine"
+  },
+  "CIS M365|CIS.M365.8.5.3": {
+    "Title": "Microsoft Teams toplantılarında lobi atlamayı yalnızca kurum içi kullanıcılarla sınırla",
+    "Desc": "",
+    "Remediation": "",
+    "Reviewed": false,
+    "Source": "machine"
+  },
+  "CIS M365|CIS.M365.8.6.1": {
+    "Title": "Şu yapılandırmanın etkin olduğunu doğrulayın: users can report security concerns in Teams",
+    "Desc": "",
+    "Remediation": "",
+    "Reviewed": false,
+    "Source": "machine"
+  },
+  "EIDSCA|EIDSCA.AF02": {
+    "Title": "Kimlik Doğrulama Yöntemi — FIDO2 güvenlik anahtarı — İzin ver: self-service set up.",
+    "Desc": "",
+    "Remediation": "",
+    "Reviewed": false,
+    "Source": "machine"
+  },
+  "EIDSCA|EIDSCA.AF06": {
+    "Title": "Kimlik Doğrulama Yöntemi — FIDO2 güvenlik anahtarı — Kısıtla: specific keys.",
+    "Desc": "",
+    "Remediation": "",
+    "Reviewed": false,
+    "Source": "machine"
+  },
+  "EIDSCA|EIDSCA.AS04": {
+    "Title": "Zayıf kimlik doğrulama yöntemlerini (SMS, sesli arama, e-posta OTP) devre dışı bırak",
+    "Desc": "",
+    "Remediation": "",
+    "Reviewed": false,
+    "Source": "machine"
+  },
+  "EIDSCA|EIDSCA.CR03": {
+    "Title": "Onay Çerçevesi — Admin Consent Request - Reviewers will receive email notifications when admin consent requests about to expire.",
+    "Desc": "",
+    "Remediation": "",
+    "Reviewed": false,
+    "Source": "machine"
+  },
+  "Maester|MT.1021": {
+    "Title": "Security Defaults etkinleştirilmiş.",
+    "Desc": "",
+    "Remediation": "",
+    "Reviewed": false,
+    "Source": "machine"
+  },
+  "Maester|MT.1029": {
+    "Title": "Stale accounts not assigned to privileged roles.",
+    "Desc": "",
+    "Remediation": "",
+    "Reviewed": false,
+    "Source": "machine"
+  },
+  "Maester|MT.1030": {
+    "Title": "Eligible role assignments on Control Plane in use by administrators.",
+    "Desc": "",
+    "Remediation": "",
+    "Reviewed": false,
+    "Source": "machine"
+  },
+  "Maester|MT.1031": {
+    "Title": "Privileged role on Control Plane managed by PIM only.",
+    "Desc": "",
+    "Remediation": "",
+    "Reviewed": false,
+    "Source": "machine"
+  },
+  "Maester|MT.1032": {
+    "Title": "Limited number — Global Admins assigned.",
+    "Desc": "",
+    "Remediation": "",
+    "Reviewed": false,
+    "Source": "machine"
+  },
+  "Maester|MT.1037": {
+    "Title": "Yalnızca users with Presenter role İzin verilen: present in Teams meetings",
+    "Desc": "",
+    "Remediation": "",
+    "Reviewed": false,
+    "Source": "machine"
+  },
+  "Maester|MT.1042": {
+    "Title": "Kısıtla: dial-in users from bypassing a meeting lobby",
+    "Desc": "",
+    "Remediation": "",
+    "Reviewed": false,
+    "Source": "machine"
+  },
+  "Maester|MT.1046": {
+    "Title": "Kısıtla: anonymous users from joining meetings",
+    "Desc": "",
+    "Remediation": "",
+    "Reviewed": false,
+    "Source": "machine"
+  },
+  "Maester|MT.1047": {
+    "Title": "Kısıtla: anonymous users from starting Teams meetings",
+    "Desc": "",
+    "Remediation": "",
+    "Reviewed": false,
+    "Source": "machine"
+  },
+  "Maester|MT.1048": {
+    "Title": "Limit external participants from having control in a Teams meeting",
+    "Desc": "",
+    "Remediation": "",
+    "Reviewed": false,
+    "Source": "machine"
+  },
+  "Maester|MT.1049": {
+    "Title": "Koşullu Erişim politikaları for User Risk and Sign-in Risk olması önerilir: separately.",
+    "Desc": "",
+    "Remediation": "",
+    "Reviewed": false,
+    "Source": "machine"
+  },
+  "Maester|MT.1073": {
+    "Title": "Soft- and hard-matching — synchronized objects olması önerilir: blocked.",
+    "Desc": "",
+    "Remediation": "",
+    "Reviewed": false,
+    "Source": "machine"
+  },
+  "Maester|MT.1076": {
+    "Title": "MOERA olmaması önerilir: used for sent mail",
+    "Desc": "",
+    "Remediation": "",
+    "Reviewed": false,
+    "Source": "machine"
+  },
+  "Maester|MT.1083": {
+    "Title": "Şu yapılandırmanın etkin olduğunu doğrulayın: Delicensing Resiliency etkinleştirilmiş",
+    "Desc": "",
+    "Remediation": "",
+    "Reviewed": false,
+    "Source": "machine"
+  },
+  "Maester|MT.1084": {
+    "Title": "Microsoft Entra seamless single sign-on olması önerilir: Devre Dışı for Tüm domains in EntraID Connect servers.",
+    "Desc": "",
+    "Remediation": "",
+    "Reviewed": false,
+    "Source": "machine"
+  },
+  "Maester|MT.1092": {
+    "Title": "Intune APNS certificate olması önerilir: valid for more than 30 days",
+    "Desc": "",
+    "Remediation": "",
+    "Reviewed": false,
+    "Source": "machine"
+  },
+  "Maester|MT.1093": {
+    "Title": "Apple Automated Device Enrollment Tokens olması önerilir: valid for more than 30 days",
+    "Desc": "",
+    "Remediation": "",
+    "Reviewed": false,
+    "Source": "machine"
+  },
+  "Maester|MT.1094": {
+    "Title": "Apple Volume Purchase Program Tokens olması önerilir: valid for more than 30 days",
+    "Desc": "",
+    "Remediation": "",
+    "Reviewed": false,
+    "Source": "machine"
+  },
+  "Maester|MT.1095": {
+    "Title": "Android Enterprise account connection olması önerilir: healthy",
+    "Desc": "",
+    "Remediation": "",
+    "Reviewed": false,
+    "Source": "machine"
+  },
+  "Maester|MT.1097": {
+    "Title": "Şu yapılandırmanın etkin olduğunu doğrulayın: Tüm Intune Certificate Connectors healthy and running supported versions",
+    "Desc": "",
+    "Remediation": "",
+    "Reviewed": false,
+    "Source": "machine"
+  },
+  "Maester|MT.1098": {
+    "Title": "Mobile Threat Defense Connectors olması önerilir: healthy",
+    "Desc": "",
+    "Remediation": "",
+    "Reviewed": false,
+    "Source": "machine"
+  },
+  "Maester|MT.1102": {
+    "Title": "Windows Feature Update Policy Settings yapılmaması önerilir: reference end — support builds",
+    "Desc": "",
+    "Remediation": "",
+    "Reviewed": false,
+    "Source": "machine"
+  },
+  "Maester|MT.1113": {
+    "Title": "AI agents olmaması önerilir: shared with broad access control policies.",
+    "Desc": "",
+    "Remediation": "",
+    "Reviewed": false,
+    "Source": "machine"
+  },
+  "Maester|MT.1114": {
+    "Title": "AI agents önerilir: Zorunlu kıl: user authentication.",
+    "Desc": "",
+    "Remediation": "",
+    "Reviewed": false,
+    "Source": "machine"
+  },
+  "Maester|MT.1115": {
+    "Title": "AI agents yapılmaması önerilir: have risky HTTP configurations.",
+    "Desc": "",
+    "Remediation": "",
+    "Reviewed": false,
+    "Source": "machine"
+  },
+  "Maester|MT.1116": {
+    "Title": "AI agents yapılmaması önerilir: send email with AI-controlled inputs.",
+    "Desc": "",
+    "Remediation": "",
+    "Reviewed": false,
+    "Source": "machine"
+  },
+  "Maester|MT.1117": {
+    "Title": "Published AI agents olmaması önerilir: dormant.",
+    "Desc": "",
+    "Remediation": "",
+    "Reviewed": false,
+    "Source": "machine"
+  },
+  "Maester|MT.1118": {
+    "Title": "AI agents yapılmaması önerilir: use author (maker) authentication for connections.",
+    "Desc": "",
+    "Remediation": "",
+    "Reviewed": false,
+    "Source": "machine"
+  },
+  "Maester|MT.1119": {
+    "Title": "AI agents yapılmaması önerilir: have hard-coded credentials in topics.",
+    "Desc": "",
+    "Remediation": "",
+    "Reviewed": false,
+    "Source": "machine"
+  },
+  "Maester|MT.1120": {
+    "Title": "AI agents yapılmaması önerilir: use MCP server tools without review.",
+    "Desc": "",
+    "Remediation": "",
+    "Reviewed": false,
+    "Source": "machine"
+  },
+  "Maester|MT.1121": {
+    "Title": "AI agents with generative orchestration önerilir: have custom instructions.",
+    "Desc": "",
+    "Remediation": "",
+    "Reviewed": false,
+    "Source": "machine"
+  },
+  "Maester|MT.1122": {
+    "Title": "AI agents yapılmaması önerilir: have orphaned ownership.",
+    "Desc": "",
+    "Remediation": "",
+    "Reviewed": false,
+    "Source": "machine"
+  },
+  "Maester|MT.1147": {
+    "Title": "Yapma: sync krbtgt_AzureAD to Entra ID.",
+    "Desc": "",
+    "Remediation": "",
+    "Reviewed": false,
+    "Source": "machine"
+  },
+  "Maester|MT.1148": {
+    "Title": "Archive Scanning olması önerilir: Etkin.",
+    "Desc": "",
+    "Remediation": "",
+    "Reviewed": false,
+    "Source": "machine"
+  },
+  "Maester|MT.1149": {
+    "Title": "Behavior Monitoring olması önerilir: Etkin.",
+    "Desc": "",
+    "Remediation": "",
+    "Reviewed": false,
+    "Source": "machine"
+  },
+  "Maester|MT.1150": {
+    "Title": "Cloud Protection olması önerilir: Etkin.",
+    "Desc": "",
+    "Remediation": "",
+    "Reviewed": false,
+    "Source": "machine"
+  },
+  "Maester|MT.1151": {
+    "Title": "Email Scanning olması önerilir: Etkin.",
+    "Desc": "",
+    "Remediation": "",
+    "Reviewed": false,
+    "Source": "machine"
+  },
+  "Maester|MT.1152": {
+    "Title": "Script Scanning olması önerilir: Etkin.",
+    "Desc": "",
+    "Remediation": "",
+    "Reviewed": false,
+    "Source": "machine"
+  },
+  "Maester|MT.1153": {
+    "Title": "Real-time Monitoring olması önerilir: Etkin.",
+    "Desc": "",
+    "Remediation": "",
+    "Reviewed": false,
+    "Source": "machine"
+  },
+  "Maester|MT.1154": {
+    "Title": "Full Scan Removable Drives olması önerilir: Etkin.",
+    "Desc": "",
+    "Remediation": "",
+    "Reviewed": false,
+    "Source": "machine"
+  },
+  "Maester|MT.1155": {
+    "Title": "Full Scan Mapped Drives olması önerilir: Devre Dışı for performance.",
+    "Desc": "",
+    "Remediation": "",
+    "Reviewed": false,
+    "Source": "machine"
+  },
+  "Maester|MT.1156": {
+    "Title": "Scanning Network Files olması önerilir: Etkin.",
+    "Desc": "",
+    "Remediation": "",
+    "Reviewed": false,
+    "Source": "machine"
+  },
+  "Maester|MT.1157": {
+    "Title": "CPU Load Factor olması önerilir: optimized (20-30%).",
+    "Desc": "",
+    "Remediation": "",
+    "Reviewed": false,
+    "Source": "machine"
+  },
+  "Maester|MT.1158": {
+    "Title": "Scan olması önerilir: scheduled.",
+    "Desc": "",
+    "Remediation": "",
+    "Reviewed": false,
+    "Source": "machine"
+  },
+  "Maester|MT.1159": {
+    "Title": "Quick Scan Time configuration not required.",
+    "Desc": "",
+    "Remediation": "",
+    "Reviewed": false,
+    "Source": "machine"
+  },
+  "Maester|MT.1160": {
+    "Title": "Signatures olması önerilir: checked before scan.",
+    "Desc": "",
+    "Remediation": "",
+    "Reviewed": false,
+    "Source": "machine"
+  },
+  "Maester|MT.1161": {
+    "Title": "Cloud Engelle: Level olması önerilir: High or higher.",
+    "Desc": "",
+    "Remediation": "",
+    "Reviewed": false,
+    "Source": "machine"
+  },
+  "Maester|MT.1162": {
+    "Title": "Cloud Extended Timeout olması önerilir: 30-50 seconds.",
+    "Desc": "",
+    "Remediation": "",
+    "Reviewed": false,
+    "Source": "machine"
+  },
+  "Maester|MT.1163": {
+    "Title": "Signature Update Interval olması önerilir: 1-4 hours.",
+    "Desc": "",
+    "Remediation": "",
+    "Reviewed": false,
+    "Source": "machine"
+  },
+  "Maester|MT.1164": {
+    "Title": "PUA Protection olması önerilir: Etkin.",
+    "Desc": "",
+    "Remediation": "",
+    "Reviewed": false,
+    "Source": "machine"
+  },
+  "Maester|MT.1165": {
+    "Title": "Network Protection olması önerilir: Etkin.",
+    "Desc": "",
+    "Remediation": "",
+    "Reviewed": false,
+    "Source": "machine"
+  },
+  "Maester|MT.1166": {
+    "Title": "Local Admin Merge olması önerilir: Devre Dışı.",
+    "Desc": "",
+    "Remediation": "",
+    "Reviewed": false,
+    "Source": "machine"
+  },
+  "Maester|MT.1167": {
+    "Title": "Real-Time Scan Direction önerilir: cover both directions.",
+    "Desc": "",
+    "Remediation": "",
+    "Reviewed": false,
+    "Source": "machine"
+  },
+  "Maester|MT.1168": {
+    "Title": "Cleaned Malware olması önerilir: retained for at least 30 days.",
+    "Desc": "",
+    "Remediation": "",
+    "Reviewed": false,
+    "Source": "machine"
+  },
+  "Maester|MT.1169": {
+    "Title": "Catch-up Full Scan olması önerilir: Devre Dışı.",
+    "Desc": "",
+    "Remediation": "",
+    "Reviewed": false,
+    "Source": "machine"
+  },
+  "Maester|MT.1170": {
+    "Title": "Catch-up Quick Scan olması önerilir: Devre Dışı.",
+    "Desc": "",
+    "Remediation": "",
+    "Reviewed": false,
+    "Source": "machine"
+  },
+  "Maester|MT.1171": {
+    "Title": "Sample Submission önerilir: send safe samples automatically.",
+    "Desc": "",
+    "Remediation": "",
+    "Reviewed": false,
+    "Source": "machine"
+  },
+  "Maester|MT.1183": {
+    "Title": "Temporary bypass for onPremisesObjectIdentifier updates olması önerilir: Devre Dışı.",
+    "Desc": "",
     "Remediation": "",
     "Reviewed": false,
     "Source": "machine"

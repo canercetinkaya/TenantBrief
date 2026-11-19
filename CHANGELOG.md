@@ -24,6 +24,11 @@ All notable changes to **TenantBrief** are documented in this file.
   - Clarified optional EntraFalcon JSON ingestion in `TenantBrief.psd1` and `docs/improvement/CLAIMS.md` (`Q15 = 0`).
   - Upstream `Planned` collapsible list (`plannedUpstreamCard`), `Error` permission action card (`errorActionCard` + `ErrorRemedy`), and structured `Diagnostics` (`Severity` + `Remedy`).
   - Deterministic `PriorityScore` (0–100) weighted prioritization configured via `data/scoring.json`.
+- **Sprint 3 Turkish Localization Quality (`S3.1–S3.6`):**
+  - Externalized UI/portal/role dictionaries in `data/i18n/{tr,en}.json` (zero Turkish portal strings in EN reports).
+  - Single-source-of-truth Turkish glossary (`data/i18n/glossary-tr.json`), CI denylist (`tests/i18n-denylist.txt`), and `ConvertTo-TenantBriefTurkish` wired as post-processor (`Q09 = 0`).
+  - Migrated `data/tr-translation-cache.json` to `Source|TestId` schema (`tools/Migrate-TranslationCache.ps1`, 0 loss) and added 259 machine translations (`Reviewed = false`) with `Summary.UnreviewedTranslations` counter (`Q08a < 5`, `Q08b < 5`).
+  - Sentence-boundary remediation extraction without mid-word ellipsis (`...`) or `Learn`/`öğrenin` artifacts, plus language-aware `Remediation` field (`RemediationTr` retained for backward compatibility, `Q10 = 0`).
 
 ### Deprecated
 - **`Finding.Impact`:** Retained for one release for backward compatibility; use `Finding.UserImpact` instead.

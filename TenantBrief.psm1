@@ -1640,6 +1640,7 @@ function New-TenantBriefFindings {
         $fDesc  = [string](Get-TenantBriefPropertyValue -Object $t -Name 'TestDescription')
         $fImp   = [string](Get-TenantBriefPropertyValue -Object $t -Name 'TestImpact')
         $trEntry = $null
+        $trReviewed = $true
         if ($Language -eq 'tr' -and $TranslationCache.Count -gt 0) {
             foreach ($sTag in $sourceList) {
                 $compositeKey = "$sTag|$tid"
@@ -1660,6 +1661,7 @@ function New-TenantBriefFindings {
             if ($trEntry) {
                 if ($trEntry.PSObject.Properties['Title'] -and $trEntry.Title) { $fTitle = [string]$trEntry.Title }
                 if ($trEntry.PSObject.Properties['Desc'] -and $trEntry.Desc) { $fDesc = [string]$trEntry.Desc }
+                $trReviewed = if ($trEntry.PSObject.Properties['Reviewed']) { [bool]$trEntry.Reviewed } else { $false }
             }
         }
         if ($Language -eq 'tr') {
@@ -1814,8 +1816,9 @@ function New-TenantBriefFindings {
             Description        = $fDesc
             SkippedReason      = [string]$skippedRaw
             ErrorRemedy        = $errRemedy
-            Remediation        = $remLocalized
-            RemediationTr      = $remTr
+            Remediation         = $remLocalized
+            RemediationTr       = $remTr
+            TranslationReviewed = $trReviewed
         }
     }
 }
@@ -2509,6 +2512,10 @@ function Invoke-TenantBriefAssessment {
         $tenantInsightObj.TotalAgents = [int]$ppAgentsSummary.TotalAgents
     }
 
+    $unreviewedTrCount = if ($Language -eq 'tr') {
+        @($findings | Where-Object { $_.PSObject.Properties['TranslationReviewed'] -and -not $_.TranslationReviewed }).Count
+    } else { 0 }
+
     $reportObj = [PSCustomObject]@{
         Tenant              = $tenantDisplay
         Language            = $Language
@@ -2526,9 +2533,10 @@ function Invoke-TenantBriefAssessment {
             Investigate     = $investigateCount
             Skipped         = $skippedCount
             Planned         = $plannedCount
-            PlannedExcluded = $plannedExcludedCount
-            Error           = $errorCount
-            HighRiskFailed  = $highRiskFailed
+            PlannedExcluded        = $plannedExcludedCount
+            Error                  = $errorCount
+            HighRiskFailed         = $highRiskFailed
+            UnreviewedTranslations = $unreviewedTrCount
         }
         Run              = [PSCustomObject]@{
             Status        = $runStatus

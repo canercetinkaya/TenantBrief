@@ -52,7 +52,8 @@
         "Planned": { "type": "integer", "minimum": 0 },
         "PlannedExcluded": { "type": "integer", "minimum": 0 },
         "Error": { "type": "integer", "minimum": 0 },
-        "HighRiskFailed": { "type": "integer", "minimum": 0 }
+        "HighRiskFailed": { "type": "integer", "minimum": 0 },
+        "UnreviewedTranslations": { "type": "integer", "minimum": 0 }
       }
     },
     "Run": {
