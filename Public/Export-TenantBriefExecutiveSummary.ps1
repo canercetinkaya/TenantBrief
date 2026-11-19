@@ -1,4 +1,4 @@
-function Export-TenantBriefExecutiveSummary {
+﻿function Export-TenantBriefExecutiveSummary {
     <#
     .SYNOPSIS
     Builds an offline Print-to-PDF executive brief from a report JSON.
@@ -135,7 +135,18 @@ function Export-TenantBriefExecutiveSummary {
   th, td { border: 1px solid #cbd5e1; padding: 8px 10px; text-align: left; font-size: 13px; }
   th { background: #f1f5f9; }
   code { background: #f1f5f9; padding: 1px 5px; border-radius: 4px; font-size: 11px; }
-  @media print { body { margin: 12mm; } }
+  @page { size: A4 portrait; margin: 10mm; }
+  @media print {
+    body { margin: 0; font-size: 11px; }
+    h1 { font-size: 18px; }
+    h2 { font-size: 14px; margin-top: 14px !important; }
+    .grid { gap: 8px; margin-bottom: 10px; }
+    .card { padding: 8px; break-inside: avoid; page-break-inside: avoid; }
+    .val { font-size: 18px; }
+    table { margin-top: 8px; }
+    th, td { padding: 5px 7px; font-size: 10.5px; }
+    tr { break-inside: avoid; page-break-inside: avoid; }
+  }
 </style>
 </head>
 <body>

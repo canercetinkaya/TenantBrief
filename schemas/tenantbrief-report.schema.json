@@ -168,6 +168,20 @@
     "PlannedFindings": {
       "type": ["array", "null"],
       "description": "Upstream Planned controls excluded from active Findings and posture scoring (Q11=0)."
+    },
+    "Trend": {
+      "type": ["object", "null"],
+      "description": "Optional comparison against -PreviousReportJson (PreviousScore, CurrentScore, ScoreDelta, Improved, Regressed, NewFailed, Resolved).",
+      "properties": {
+        "PreviousDate": { "type": ["string", "null"] },
+        "PreviousScore": { "type": ["number", "null"] },
+        "CurrentScore": { "type": ["number", "null"] },
+        "ScoreDelta": { "type": ["number", "null"] },
+        "Improved": { "type": ["array", "null"] },
+        "Regressed": { "type": ["array", "null"] },
+        "NewFailed": { "type": ["array", "null"] },
+        "Resolved": { "type": ["array", "null"] }
+      }
     }
   }
 }

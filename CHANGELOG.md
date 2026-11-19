@@ -44,6 +44,12 @@ All notable changes to **TenantBrief** are documented in this file.
   - Split monolithic `TenantBrief.psm1` (4,278 lines) into 35 clean files under `Public/` (12 cmdlets) and `Private/{Import,Correlation,Scoring,Render}/` (23 helpers) with deterministic `LicenseROI.Gaps` tie-break sorting and identical 12-cmdlet export surface.
   - Upgraded `.github/workflows/ci.yml` to a Windows + Ubuntu matrix with Pester JaCoCo code coverage artifact, blocking PSScriptAnalyzer v1.25.0 gate, blocking JSON Schema (`Test-Json`) check, and blocking Q01–Q15 quality gate.
   - Replaced hot `+=` array loops with `List[object]`, compiled Turkish glossary regex (`ConvertTo-TenantBriefTurkish`), and batched module lookup in `Test-TenantBriefPrerequisites`.
+- **Sprint 7 Report UX, Accessibility, SVG Charts, Trend Tab & A4 Print (`S7.1–S7.5`):**
+  - Accessibility hardening in `assets/report-template.html`: skip-to-content link, ARIA `tablist`/`tab`/`tabpanel` with `aria-selected`, keyboard arrow/Home/End tab navigation, and `:focus-visible` outlines.
+  - Dependency-free inline SVG visuals on Overview: 6-pillar stacked distribution bar chart (`#pillarSvgChart`) and Risk × Effort open-findings heatmap (`#riskEffortHeatmap`).
+  - Optional `-PreviousReportJson` parameter on `Invoke-TenantBriefAssessment` computing `Report.Trend` (`ScoreDelta`, `Improved`, `Regressed`, `NewFailed`, `Resolved`) and rendering the `"Önceki Rapora Göre" / "Trend vs Previous"` tab in HTML.
+  - Compact HTML-embedded payload projection stripping redundant/empty fields and capping oversized inline markdown tables in HTML while preserving full JSON fidelity on disk.
+  - A4 portrait `@page` and `@media print` pagination rules (`break-inside: avoid`) in `Export-TenantBriefExecutiveSummary`.
 
 ### Deprecated
 - **`Finding.Impact`:** Retained for one release for backward compatibility; use `Finding.UserImpact` instead.
