@@ -1,0 +1,155 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://github.com/canercetinkaya/TenantBrief/schemas/tenantbrief-report.schema.json",
+  "title": "TenantBrief Assessment Report (v1.0 Draft Schema)",
+  "description": "Sprint 0 baseline schema describing the current TenantBriefReport-{TR,EN}.json output structure without breaking existing reports. Tightened enums and required fields are scheduled for Sprint 1 (S1.7).",
+  "type": "object",
+  "required": [
+    "Tenant",
+    "Language",
+    "Framework",
+    "Summary",
+    "Frameworks",
+    "LicenseROI",
+    "Roadmap",
+    "Findings"
+  ],
+  "properties": {
+    "Tenant": { "type": "string" },
+    "Language": { "type": "string", "enum": ["tr", "en"] },
+    "Framework": { "type": "string" },
+    "TenantInsights": {
+      "type": ["object", "null"],
+      "properties": {
+        "UserCount": { "type": ["integer", "null"] },
+        "GuestCount": { "type": ["integer", "null"] },
+        "GroupCount": { "type": ["integer", "null"] },
+        "ApplicationCount": { "type": ["integer", "null"] },
+        "DeviceCount": { "type": ["integer", "null"] },
+        "ManagedDeviceCount": { "type": ["integer", "null"] },
+        "CompliantDevices": { "type": ["integer", "null"] },
+        "NonCompliantDevices": { "type": ["integer", "null"] },
+        "TotalAgents": { "type": ["integer", "null"] },
+        "SecureScoreCurrent": { "type": ["number", "null"] },
+        "SecureScoreMax": { "type": ["number", "null"] },
+        "MfaCoverageDesc": { "type": ["string", "null"] }
+      }
+    },
+    "UsageAdoption": { "type": ["object", "null"] },
+    "SharePointRisk": { "type": ["object", "null"] },
+    "PowerPlatformAgents": { "type": ["object", "null"] },
+    "Summary": {
+      "type": "object",
+      "required": ["Total", "Passed", "Failed", "Investigate", "Skipped", "Planned", "Error", "HighRiskFailed"],
+      "properties": {
+        "Total": { "type": "integer", "minimum": 0 },
+        "Passed": { "type": "integer", "minimum": 0 },
+        "Failed": { "type": "integer", "minimum": 0 },
+        "Investigate": { "type": "integer", "minimum": 0 },
+        "Skipped": { "type": "integer", "minimum": 0 },
+        "Planned": { "type": "integer", "minimum": 0 },
+        "Error": { "type": "integer", "minimum": 0 },
+        "HighRiskFailed": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "Run": {
+      "type": ["object", "null"],
+      "properties": {
+        "Status": { "type": "string" },
+        "StartedAt": { "type": ["string", "null"] },
+        "CompletedAt": { "type": ["string", "null"] },
+        "Resumed": { "type": "boolean" },
+        "SourceReport": { "type": ["string", "null"] },
+        "Stages": { "type": "array" }
+      }
+    },
+    "Diagnostics": { "type": ["array", "null"] },
+    "Frameworks": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["Id", "Name", "Score", "Passed", "Total"],
+        "properties": {
+          "Id": { "type": "string" },
+          "Name": { "type": "string" },
+          "SourceTag": { "type": ["string", "null"] },
+          "Score": { "type": "number", "minimum": 0, "maximum": 100 },
+          "Passed": { "type": "integer", "minimum": 0 },
+          "Evaluated": { "type": "integer", "minimum": 0 },
+          "Failed": { "type": "integer", "minimum": 0 },
+          "Investigate": { "type": "integer", "minimum": 0 },
+          "Skipped": { "type": "integer", "minimum": 0 },
+          "Errors": { "type": "integer", "minimum": 0 },
+          "Total": { "type": "integer", "minimum": 0 }
+        }
+      }
+    },
+    "LicenseROI": {
+      "type": "object",
+      "properties": {
+        "Summary": { "type": ["string", "null"] },
+        "Gaps": { "type": ["array", "null"] },
+        "Skus": { "type": ["array", "null"] },
+        "WasteAnalysis": { "type": ["object", "null"] },
+        "TotalIdleUsdMo": { "type": ["number", "null"] },
+        "TotalIdleUsdYr": { "type": ["number", "null"] }
+      }
+    },
+    "CopilotReadiness": {
+      "type": ["object", "null"],
+      "properties": {
+        "Score": { "type": "number" },
+        "MaturityLevel": { "type": "string" },
+        "EligibleBaseSeats": { "type": "integer" },
+        "CopilotSeats": { "type": "integer" },
+        "FastTrackImported": { "type": "boolean" },
+        "Warnings": { "type": "array" },
+        "Checks": { "type": "array" }
+      }
+    },
+    "Roadmap": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["Phase", "Count", "Focus"],
+        "properties": {
+          "Phase": { "type": "string" },
+          "Count": { "type": "integer", "minimum": 0 },
+          "Focus": { "type": "string" }
+        }
+      }
+    },
+    "Findings": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["Id", "Status", "Risk", "Title"],
+        "properties": {
+          "Id": { "type": "string" },
+          "CorrelatedIds": { "type": ["array", "null"], "items": { "type": "string" } },
+          "Pillar": { "type": ["string", "null"] },
+          "PrimaryPillar": { "type": ["string", "null"] },
+          "DomainPillar": { "type": ["string", "null"] },
+          "DomainPillars": { "type": ["array", "null"], "items": { "type": "string" } },
+          "Source": { "type": ["string", "null"] },
+          "Sources": { "type": ["array", "null"], "items": { "type": "string" } },
+          "Category": { "type": ["string", "null"] },
+          "SfiPillar": { "type": ["string", "null"] },
+          "ImplementationCost": { "type": ["string", "null"] },
+          "MinimumLicense": { "type": ["string", "null"] },
+          "RequiredRole": { "type": ["string", "null"] },
+          "AdminPortal": { "type": ["string", "null"] },
+          "Status": { "type": "string" },
+          "Risk": { "type": "string" },
+          "Title": { "type": "string" },
+          "FrameworkRef": { "type": ["string", "null"] },
+          "Result": { "type": ["string", "null"] },
+          "Impact": { "type": ["string", "null"] },
+          "Description": { "type": ["string", "null"] },
+          "SkippedReason": { "type": ["string", "null"] },
+          "RemediationTr": { "type": ["string", "null"] }
+        }
+      }
+    }
+  }
+}
