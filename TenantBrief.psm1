@@ -1702,23 +1702,47 @@ function New-TenantBriefFindings {
         $portalName = if ($i18n -and $i18n.portals.PSObject.Properties[$portalKey]) { [string]$i18n.portals.$portalKey } else { 'Microsoft 365 Admin Center' }
         $requiredRole = if ($i18n -and $i18n.roles.PSObject.Properties[$portalKey]) { [string]$i18n.roles.$portalKey } else { 'Security Administrator' }
 
-        # Extract concrete remediation bullet/step from Description when available; keep guidance compact.
+        # Extract concrete remediation bullet/step from Description on sentence boundaries (no ellipsis, no Learn/öğrenin artifacts).
         $remTr = ''
+        $remLocalized = ''
         if ($statusRaw -in @('Failed', 'Investigate')) {
             $extractedStep = ''
             if ($fDesc -match '(?is)(?:\*\*Düzeltme işlemi\*\*|####\s*Remediation action|\*\*Remediation action\*\*)(.+)$') {
-                $remBlock = ($Matches[1] -replace '```[\s\S]*?```', ' ' -replace '\[([^\]]+)\]\([^\)]+\)', '$1' -replace 'https?://\S+', ' ' -replace '[#*_`>|\[\]]', ' ' -replace '\s+', ' ').Trim()
-                if ($remBlock -match 'Related links') {
-                    $remBlock = ($remBlock -split 'Related links')[0].Trim()
+                $rawLines = @($Matches[1] -split '\r?\n' | Where-Object {
+                    $ln = $_.Trim()
+                    $ln -and ($ln -notmatch '(?i)(Related links|İlgili bağlantılar|Learn more|Daha fazla bilgi|öğrenin|For more information|See also)')
+                })
+                $remBlock = (($rawLines -join ' ') -replace '```[\s\S]*?```', ' ' -replace '\[([^\]]+)\]\([^\)]+\)', '$1' -replace 'https?://\S+', ' ' -replace '[#*_`>|\[\]]', ' ' -replace '\.\.\.+', '.' -replace '\s+', ' ').Trim()
+                # Keep complete sentences up to 220 chars without mid-word ellipsis
+                $sentences = @($remBlock -split '(?<=[.!?])\s+' | Where-Object {
+                    $_ -and ($_ -notmatch '(?i)(Related links|İlgili bağlantılar|Learn more|Daha fazla bilgi|öğrenin|For more information)')
+                })
+                $acc = ''
+                foreach ($sent in $sentences) {
+                    $cand = if ($acc) { "$acc $sent" } else { $sent }
+                    if ($cand.Length -le 220) {
+                        $acc = $cand
+                    } else {
+                        if (-not $acc) {
+                            $cut = $sent.Substring(0, [Math]::Min(215, $sent.Length))
+                            $lastSp = $cut.LastIndexOf(' ')
+                            if ($lastSp -gt 40) { $cut = $cut.Substring(0, $lastSp) }
+                            $acc = $cut.TrimEnd(' ', ',', ';', ':', '.') + '.'
+                        }
+                        break
+                    }
                 }
-                if ($remBlock.Length -gt 160) { $remBlock = $remBlock.Substring(0, 157).Trim() + '...' }
-                $extractedStep = $remBlock
+                if ($acc -and $acc -notmatch '[.!?]$') { $acc = "$acc." }
+                $extractedStep = $acc.Trim()
             }
             if ($extractedStep -and $extractedStep.Length -gt 12) {
                 $remTr = "$portalName üzerinden uygulayın: $extractedStep Pilot gruba Denetim (Report-only) kipinde uygulayıp doğruladıktan sonra Zorunlu (Enforce) durumuna geçin. [En Az Ayrıcalıklı Rol: $requiredRole]"
+                $remEn = "Apply in $portalName`: $extractedStep Roll out in Report-only mode to a pilot group, verify sign-in/audit logs, then switch to Enforce. [Least-Privilege Role: $requiredRole]"
             } else {
                 $remTr = "1. $portalName üzerinden '$fTitle' kontrolünü açın. 2. Değişikliği önce Denetim (Report-only) kipinde pilot gruba uygulayıp oturum açma/olay günlüklerini doğrulayın. 3. Etki analizi sonrası kademeli olarak Zorunlu (Enforce) durumuna geçin. [En Az Ayrıcalıklı Rol: $requiredRole]"
+                $remEn = "1. Open '$fTitle' in $portalName. 2. Apply the change to a pilot group in Report-only mode and verify sign-in/audit logs. 3. Enforce incrementally after impact validation. [Least-Privilege Role: $requiredRole]"
             }
+            $remLocalized = if ($Language -eq 'tr') { $remTr } else { $remEn }
         }
 
         $minLicRaw = Get-TenantBriefPropertyValue -Object $t -Name 'TestMinimumLicense'
@@ -1790,6 +1814,7 @@ function New-TenantBriefFindings {
             Description        = $fDesc
             SkippedReason      = [string]$skippedRaw
             ErrorRemedy        = $errRemedy
+            Remediation        = $remLocalized
             RemediationTr      = $remTr
         }
     }
