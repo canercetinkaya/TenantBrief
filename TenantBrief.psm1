@@ -258,8 +258,18 @@ function Connect-TenantBrief {
             if ($mgCtx.TenantId) { $teamsParams['TenantId'] = $mgCtx.TenantId }
             elseif ($Tenant) { $teamsParams['TenantId'] = $Tenant }
             if ($UseDeviceCode) { $teamsParams['UseDeviceCode'] = $true }
-            elseif ($mgCtx.Account) { $teamsParams['AccountId'] = $mgCtx.Account }
-            Connect-MicrosoftTeams @teamsParams | Out-Null
+            try {
+                Connect-MicrosoftTeams @teamsParams | Out-Null
+            } catch {
+                $tErr = $_.Exception.Message
+                if (-not $UseDeviceCode -and ($tErr -match 'WAM Error|3399548929|Need user interaction|broker')) {
+                    Write-Host "[TenantBrief] WAM blocked interactive sign-in for Teams; retrying with Device Code (microsoft.com/devicelogin)..." -ForegroundColor Yellow
+                    $teamsParams['UseDeviceCode'] = $true
+                    Connect-MicrosoftTeams @teamsParams | Out-Null
+                } else {
+                    throw
+                }
+            }
             Write-Host "[TenantBrief] Connected to Microsoft Teams." -ForegroundColor Green
         } catch {
             Write-Warning "[TenantBrief] Microsoft Teams connection skipped: $($_.Exception.Message)"
