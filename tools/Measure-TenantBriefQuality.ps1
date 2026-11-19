@@ -221,11 +221,12 @@ if ($ReadmePath -and (Test-Path -LiteralPath $ReadmePath)) {
         @{ Name = 'ZeroTrustAssessment'; Pattern = 'ZeroTrustAssessment'; Ids = @('ZeroTrust'); Tags = @('ZeroTrust') },
         @{ Name = 'ScubaGear';           Pattern = 'ScubaGear';           Ids = @('CISA_SCuBA'); Tags = @('CISA SCuBA') },
         @{ Name = 'ORCA';                Pattern = '\bORCA\b';            Ids = @('MDO_ORCA'); Tags = @('MDO / ORCA') },
-        @{ Name = 'Maester';             Pattern = '\bMaester\b';         Ids = @('Maester', 'CIS_M365', 'EIDSCA'); Tags = @('Maester', 'CIS M365', 'EIDSCA') },
-        @{ Name = 'EntraFalcon';         Pattern = 'EntraFalcon';         Ids = @('EntraFalcon'); Tags = @('EntraFalcon') }
+        @{ Name = 'Maester';             Pattern = '\bMaester\b';         Ids = @('Maester', 'CIS_M365', 'EIDSCA'); Tags = @('Maester', 'CIS M365', 'EIDSCA'); OptionalPattern = '' },
+        @{ Name = 'EntraFalcon';         Pattern = 'EntraFalcon';         Ids = @('EntraFalcon'); Tags = @('EntraFalcon'); OptionalPattern = '(?i)(optional\s+`?EntraFalcon|EntraFalcon[^\r\n]{0,80}optional)' }
     )
     foreach ($ce in $claimedEngines) {
         if ($readmeText -match $ce.Pattern) {
+            if ($ce.ContainsKey('OptionalPattern') -and $ce['OptionalPattern'] -and ($readmeText -match $ce['OptionalPattern'])) { continue }
             $present = $false
             foreach ($cid in $ce.Ids) { if ($fwIds -contains $cid) { $present = $true } }
             foreach ($ctg in $ce.Tags) { if ($fwTags -contains $ctg) { $present = $true } }

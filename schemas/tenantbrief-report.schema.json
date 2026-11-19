@@ -67,6 +67,7 @@
       }
     },
     "Diagnostics": { "type": ["array", "null"] },
+    "Prerequisites": { "type": ["array", "null"] },
     "Frameworks": {
       "type": "array",
       "items": {
@@ -148,6 +149,8 @@
           "AdminPortal": { "type": ["string", "null"] },
           "Status": { "type": "string", "enum": ["Passed", "Failed", "Investigate", "Skipped", "Planned", "Error"] },
           "Risk": { "type": "string", "enum": ["Critical", "High", "Medium", "Low"] },
+          "PriorityScore": { "type": ["integer", "null"], "minimum": 0, "maximum": 100 },
+          "ErrorRemedy": { "type": ["string", "null"] },
           "Title": { "type": "string" },
           "FrameworkRef": { "type": ["string", "null"] },
           "Result": { "type": ["string", "null"] },

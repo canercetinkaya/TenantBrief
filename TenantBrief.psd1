@@ -5,7 +5,7 @@
     Author            = 'Caner Çetinkaya'
     CompanyName       = 'canercetinkaya.com'
     Copyright         = '(c) 2026 Caner Çetinkaya. MIT License.'
-    Description       = 'Bilingual (TR/EN) Read-Only Microsoft 365 & Azure Security Posture, 6-Pillar Assessment Brief, License ROI/Waste Audit (R1-R7), Copilot Readiness, and Verified Benchmark Scoring (ZeroTrustAssessment, CISA ScubaGear, Microsoft ORCA, Maester EIDSCA/CIS M365, EntraFalcon).'
+    Description       = 'Bilingual (TR/EN) Read-Only Microsoft 365 & Azure Security Posture, 6-Pillar Assessment Brief, License ROI/Waste Audit (R1-R7), Copilot Readiness, and Verified Benchmark Scoring (ZeroTrustAssessment, CISA ScubaGear, Microsoft ORCA, Maester EIDSCA/CIS M365, optional EntraFalcon JSON).'
     PowerShellVersion = '7.0'
     FunctionsToExport = @(
         'Connect-TenantBrief',
@@ -18,7 +18,8 @@
         'Import-TenantBriefSharePointRisk',
         'Import-TenantBriefPowerPlatformAgents',
         'Compare-TenantBriefReports',
-        'Export-TenantBriefExecutiveSummary'
+        'Export-TenantBriefExecutiveSummary',
+        'Test-TenantBriefPrerequisites'
     )
     CmdletsToExport   = @()
     VariablesToExport = @()

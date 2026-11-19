@@ -4,7 +4,42 @@ $script:ModuleRoot = $PSScriptRoot
 $script:FrameworkMapPath = Join-Path $script:ModuleRoot 'data\framework-mappings.json'
 $script:CrosswalkPath = Join-Path $script:ModuleRoot 'data\control-crosswalk.json'
 $script:CrosswalkMapCache = $null
+$script:ScoringConfigPath = Join-Path $script:ModuleRoot 'data\scoring.json'
+$script:ScoringConfigCache = $null
 $script:ReportTemplatePath = Join-Path $script:ModuleRoot 'assets\report-template.html'
+
+function Get-TenantBriefScoringConfig {
+    [CmdletBinding()]
+    param()
+    if ($null -ne $script:ScoringConfigCache) { return $script:ScoringConfigCache }
+    if (Test-Path -LiteralPath $script:ScoringConfigPath) {
+        $script:ScoringConfigCache = Get-Content -LiteralPath $script:ScoringConfigPath -Raw -Encoding UTF8 | ConvertFrom-Json
+    }
+    return $script:ScoringConfigCache
+}
+
+function Get-TenantBriefPriorityScore {
+    [CmdletBinding()]
+    param(
+        [string]$Status,
+        [string]$Risk,
+        [string]$ImplementationCost,
+        [int]$SourceCount = 1,
+        [bool]$StatusConflict = $false
+    )
+    if ($Status -eq 'Passed' -or $Status -eq 'Planned') { return 0 }
+    $cfg = Get-TenantBriefScoringConfig
+    $rW = if ($cfg -and $cfg.riskWeights.PSObject.Properties[$Risk]) { [int]$cfg.riskWeights.$Risk } else { 8 }
+    $sW = if ($cfg -and $cfg.statusWeights.PSObject.Properties[$Status]) { [int]$cfg.statusWeights.$Status } else { 0 }
+    $costKey = if ([string]::IsNullOrWhiteSpace($ImplementationCost)) { 'Unknown' } else { $ImplementationCost }
+    $cB = if ($cfg -and $cfg.costBonus.PSObject.Properties[$costKey]) { [int]$cfg.costBonus.$costKey } else { 0 }
+    $extraSrc = [Math]::Max(0, $SourceCount - 1)
+    $perExtra = if ($cfg) { [int]$cfg.multiSourceBonusPerExtra } else { 4 }
+    $cap = if ($cfg) { [int]$cfg.multiSourceBonusCap } else { 10 }
+    $mB = [Math]::Min($cap, ($extraSrc * $perExtra))
+    $confB = if ($StatusConflict -and $cfg) { [int]$cfg.conflictBonus } else { 0 }
+    return [Math]::Min(100, [Math]::Max(0, ($rW + $sW + $cB + $mB + $confB)))
+}
 
 function Get-TenantBriefCrosswalkMap {
     [CmdletBinding()]
@@ -98,7 +133,10 @@ function Connect-TenantBrief {
         [switch]$SkipTeams,
 
         [Parameter()]
-        [switch]$SkipSharePoint
+        [switch]$SkipSharePoint,
+
+        [Parameter()]
+        [switch]$AutoFixDependencies
     )
 
     Write-Host "[TenantBrief] Cleaning any previous tenant sessions..." -ForegroundColor DarkGray
@@ -126,11 +164,15 @@ function Connect-TenantBrief {
 
     foreach ($dep in @('Microsoft.Graph.Beta.Teams', 'MicrosoftTeams', 'powershell-yaml', 'ScubaGear', 'ORCA', 'Maester')) {
         if (-not (Get-Module -ListAvailable -Name $dep)) {
-            Write-Host "[TenantBrief] Installing missing module '$dep' from PSGallery..." -ForegroundColor Yellow
-            try {
-                Install-Module -Name $dep -Repository PSGallery -Scope CurrentUser -Force -AllowClobber -ErrorAction Stop
-            } catch {
-                Write-Warning "Could not auto-install '$dep': $($_.Exception.Message)"
+            if ($AutoFixDependencies) {
+                Write-Host "[TenantBrief] Installing missing module '$dep' from PSGallery..." -ForegroundColor Yellow
+                try {
+                    Install-Module -Name $dep -Repository PSGallery -Scope CurrentUser -Force -AllowClobber -ErrorAction Stop
+                } catch {
+                    Write-Warning "Could not auto-install '$dep': $($_.Exception.Message)"
+                }
+            } else {
+                Write-Warning "[TenantBrief] Optional module '$dep' is not installed. Run: Install-Module $dep -Scope CurrentUser (or pass -AutoFixDependencies)."
             }
         }
     }
@@ -155,17 +197,20 @@ function Connect-TenantBrief {
         } catch {}
     }
 
-    # Prune newer unpinned Microsoft.Graph.Authentication versions (e.g. 2.41.2 pulled transitively by Maester)
-    # when the pinned version exists, preventing CLR "different copy already loaded" errors.
+    # Prune newer unpinned Microsoft.Graph.Authentication versions only when -AutoFixDependencies is explicitly supplied.
     $allGraphMods = @(Get-Module -ListAvailable -Name 'Microsoft.Graph.Authentication')
     if ($allGraphMods | Where-Object { $_.Version.ToString() -eq $graphReqVersion }) {
         foreach ($gm in $allGraphMods) {
             if ($gm.Version.ToString() -ne $graphReqVersion -and $gm.ModuleBase -like "$($env:USERPROFILE)*") {
-                try {
-                    Remove-Item -Path $gm.ModuleBase -Recurse -Force -ErrorAction Stop
-                    Write-Host "[TenantBrief] Removed unpinned Microsoft.Graph.Authentication v$($gm.Version) to keep v$graphReqVersion aligned with ZeroTrustAssessment." -ForegroundColor DarkGray
-                } catch {
-                    Write-Warning "[TenantBrief] Could not remove Microsoft.Graph.Authentication v$($gm.Version) at '$($gm.ModuleBase)' (close other PowerShell windows holding the DLL): $($_.Exception.Message)"
+                if ($AutoFixDependencies) {
+                    try {
+                        Remove-Item -Path $gm.ModuleBase -Recurse -Force -ErrorAction Stop
+                        Write-Host "[TenantBrief] Removed unpinned Microsoft.Graph.Authentication v$($gm.Version) to keep v$graphReqVersion aligned with ZeroTrustAssessment." -ForegroundColor DarkGray
+                    } catch {
+                        Write-Warning "[TenantBrief] Could not remove Microsoft.Graph.Authentication v$($gm.Version) at '$($gm.ModuleBase)' (close other PowerShell windows holding the DLL): $($_.Exception.Message)"
+                    }
+                } else {
+                    Write-Warning "[TenantBrief] Unpinned Microsoft.Graph.Authentication v$($gm.Version) detected alongside v$graphReqVersion. Pass -AutoFixDependencies or remove '$($gm.ModuleBase)' manually if assembly conflicts occur."
                 }
             }
         }
@@ -209,10 +254,14 @@ function Connect-TenantBrief {
         if (Test-Path $ps7SpoDir) {
             foreach ($verDir in @(Get-ChildItem -Path $ps7SpoDir -Directory -ErrorAction SilentlyContinue)) {
                 if ($verDir.Name -ne $spoReqVersion) {
-                    try {
-                        Remove-Item -Path $verDir.FullName -Recurse -Force -ErrorAction Stop
-                    } catch {
-                        Write-Warning "[TenantBrief] Could not remove unpinned PS7 SharePoint module '$($verDir.FullName)': $($_.Exception.Message)"
+                    if ($AutoFixDependencies) {
+                        try {
+                            Remove-Item -Path $verDir.FullName -Recurse -Force -ErrorAction Stop
+                        } catch {
+                            Write-Warning "[TenantBrief] Could not remove unpinned PS7 SharePoint module '$($verDir.FullName)': $($_.Exception.Message)"
+                        }
+                    } else {
+                        Write-Warning "[TenantBrief] Unpinned PS7 SharePoint module '$($verDir.FullName)' detected. Pass -AutoFixDependencies or remove it manually."
                     }
                 }
             }
@@ -221,31 +270,39 @@ function Connect-TenantBrief {
 
     $spoTargetDir = Join-Path $winPsModulesDir "Microsoft.Online.SharePoint.PowerShell\$spoReqVersion"
     if (-not (Test-Path $spoTargetDir)) {
-        Write-Host "[TenantBrief] Installing Microsoft.Online.SharePoint.PowerShell v$spoReqVersion into WindowsPowerShell\Modules for PS7/WinPS5 compatibility..." -ForegroundColor Yellow
-        try {
-            if (Get-Command Save-Module -ErrorAction SilentlyContinue) {
-                Save-Module -Name 'Microsoft.Online.SharePoint.PowerShell' -RequiredVersion $spoReqVersion -Repository PSGallery -Path $winPsModulesDir -Force -ErrorAction Stop
-            } elseif (Get-Command Save-PSResource -ErrorAction SilentlyContinue) {
-                Save-PSResource -Name 'Microsoft.Online.SharePoint.PowerShell' -Version $spoReqVersion -Repository PSGallery -Path $winPsModulesDir -TrustRepository -ErrorAction Stop
-            } else {
-                Write-Warning "Could not auto-install Microsoft.Online.SharePoint.PowerShell v$spoReqVersion`: neither Save-Module nor Save-PSResource is available."
+        if ($AutoFixDependencies) {
+            Write-Host "[TenantBrief] Installing Microsoft.Online.SharePoint.PowerShell v$spoReqVersion into WindowsPowerShell\Modules for PS7/WinPS5 compatibility..." -ForegroundColor Yellow
+            try {
+                if (Get-Command Save-Module -ErrorAction SilentlyContinue) {
+                    Save-Module -Name 'Microsoft.Online.SharePoint.PowerShell' -RequiredVersion $spoReqVersion -Repository PSGallery -Path $winPsModulesDir -Force -ErrorAction Stop
+                } elseif (Get-Command Save-PSResource -ErrorAction SilentlyContinue) {
+                    Save-PSResource -Name 'Microsoft.Online.SharePoint.PowerShell' -Version $spoReqVersion -Repository PSGallery -Path $winPsModulesDir -TrustRepository -ErrorAction Stop
+                } else {
+                    Write-Warning "Could not auto-install Microsoft.Online.SharePoint.PowerShell v$spoReqVersion`: neither Save-Module nor Save-PSResource is available."
+                }
+            } catch {
+                Write-Warning "Could not auto-install Microsoft.Online.SharePoint.PowerShell v$spoReqVersion`: $($_.Exception.Message)"
             }
-        } catch {
-            Write-Warning "Could not auto-install Microsoft.Online.SharePoint.PowerShell v$spoReqVersion`: $($_.Exception.Message)"
+        } else {
+            Write-Warning "[TenantBrief] Microsoft.Online.SharePoint.PowerShell v$spoReqVersion is not in '$winPsModulesDir'. Run: Save-Module Microsoft.Online.SharePoint.PowerShell -RequiredVersion $spoReqVersion -Path '$winPsModulesDir' (or pass -AutoFixDependencies)."
         }
     }
 
     $opaExe = Join-Path $env:USERPROFILE '.scubagear\Tools\opa_windows_amd64.exe'
     if (-not (Test-Path $opaExe) -and (Get-Module -ListAvailable -Name 'ScubaGear')) {
-        Write-Host "[TenantBrief] Installing OPA executable for ScubaGear..." -ForegroundColor Yellow
-        try {
-            Set-StrictMode -Off
-            Import-Module ScubaGear -ErrorAction SilentlyContinue -WarningAction SilentlyContinue 6>$null 3>$null 2>$null | Out-Null
-            Install-OPAforSCuBA | Out-Null
-        } catch {
-            Write-Warning "Could not auto-install OPA: $($_.Exception.Message)"
-        } finally {
-            Set-StrictMode -Version Latest
+        if ($AutoFixDependencies) {
+            Write-Host "[TenantBrief] Installing OPA executable for ScubaGear..." -ForegroundColor Yellow
+            try {
+                Set-StrictMode -Off
+                Import-Module ScubaGear -ErrorAction SilentlyContinue -WarningAction SilentlyContinue 6>$null 3>$null 2>$null | Out-Null
+                Install-OPAforSCuBA | Out-Null
+            } catch {
+                Write-Warning "Could not auto-install OPA: $($_.Exception.Message)"
+            } finally {
+                Set-StrictMode -Version Latest
+            }
+        } else {
+            Write-Warning "[TenantBrief] ScubaGear OPA executable not found at '$opaExe'. Run: Install-OPAforSCuBA (or pass -AutoFixDependencies)."
         }
     }
 
@@ -395,15 +452,23 @@ function Add-TenantBriefDiagnostic {
         [string]$Component,
 
         [Parameter(Mandatory = $true)]
-        [string]$Message
+        [string]$Message,
+
+        [Parameter(Mandatory = $false)]
+        [ValidateSet('Info', 'Warning', 'Error')]
+        [string]$Severity = 'Warning',
+
+        [Parameter(Mandatory = $false)]
+        [string]$Remedy = ''
     )
 
     if ($null -eq $Diagnostics) { return }
     $Diagnostics.Add([PSCustomObject]@{
         Stage     = $Stage
         Component = $Component
-        Severity  = 'Warning'
+        Severity  = $Severity
         Message   = $Message
+        Remedy    = $Remedy
         Timestamp = (Get-Date).ToString('o')
     })
     Write-Verbose "[TenantBrief] Stage $Stage / ${Component}: $Message"
@@ -1121,7 +1186,13 @@ function Invoke-TenantBriefBaselineCollections {
         [string]$ManifestPath,
 
         [Parameter(Mandatory = $false)]
-        [switch]$SkipMaester
+        [switch]$SkipMaester,
+
+        [Parameter(Mandatory = $false)]
+        [string[]]$ScubaProducts = @('aad', 'securitysuite', 'exo', 'powerplatform', 'sharepoint', 'teams', 'powerbi'),
+
+        [Parameter(Mandatory = $false)]
+        [switch]$AutoFixDependencies
     )
 
     $markStage = {
@@ -1143,9 +1214,14 @@ function Invoke-TenantBriefBaselineCollections {
     & $markStage 2 'CISA ScubaGear' 'started' ''
 
     if (-not (Get-Module -ListAvailable -Name 'ScubaGear')) {
-        & $Log "[Stage 2/5] ScubaGear not found — installing from PSGallery..."
-        try { Install-Module -Name ScubaGear -Repository PSGallery -Scope CurrentUser -Force -AllowClobber -ErrorAction Stop } catch {
-            & $note 2 'ScubaGear' "Module install failed: $($_.Exception.Message)"
+        if ($AutoFixDependencies) {
+            & $Log "[Stage 2/5] ScubaGear not found — installing from PSGallery..."
+            try { Install-Module -Name ScubaGear -Repository PSGallery -Scope CurrentUser -Force -AllowClobber -ErrorAction Stop } catch {
+                & $note 2 'ScubaGear' "Module install failed: $($_.Exception.Message)"
+            }
+        } else {
+            & $Log "[Stage 2/5] ScubaGear not installed (skipped). Run: Install-Module ScubaGear -Scope CurrentUser (or pass -AutoFixDependencies)."
+            & $note 2 'ScubaGear' 'Module not installed. Run: Install-Module ScubaGear -Scope CurrentUser (or pass -AutoFixDependencies).'
         }
     }
     if (Get-Module -ListAvailable -Name 'ScubaGear') {
@@ -1153,7 +1229,11 @@ function Invoke-TenantBriefBaselineCollections {
         if (-not (Test-Path $scubaOut)) { New-Item -ItemType Directory -Path $scubaOut -Force | Out-Null }
         try {
             if (-not (Get-Module -ListAvailable -Name 'powershell-yaml')) {
-                Install-Module -Name 'powershell-yaml' -Repository PSGallery -Scope CurrentUser -Force -ErrorAction SilentlyContinue
+                if ($AutoFixDependencies) {
+                    Install-Module -Name 'powershell-yaml' -Repository PSGallery -Scope CurrentUser -Force -ErrorAction SilentlyContinue
+                } else {
+                    & $note 2 'ScubaGear' 'Optional dependency powershell-yaml missing. Run: Install-Module powershell-yaml -Scope CurrentUser.'
+                }
             }
             Set-StrictMode -Off
             try {
@@ -1164,15 +1244,31 @@ function Invoke-TenantBriefBaselineCollections {
             $opaDir = Join-Path $env:USERPROFILE '.scubagear\Tools'
             $opaExePath = Join-Path $opaDir 'opa_windows_amd64.exe'
             if (-not (Test-Path $opaExePath)) {
-                & $Log "[Stage 2/5] Installing OPA executable for ScubaGear..."
-                Install-OPAforSCuBA | Out-Null
+                if ($AutoFixDependencies) {
+                    & $Log "[Stage 2/5] Installing OPA executable for ScubaGear..."
+                    Install-OPAforSCuBA | Out-Null
+                } else {
+                    throw "OPA executable missing at '$opaExePath'. Run: Install-OPAforSCuBA (or pass -AutoFixDependencies)."
+                }
             }
-            & $Log "[Stage 2/5] Running CISA ScubaGear checks (aad baseline — reusing active Graph session)..."
-            $null = Invoke-SCuBA -ProductNames @('aad') -LogIn:$false -DisconnectOnExit:$false -OPAPath $opaDir -OutPath $scubaOut -Quiet 6>$null 3>$null
+            $requestedScuba = @($ScubaProducts | ForEach-Object { ([string]$_).Trim().ToLowerInvariant() } | Where-Object { $_ } | Select-Object -Unique)
+            if ($requestedScuba.Count -eq 0) { $requestedScuba = @('aad', 'securitysuite', 'exo', 'powerplatform', 'sharepoint', 'teams', 'powerbi') }
+            & $Log "[Stage 2/5] Running CISA ScubaGear checks ($($requestedScuba -join ', ') — reusing active session)..."
+            $null = Invoke-SCuBA -ProductNames $requestedScuba -LogIn:$false -DisconnectOnExit:$false -OPAPath $opaDir -OutPath $scubaOut -Quiet 6>$null 3>$null
             $scubaItems = @(Import-TenantBriefScubaResults -Path $scubaOut)
+            $executedScuba = @($scubaItems | ForEach-Object { ([string]$_.TestCategory).Trim().ToLowerInvariant() } | Where-Object { $_ } | Select-Object -Unique)
+            $skippedScuba = @($requestedScuba | Where-Object { $executedScuba -notcontains $_ })
+            if ($Manifest) {
+                $scubaSummaryObj = [PSCustomObject]@{
+                    Requested = @($requestedScuba)
+                    Executed  = @($executedScuba)
+                    Skipped   = @($skippedScuba)
+                }
+                $Manifest | Add-Member -NotePropertyName 'ScubaProducts' -NotePropertyValue $scubaSummaryObj -Force
+            }
             if ($scubaItems.Count -gt 0) {
                 $collected += $scubaItems
-                & $Log "[Stage 2/5] ScubaGear completed: $($scubaItems.Count) controls merged."
+                & $Log "[Stage 2/5] ScubaGear completed: $($scubaItems.Count) controls merged ($($executedScuba.Count)/$($requestedScuba.Count) products)."
                 $scubaOk = $true
             } else {
                 "ScubaGear finished without ScubaResults.json / *Report.json output." | Set-Content -Path (Join-Path $scubaOut 'scuba-error.txt') -Encoding UTF8
@@ -1196,9 +1292,14 @@ function Invoke-TenantBriefBaselineCollections {
     $State.Stage = 3
     & $markStage 3 'Microsoft ORCA & Maester' 'started' ''
     if (-not (Get-Module -ListAvailable -Name 'ORCA')) {
-        & $Log "[Stage 3/5] ORCA not found — installing from PSGallery..."
-        try { Install-Module -Name ORCA -Repository PSGallery -Scope CurrentUser -Force -AllowClobber -ErrorAction Stop } catch {
-            & $note 3 'ORCA' "Module install failed: $($_.Exception.Message)"
+        if ($AutoFixDependencies) {
+            & $Log "[Stage 3/5] ORCA not found — installing from PSGallery..."
+            try { Install-Module -Name ORCA -Repository PSGallery -Scope CurrentUser -Force -AllowClobber -ErrorAction Stop } catch {
+                & $note 3 'ORCA' "Module install failed: $($_.Exception.Message)"
+            }
+        } else {
+            & $Log "[Stage 3/5] ORCA not installed (skipped). Run: Install-Module ORCA -Scope CurrentUser (or pass -AutoFixDependencies)."
+            & $note 3 'ORCA' 'Module not installed. Run: Install-Module ORCA -Scope CurrentUser (or pass -AutoFixDependencies).'
         }
     }
     if (Get-Module -ListAvailable -Name 'ORCA') {
@@ -1620,6 +1721,25 @@ function New-TenantBriefFindings {
         $riskRaw     = Get-TenantBriefPropertyValue -Object $t -Name 'TestRisk'
         $resultRaw   = Get-TenantBriefPropertyValue -Object $t -Name 'TestResult'
         $skippedRaw  = Get-TenantBriefPropertyValue -Object $t -Name 'SkippedReason'
+        $errRemedy = ''
+        if ($statusRaw -eq 'Error') {
+            $resStr = [string]$resultRaw
+            $scopeMatch = [regex]::Match($resStr, '\b([A-Za-z][A-Za-z0-9]+\.(?:Read|ReadBasic)(?:\.All)?)\b')
+            $scopeHint = if ($scopeMatch.Success) { " ($($scopeMatch.Groups[1].Value))" } else { '' }
+            if ($resStr -match '403|Forbidden|Authorization_RequestDenied|Insufficient privileges|Missing.*scope|Unauthorized') {
+                $errRemedy = if ($Language -eq 'tr') {
+                    "HTTP 403 / Yetki eksikliği tespit edildi$scopeHint. Oturumu gerekli salt okunur Graph/M365 izniyle yeniden bağlayın (Connect-TenantBrief) ve yönetici onayını doğrulayın."
+                } else {
+                    "HTTP 403 / Missing permission detected$scopeHint. Reconnect with the required read-only Graph/M365 scope (Connect-TenantBrief) and verify admin consent."
+                }
+            } else {
+                $errRemedy = if ($Language -eq 'tr') {
+                    "Denetim motoru hata döndürdü; ayrıntı için run-manifest.json ve ham motor günlüklerini inceleyin."
+                } else {
+                    "Assessment engine returned an error; inspect run-manifest.json and raw engine logs."
+                }
+            }
+        }
 
         $canonicalRaw = [string](Get-TenantBriefPropertyValue -Object $t -Name 'CanonicalId')
         $srcStatusesRaw = Get-TenantBriefPropertyValue -Object $t -Name 'SourceStatuses'
@@ -1629,6 +1749,9 @@ function New-TenantBriefFindings {
         }
         $conflictRaw = [bool](Get-TenantBriefPropertyValue -Object $t -Name 'StatusConflict')
 
+        $riskFinal = if ($riskRaw) { [string]$riskRaw } else { 'Low' }
+        $costFinal = if ($implCostRaw) { [string]$implCostRaw } else { 'Unknown' }
+        $prioScore = Get-TenantBriefPriorityScore -Status $statusRaw -Risk $riskFinal -ImplementationCost $costFinal -SourceCount $sourceList.Count -StatusConflict $conflictRaw
         $canonicalPrimary = if ($domainList.Count -gt 0) { [string]$domainList[0] } else { 'Identity' }
         [PSCustomObject]@{
             Id                 = $tid
@@ -1645,12 +1768,13 @@ function New-TenantBriefFindings {
             StatusConflict     = $conflictRaw
             Category           = if ($catRaw) { $catRaw } else { 'General' }
             SfiPillar          = if ($sfiRaw) { [string]$sfiRaw } else { '' }
-            ImplementationCost = if ($implCostRaw) { [string]$implCostRaw } else { 'Unknown' }
+            ImplementationCost = $costFinal
             MinimumLicense     = $minLicStr
             RequiredRole       = $requiredRole
             AdminPortal        = $portalName
             Status             = $statusRaw
-            Risk               = if ($riskRaw) { [string]$riskRaw } else { 'Low' }
+            Risk               = $riskFinal
+            PriorityScore      = $prioScore
             Title              = $fTitle
             FrameworkRef       = $fwRef
             Result             = [string]$resultRaw
@@ -1658,6 +1782,7 @@ function New-TenantBriefFindings {
             Impact             = $fImp
             Description        = $fDesc
             SkippedReason      = [string]$skippedRaw
+            ErrorRemedy        = $errRemedy
             RemediationTr      = $remTr
         }
     }
@@ -2382,6 +2507,7 @@ function Invoke-TenantBriefAssessment {
             Stages        = @($manifest.Stages)
         }
         Diagnostics      = @($diagnostics)
+        Prerequisites    = @(Test-TenantBriefPrerequisites)
         Frameworks       = @($frameworkCards)
         LicenseROI       = [PSCustomObject]@{
             Summary         = $roiSummary
@@ -3854,5 +3980,115 @@ function Get-TenantBriefUsageAdoption {
     }
 }
 
+function Test-TenantBriefPrerequisites {
+    <#
+    .SYNOPSIS
+    Runs a strictly read-only preflight check of TenantBrief modules, OPA binary, and M365 sessions.
+
+    .DESCRIPTION
+    Inspects locally installed PowerShell modules (ZeroTrustAssessment, ScubaGear, ORCA, Maester,
+    MicrosoftTeams, Microsoft.Online.SharePoint.PowerShell, powershell-yaml), the ScubaGear OPA
+    executable, and active Microsoft Graph / Exchange Online / SharePoint Online / Teams sessions.
+    Makes zero changes to the local machine or tenant.
+
+    .EXAMPLE
+    Test-TenantBriefPrerequisites | Format-Table Category, Name, Status, InstalledVersion, Details
+    #>
+    [CmdletBinding()]
+    [OutputType([PSCustomObject])]
+    param()
+
+    $results = New-Object System.Collections.Generic.List[object]
+
+    $moduleSpecs = @(
+        @{ Name = 'ZeroTrustAssessment'; Required = $true;  InstallCmd = 'Install-Module ZeroTrustAssessment -Scope CurrentUser' },
+        @{ Name = 'ScubaGear';           Required = $false; InstallCmd = 'Install-Module ScubaGear -Scope CurrentUser' },
+        @{ Name = 'ORCA';                Required = $false; InstallCmd = 'Install-Module ORCA -Scope CurrentUser' },
+        @{ Name = 'Maester';             Required = $false; InstallCmd = 'Install-Module Maester -Scope CurrentUser' },
+        @{ Name = 'powershell-yaml';     Required = $false; InstallCmd = 'Install-Module powershell-yaml -Scope CurrentUser' },
+        @{ Name = 'MicrosoftTeams';      Required = $false; InstallCmd = 'Install-Module MicrosoftTeams -Scope CurrentUser' },
+        @{ Name = 'Microsoft.Online.SharePoint.PowerShell'; Required = $false; InstallCmd = 'Save-Module Microsoft.Online.SharePoint.PowerShell -Path "$HOME\Documents\WindowsPowerShell\Modules"' }
+    )
+
+    foreach ($spec in $moduleSpecs) {
+        $found = Get-Module -ListAvailable -Name $spec.Name -ErrorAction SilentlyContinue | Sort-Object Version -Descending | Select-Object -First 1
+        $status = if ($found) { 'Ready' } elseif ($spec.Required) { 'Missing' } else { 'Warning' }
+        $results.Add([PSCustomObject]@{
+            Category         = 'Module'
+            Name             = $spec.Name
+            Status           = $status
+            InstalledVersion = if ($found) { [string]$found.Version } else { '' }
+            Details          = if ($found) { 'Installed' } elseif ($spec.Required) { 'Required module not found' } else { 'Optional engine/module not installed' }
+            Remedy           = if ($found) { '' } else { $spec.InstallCmd }
+        })
+    }
+
+    $opaExe = if ($env:USERPROFILE) { Join-Path $env:USERPROFILE '.scubagear\Tools\opa_windows_amd64.exe' } else { '' }
+    $opaReady = ($opaExe -and (Test-Path -LiteralPath $opaExe))
+    $results.Add([PSCustomObject]@{
+        Category         = 'Binary'
+        Name             = 'ScubaGear OPA'
+        Status           = if ($opaReady) { 'Ready' } else { 'Warning' }
+        InstalledVersion = ''
+        Details          = if ($opaReady) { 'OPA executable present' } else { 'OPA executable not found under ~/.scubagear/Tools' }
+        Remedy           = if ($opaReady) { '' } else { 'Install-OPAforSCuBA' }
+    })
+
+    $mgCtx = $null
+    if (Get-Command Get-MgContext -ErrorAction SilentlyContinue) {
+        try { $mgCtx = Get-MgContext -ErrorAction SilentlyContinue } catch { $mgCtx = $null }
+    }
+    $mgScopes = if ($mgCtx -and $mgCtx.PSObject.Properties['Scopes'] -and $mgCtx.Scopes) { @($mgCtx.Scopes) } else { @() }
+    $results.Add([PSCustomObject]@{
+        Category         = 'Session'
+        Name             = 'Microsoft Graph'
+        Status           = if ($mgCtx) { 'Ready' } else { 'NotConnected' }
+        InstalledVersion = ''
+        Details          = if ($mgCtx) { "Connected ($($mgScopes.Count) scopes)" } else { 'No active Microsoft Graph session' }
+        Remedy           = if ($mgCtx) { '' } else { 'Connect-TenantBrief' }
+    })
+
+    $exoReady = $false
+    if (Get-Command Get-ConnectionInformation -ErrorAction SilentlyContinue) {
+        try { $exoReady = (@(Get-ConnectionInformation -ErrorAction SilentlyContinue | Where-Object { $_.State -eq 'Connected' }).Count -gt 0) } catch { $exoReady = $false }
+    }
+    $results.Add([PSCustomObject]@{
+        Category         = 'Session'
+        Name             = 'Exchange Online'
+        Status           = if ($exoReady) { 'Ready' } else { 'NotConnected' }
+        InstalledVersion = ''
+        Details          = if ($exoReady) { 'Connected' } else { 'Not connected (required for ORCA and ScubaGear EXO/SecuritySuite)' }
+        Remedy           = if ($exoReady) { '' } else { 'Connect-TenantBrief -Service ExchangeOnline' }
+    })
+
+    $spoReady = $false
+    if (Get-Command Get-SPOTenant -ErrorAction SilentlyContinue) {
+        try { $null = Get-SPOTenant -ErrorAction Stop; $spoReady = $true } catch { $spoReady = $false }
+    }
+    $results.Add([PSCustomObject]@{
+        Category         = 'Session'
+        Name             = 'SharePoint Online'
+        Status           = if ($spoReady) { 'Ready' } else { 'NotConnected' }
+        InstalledVersion = ''
+        Details          = if ($spoReady) { 'Connected' } else { 'Not connected (SPO sharing checks will be skipped)' }
+        Remedy           = if ($spoReady) { '' } else { 'Connect-TenantBrief -Service SharePointOnline' }
+    })
+
+    $teamsReady = $false
+    if (Get-Command Get-CsTenant -ErrorAction SilentlyContinue) {
+        try { $null = Get-CsTenant -ErrorAction Stop; $teamsReady = $true } catch { $teamsReady = $false }
+    }
+    $results.Add([PSCustomObject]@{
+        Category         = 'Session'
+        Name             = 'Microsoft Teams'
+        Status           = if ($teamsReady) { 'Ready' } else { 'NotConnected' }
+        InstalledVersion = ''
+        Details          = if ($teamsReady) { 'Connected' } else { 'Not connected (Teams checks will be skipped)' }
+        Remedy           = if ($teamsReady) { '' } else { 'Connect-MicrosoftTeams' }
+    })
+
+    return $results.ToArray()
+}
+
 Export-ModuleMember `
-    -Function Connect-TenantBrief, Invoke-TenantBriefAssessment, Get-TenantBriefFrameworks, Get-TenantBriefLicenseRoi, Get-TenantBriefLicenseWaste, Get-TenantBriefCopilotReadiness, Get-TenantBriefUsageAdoption, Import-TenantBriefSharePointRisk, Import-TenantBriefPowerPlatformAgents, Compare-TenantBriefReports, Export-TenantBriefExecutiveSummary
+    -Function Connect-TenantBrief, Invoke-TenantBriefAssessment, Get-TenantBriefFrameworks, Get-TenantBriefLicenseRoi, Get-TenantBriefLicenseWaste, Get-TenantBriefCopilotReadiness, Get-TenantBriefUsageAdoption, Import-TenantBriefSharePointRisk, Import-TenantBriefPowerPlatformAgents, Compare-TenantBriefReports, Export-TenantBriefExecutiveSummary, Test-TenantBriefPrerequisites

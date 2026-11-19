@@ -17,6 +17,13 @@ All notable changes to **TenantBrief** are documented in this file.
   - Canonical 6-pillar normalization (`Pillar`/`PrimaryPillar`/`DomainPillar`, `EngineLabel`, ScubaGear 2.0 `MS.SECURITYSUITE.*` support) and source/ID-based portal & least-privilege role routing.
   - ORCA `ChiValue` (`ORCACHI` enum) risk mapping (`Critical`/`High`/`Medium`/`Low`), `Critical` risk filter/badge in `assets/report-template.html` and schema, and optional offline `-InputScubaJsonPath` / `-InputOrcaJsonPath` parameters.
   - New `UserImpact` field separating end-user disruption impact from security `Risk`.
+- **Sprint 2 Coverage, Preflight & Operational Safety (`S2.1–S2.7`):**
+  - ScubaGear 2.0 multi-product execution (`aad, securitysuite, exo, powerplatform, sharepoint, teams, powerbi`) with `ScubaProducts` (`Requested`/`Executed`/`Skipped`) recorded in `run-manifest.json`.
+  - New exported read-only preflight cmdlet `Test-TenantBriefPrerequisites` and `"Scope & Blind Spots"` report card.
+  - `-AutoFixDependencies` safety gate on `Connect-TenantBrief` and `Invoke-TenantBriefBaselineCollections` (zero unrequested `Install-Module` / `Remove-Item` calls by default).
+  - Clarified optional EntraFalcon JSON ingestion in `TenantBrief.psd1` and `docs/improvement/CLAIMS.md` (`Q15 = 0`).
+  - Upstream `Planned` collapsible list (`plannedUpstreamCard`), `Error` permission action card (`errorActionCard` + `ErrorRemedy`), and structured `Diagnostics` (`Severity` + `Remedy`).
+  - Deterministic `PriorityScore` (0–100) weighted prioritization configured via `data/scoring.json`.
 
 ### Deprecated
 - **`Finding.Impact`:** Retained for one release for backward compatibility; use `Finding.UserImpact` instead.
