@@ -252,13 +252,6 @@
     "Summary": "Toplam 3 kontrol atlandı: 2 tanesi lisans eksikliğinden, 1 tanesi servis bağlantısı veya API yetki eksikliğinden (ölçülemeyen kör nokta), 0 tanesi ise kiracıda ilgili platform/özellik kullanılmadığından kapsam dışı olarak işaretlendi.",
     "Gaps": [
       {
-        "License": "Lisans: Microsoft Entra Internet / Private Access (SSE)",
-        "Count": 1,
-        "Category": "License",
-        "Note": "Global Secure Access (SSE) lisansı kiracıda bulunmadığı için ağ erişim kontrolleri atlandı.",
-        "Search": "Entra_Premium_"
-      },
-      {
         "License": "Bağlantı Eksikliği: SharePoint Online",
         "Count": 1,
         "Category": "Connection",
@@ -271,6 +264,13 @@
         "Category": "License",
         "Note": "MDE planı kiracıda etkin olmadığı için uç nokta güvenlik kontrolleri çalıştırılamadı.",
         "Search": "WINDEFATP"
+      },
+      {
+        "License": "Lisans: Microsoft Entra Internet / Private Access (SSE)",
+        "Count": 1,
+        "Category": "License",
+        "Note": "Global Secure Access (SSE) lisansı kiracıda bulunmadığı için ağ erişim kontrolleri atlandı.",
+        "Search": "Entra_Premium_"
       }
     ],
     "Skus": [],

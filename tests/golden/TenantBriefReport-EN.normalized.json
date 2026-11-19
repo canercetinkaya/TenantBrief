@@ -252,13 +252,6 @@
     "Summary": "Out of 3 skipped controls, 2 are blocked by missing licenses, 1 by disconnected services or missing API scopes (blind spots), and 0 are not applicable because those features/platforms are unused in the tenant.",
     "Gaps": [
       {
-        "License": "License: Microsoft Entra Internet / Private Access (SSE)",
-        "Count": 1,
-        "Category": "License",
-        "Note": "Global Secure Access (SSE) license is not assigned in this tenant.",
-        "Search": "Entra_Premium_"
-      },
-      {
         "License": "Disconnected Service: SharePoint Online",
         "Count": 1,
         "Category": "Connection",
@@ -271,6 +264,13 @@
         "Category": "License",
         "Note": "Defender for Endpoint plan is not licensed in this tenant.",
         "Search": "WINDEFATP"
+      },
+      {
+        "License": "License: Microsoft Entra Internet / Private Access (SSE)",
+        "Count": 1,
+        "Category": "License",
+        "Note": "Global Secure Access (SSE) license is not assigned in this tenant.",
+        "Search": "Entra_Premium_"
       }
     ],
     "Skus": [],
