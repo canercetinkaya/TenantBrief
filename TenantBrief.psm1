@@ -1639,9 +1639,28 @@ function New-TenantBriefFindings {
         $fTitle = [string](Get-TenantBriefPropertyValue -Object $t -Name 'TestTitle')
         $fDesc  = [string](Get-TenantBriefPropertyValue -Object $t -Name 'TestDescription')
         $fImp   = [string](Get-TenantBriefPropertyValue -Object $t -Name 'TestImpact')
-        if ($Language -eq 'tr' -and $TranslationCache.ContainsKey($tid)) {
-            if ($TranslationCache[$tid].Title) { $fTitle = [string]$TranslationCache[$tid].Title }
-            if ($TranslationCache[$tid].Desc)  { $fDesc  = [string]$TranslationCache[$tid].Desc }
+        $trEntry = $null
+        if ($Language -eq 'tr' -and $TranslationCache.Count -gt 0) {
+            foreach ($sTag in $sourceList) {
+                $compositeKey = "$sTag|$tid"
+                if ($TranslationCache.ContainsKey($compositeKey)) { $trEntry = $TranslationCache[$compositeKey]; break }
+            }
+            if (-not $trEntry) {
+                foreach ($cid in $corrList) {
+                    foreach ($sTag in $sourceList) {
+                        $ck = "$sTag|$cid"
+                        if ($TranslationCache.ContainsKey($ck)) { $trEntry = $TranslationCache[$ck]; break }
+                    }
+                    if ($trEntry) { break }
+                }
+            }
+            if (-not $trEntry -and $TranslationCache.ContainsKey($tid)) {
+                $trEntry = $TranslationCache[$tid]
+            }
+            if ($trEntry) {
+                if ($trEntry.PSObject.Properties['Title'] -and $trEntry.Title) { $fTitle = [string]$trEntry.Title }
+                if ($trEntry.PSObject.Properties['Desc'] -and $trEntry.Desc) { $fDesc = [string]$trEntry.Desc }
+            }
         }
         if ($Language -eq 'tr') {
             $fTitle = ConvertTo-TenantBriefTurkish -Text $fTitle
