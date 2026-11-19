@@ -1,0 +1,18 @@
+{
+  "schemaVersion": "1.0.0",
+  "description": "Single source of truth for Turkish security terminology and post-processing replacements.",
+  "replacements": {
+    "tasdiqi": "doğrulaması",
+    "tasdiği": "doğrulaması",
+    "Conditional Access policies": "Koşullu Erişim politikaları",
+    "Conditional Access policy": "Koşullu Erişim politikası",
+    "Conditional Access": "Koşullu Erişim",
+    "phishing-resistant": "oltalamaya dayanıklı",
+    "legacy authentication": "eski kimlik doğrulama",
+    "device code flow": "cihaz kodu akışı",
+    "break-glass": "acil durum hesabı",
+    "sensitivity labels": "hassasiyet etiketleri",
+    "sensitivity label": "hassasiyet etiketi",
+    "least privilege": "en az ayrıcalık"
+  }
+}

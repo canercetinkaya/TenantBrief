@@ -7,6 +7,7 @@ $script:CrosswalkMapCache = $null
 $script:ScoringConfigPath = Join-Path $script:ModuleRoot 'data\scoring.json'
 $script:ScoringConfigCache = $null
 $script:I18nCache = @{}
+$script:GlossaryTrCache = $null
 $script:ReportTemplatePath = Join-Path $script:ModuleRoot 'assets\report-template.html'
 
 function Get-TenantBriefI18n {
@@ -408,43 +409,23 @@ function Connect-TenantBrief {
 }
 
 function ConvertTo-TenantBriefTurkish {
+    [CmdletBinding()]
     param([string]$Text)
     if ([string]::IsNullOrWhiteSpace($Text)) { return $Text }
-    $map = [ordered]@{
-        'Conditional Access policies' = 'Koşullu Erişim ilkeleri'
-        'Conditional Access policy'   = 'Koşullu Erişim ilkesi'
-        'Conditional Access'          = 'Koşullu Erişim'
-        'Sensitivity labels'          = 'Hassasiyet etiketleri'
-        'Break-glass'                 = 'Acil durum (Break-glass)'
-        'Legacy authentication'       = 'Eski kimlik doğrulama (Legacy Auth)'
-        'Token protection'            = 'Belirteç koruması (Token Protection)'
-        'Passkey'                     = 'Geçiş anahtarı (Passkey)'
-        'Passwordless'                = 'Parolasız kimlik doğrulama'
-        'Admin consent'               = 'Yönetici onayı'
-        'are configured'              = 'yapılandırılmış'
-        'is configured'               = 'yapılandırılmış'
-        'are enabled'                 = 'etkinleştirilmiş'
-        'is enabled'                  = 'etkinleştirilmiş'
-        'are enforced'                = 'zorunlu kılınmış'
-        'is enforced'                 = 'zorunlu kılınmış'
-        'are published to users'      = 'kullanıcılara yayımlanmış'
-        'are blocked'                 = 'engellenmiş'
-        'is blocked'                  = 'engellenmiş'
-        'are required'                = 'zorunlu'
-        'is required'                 = 'zorunlu'
-        'for all users'               = 'tüm kullanıcılar için'
-        'for all administrators'      = 'tüm yöneticiler için'
-        'for privileged roles'        = 'ayrıcalıklı roller için'
-        'with encryption'             = 'şifreleme ile'
-        'should be'                   = 'olmalıdır'
-        'must be'                     = 'olmalıdır'
-        'High'                        = 'Yüksek'
-        'Medium'                      = 'Orta'
-        'Low'                         = 'Düşük'
+    if ($null -eq $script:GlossaryTrCache) {
+        $gPath = Join-Path $script:ModuleRoot 'data\i18n\glossary-tr.json'
+        $map = [ordered]@{}
+        if (Test-Path -LiteralPath $gPath) {
+            $gObj = Get-Content -LiteralPath $gPath -Raw -Encoding UTF8 | ConvertFrom-Json
+            foreach ($p in $gObj.replacements.PSObject.Properties) {
+                $map[$p.Name] = [string]$p.Value
+            }
+        }
+        $script:GlossaryTrCache = $map
     }
     $out = $Text
-    foreach ($k in $map.Keys) {
-        $out = $out -replace [regex]::Escape($k), $map[$k]
+    foreach ($k in $script:GlossaryTrCache.Keys) {
+        $out = $out -replace [regex]::Escape($k), $script:GlossaryTrCache[$k]
     }
     return $out
 }
@@ -1661,6 +1642,10 @@ function New-TenantBriefFindings {
         if ($Language -eq 'tr' -and $TranslationCache.ContainsKey($tid)) {
             if ($TranslationCache[$tid].Title) { $fTitle = [string]$TranslationCache[$tid].Title }
             if ($TranslationCache[$tid].Desc)  { $fDesc  = [string]$TranslationCache[$tid].Desc }
+        }
+        if ($Language -eq 'tr') {
+            $fTitle = ConvertTo-TenantBriefTurkish -Text $fTitle
+            $fDesc  = ConvertTo-TenantBriefTurkish -Text $fDesc
         }
         if ($Language -eq 'tr' -and $fImp) {
             $fImp = $fImp -replace '^High$', 'Yüksek' -replace '^Medium$', 'Orta' -replace '^Low$', 'Düşük'
