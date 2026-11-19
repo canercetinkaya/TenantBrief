@@ -2328,15 +2328,18 @@ function Invoke-TenantBriefAssessment {
     }
 
     $reportJsonPath = Join-Path $OutputPath "TenantBriefReport-$($Language.ToUpper()).json"
-    $reportObj | ConvertTo-Json -Depth 6 | Set-Content -Path $reportJsonPath -Encoding UTF8
+    $reportObj | ConvertTo-Json -Depth 12 | Set-Content -Path $reportJsonPath -Encoding UTF8
 
     $template = Get-Content -Path $script:ReportTemplatePath -Raw -Encoding UTF8
     $isTr = $Language -eq 'tr'
+    $tenantDisplayHtml = [System.Net.WebUtility]::HtmlEncode([string]$tenantDisplay)
+    $embeddedJson = ($reportObj | ConvertTo-Json -Depth 12 -Compress -EscapeHandling EscapeHtml)
+    $embeddedJson = $embeddedJson.Replace([string][char]0x2028, '\u2028').Replace([string][char]0x2029, '\u2029')
     $replacements = @{
         '{{LANG}}'               = $Language
-        '{{TITLE}}'              = if ($isTr) { "TenantBrief Raporu — $tenantDisplay" } else { "TenantBrief Report — $tenantDisplay" }
+        '{{TITLE}}'              = if ($isTr) { "TenantBrief Raporu — $tenantDisplayHtml" } else { "TenantBrief Report — $tenantDisplayHtml" }
         '{{HEADER_TITLE}}'       = if ($isTr) { 'Sıfır Güven, Lisans ROI ve Uyumluluk Analizi' } else { 'Zero Trust, License ROI & Compliance Assessment' }
-        '{{SUBTITLE}}'           = if ($isTr) { "Kiracı: $tenantDisplay · Çerçeve: $Framework" } else { "Tenant: $tenantDisplay · Framework: $Framework" }
+        '{{SUBTITLE}}'           = if ($isTr) { "Kiracı: $tenantDisplayHtml · Çerçeve: $Framework" } else { "Tenant: $tenantDisplayHtml · Framework: $Framework" }
         '{{READONLY_BADGE}}'     = if ($isTr) { 'Salt Okunur (Read-Only)' } else { 'Read-Only Mode' }
         '{{GENERATED_AT}}'       = (Get-Date -Format 'yyyy-MM-dd HH:mm')
         '{{FW_TITLE}}'           = if ($isTr) { 'Standart ve Motor Bazlı Uyumluluk Skorları' } else { 'Verified Benchmark & Engine Scores' }
@@ -2378,7 +2381,7 @@ function Invoke-TenantBriefAssessment {
             }
             $blocks -join ''
         } else { '' }
-        '{{REPORT_JSON}}'        = ($reportObj | ConvertTo-Json -Depth 6 -Compress)
+        '{{REPORT_JSON}}'        = $embeddedJson
     }
 
     $html = $template
@@ -2593,8 +2596,10 @@ function Export-TenantBriefExecutiveSummary {
         "<div style='border:1px solid #f59e0b;background:#fffbeb;color:#92400e;padding:8px 12px;border-radius:6px;font-size:12.5px;margin-bottom:16px;'>$diagText</div>"
     } else { '' }
 
+    $htmlEncode = { param($v) [System.Net.WebUtility]::HtmlEncode([string]$v) }
+
     $fwRows = ($data.Frameworks | ForEach-Object {
-        "<tr><td>$($_.Name)</td><td>$($_.Passed) / $($_.Evaluated)</td><td><strong>$($_.Score)%</strong></td></tr>"
+        "<tr><td>$(& $htmlEncode $_.Name)</td><td>$(& $htmlEncode $_.Passed) / $(& $htmlEncode $_.Evaluated)</td><td><strong>$(& $htmlEncode $_.Score)%</strong></td></tr>"
     }) -join "`n"
 
     # Priority order for the printable brief: cheapest high-risk fixes first, then by control id so
@@ -2609,12 +2614,12 @@ function Export-TenantBriefExecutiveSummary {
             @{ Expression = { [string]$_.Id } } |
         Select-Object -First 15)
     $actionRows = ($topHigh | ForEach-Object {
-        $remText = if ($isTr) { $_.RemediationTr } else { [string]$_.Description }
+        $remText = if ($isTr) { [string]$_.RemediationTr } else { [string]$_.Description }
         if ($remText.Length -gt 220) { $remText = $remText.Substring(0, 220) + '...' }
         $domLbl = if ($_.PSObject.Properties['DomainPillar'] -and $_.DomainPillar) { [string]$_.DomainPillar } else { [string]$_.Pillar }
         $costStr = [string]$_.ImplementationCost
         $costLbl = if ($isTr -and $costMap.ContainsKey($costStr)) { $costMap[$costStr] } else { $costStr }
-        "<tr><td><code>$($_.Id)</code> <strong>$($_.Title)</strong><br/><span style='color:#64748b;font-size:11px;'>$domLbl · $($_.Category)</span></td><td>$costLbl</td><td>$remText</td></tr>"
+        "<tr><td><code>$(& $htmlEncode $_.Id)</code> <strong>$(& $htmlEncode $_.Title)</strong><br/><span style='color:#64748b;font-size:11px;'>$(& $htmlEncode $domLbl) · $(& $htmlEncode $_.Category)</span></td><td>$(& $htmlEncode $costLbl)</td><td>$(& $htmlEncode $remText)</td></tr>"
     }) -join "`n"
 
     $subLine = if ($isTr) { "Üretim: $(Get-Date -Format 'yyyy-MM-dd HH:mm') | Salt Okunur Değerlendirme" } else { "Generated: $(Get-Date -Format 'yyyy-MM-dd HH:mm') | Read-Only Assessment" }
