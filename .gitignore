@@ -5,6 +5,7 @@ ZeroTrustLensReport/
 .DS_Store
 Thumbs.db
 
-# Pester -CI / local test artifacts
+# Pester -CI / local test & baseline artifacts
 testResults.xml
 *.TestResults.xml
+artifacts/
