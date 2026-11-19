@@ -1,0 +1,35 @@
+{
+  "language": "tr",
+  "portals": {
+    "defenderExchange": "Microsoft Defender & Exchange Yönetim Merkezi (security.microsoft.com)",
+    "teams": "Microsoft Teams yönetim merkezi (admin.teams.microsoft.com)",
+    "intune": "Microsoft Intune yönetim merkezi (intune.microsoft.com)",
+    "sharePointPurview": "Microsoft SharePoint & Purview Yönetim Merkezi (purview.microsoft.com)",
+    "aiPurviewEntra": "Microsoft Purview / Entra Agent ID (entra.microsoft.com)",
+    "purview": "Microsoft Purview portalı (purview.microsoft.com)",
+    "azure": "Azure Portal (portal.azure.com)",
+    "globalSecureAccess": "Global Secure Access / Azure Portal (portal.azure.com)",
+    "defenderXdr": "Microsoft Defender XDR / Sentinel (security.microsoft.com)",
+    "entra": "Microsoft Entra yönetim merkezi (entra.microsoft.com)",
+    "m365Admin": "Microsoft 365 Yönetim Merkezi"
+  },
+  "roles": {
+    "defenderExchange": "Security Administrator / Exchange Administrator",
+    "teams": "Teams Administrator",
+    "intune": "Intune Administrator",
+    "sharePointPurview": "SharePoint Administrator / Compliance Administrator",
+    "aiPurviewEntra": "Compliance Administrator / Information Protection Admin",
+    "purview": "Compliance Administrator / Information Protection Admin",
+    "azure": "Security Admin / Subscription Contributor",
+    "globalSecureAccess": "Global Secure Access Administrator / Network Contributor",
+    "defenderXdr": "Security Administrator / Sentinel Contributor",
+    "entra": "Conditional Access Administrator / Security Administrator",
+    "m365Admin": "Security Administrator"
+  },
+  "labels": {
+    "TotalChecks": "Toplam Kontrol",
+    "HighRiskFailed": "Yüksek Riskli Açık",
+    "PassedLabel": "Geçen Kontrol",
+    "SkippedChecksLabel": "atlanan kontrol"
+  }
+}

@@ -6,7 +6,20 @@ $script:CrosswalkPath = Join-Path $script:ModuleRoot 'data\control-crosswalk.jso
 $script:CrosswalkMapCache = $null
 $script:ScoringConfigPath = Join-Path $script:ModuleRoot 'data\scoring.json'
 $script:ScoringConfigCache = $null
+$script:I18nCache = @{}
 $script:ReportTemplatePath = Join-Path $script:ModuleRoot 'assets\report-template.html'
+
+function Get-TenantBriefI18n {
+    [CmdletBinding()]
+    param([ValidateSet('tr', 'en')][string]$Language = 'tr')
+    if ($script:I18nCache.ContainsKey($Language)) { return $script:I18nCache[$Language] }
+    $p = Join-Path $script:ModuleRoot "data\i18n\$Language.json"
+    if (Test-Path -LiteralPath $p) {
+        $script:I18nCache[$Language] = Get-Content -LiteralPath $p -Raw -Encoding UTF8 | ConvertFrom-Json
+        return $script:I18nCache[$Language]
+    }
+    return $null
+}
 
 function Get-TenantBriefScoringConfig {
     [CmdletBinding()]
@@ -1658,42 +1671,32 @@ function New-TenantBriefFindings {
         $domPrimary = if ($domainList.Count -gt 0) { [string]$domainList[0] } else { $primaryPillar }
 
         # Determine admin portal & least-privilege role from Control ID, Sources, Category, and canonical DomainPillar
-        $portalName = ''
-        $requiredRole = ''
-        if (($sourceList -contains 'MDO / ORCA') -or $tid -like 'ORCA-*' -or $tid -match '^SCUBA-MS\.EXO\.' -or $catRaw -match 'Exchange|EXO|Anti-Phish|Safe Links|Safe Attachments|DKIM|DMARC|SPF|OWA') {
-            $portalName = 'Microsoft Defender & Exchange Yönetim Merkezi (security.microsoft.com)'
-            $requiredRole = 'Security Administrator / Exchange Administrator'
+        $i18n = Get-TenantBriefI18n -Language $Language
+        $portalKey = if (($sourceList -contains 'MDO / ORCA') -or $tid -like 'ORCA-*' -or $tid -match '^SCUBA-MS\.EXO\.' -or $catRaw -match 'Exchange|EXO|Anti-Phish|Safe Links|Safe Attachments|DKIM|DMARC|SPF|OWA') {
+            'defenderExchange'
         } elseif ($tid -match '^(CIS\.M365\.8\.|SCUBA-MS\.TEAMS\.)' -or $catRaw -match 'Teams') {
-            $portalName = 'Microsoft Teams yönetim merkezi (admin.teams.microsoft.com)'
-            $requiredRole = 'Teams Administrator'
+            'teams'
         } elseif ($domPrimary -eq 'Devices' -or ($domPrimary -ne 'Identity' -and $catRaw -match 'Intune|BitLocker|Device|Compliance')) {
-            $portalName = 'Microsoft Intune yönetim merkezi (intune.microsoft.com)'
-            $requiredRole = 'Intune Administrator'
+            'intune'
         } elseif ($tid -match '^SCUBA-MS\.SHAREPOINT\.' -or $catRaw -match 'SharePoint|OneDrive') {
-            $portalName = 'Microsoft SharePoint & Purview Yönetim Merkezi (purview.microsoft.com)'
-            $requiredRole = 'SharePoint Administrator / Compliance Administrator'
+            'sharePointPurview'
         } elseif ($domPrimary -eq 'AI' -or $catRaw -match 'Copilot|Agent') {
-            $portalName = 'Microsoft Purview / Entra Agent ID (entra.microsoft.com)'
-            $requiredRole = 'Compliance Administrator / Information Protection Admin'
+            'aiPurviewEntra'
         } elseif ($domPrimary -eq 'Data' -or $tid -match '^SCUBA-MS\.SECURITYSUITE\.3\.' -or $catRaw -match 'Purview|Sensitivity|DLP|Information Protection|Encryption|Lockbox|Storage') {
-            $portalName = 'Microsoft Purview portalı (purview.microsoft.com)'
-            $requiredRole = 'Compliance Administrator / Information Protection Admin'
+            'purview'
         } elseif ($catRaw -match 'Defender for Cloud|AzureConfig|Azure Network') {
-            $portalName = 'Azure Portal (portal.azure.com)'
-            $requiredRole = 'Security Admin / Subscription Contributor'
+            'azure'
         } elseif ($domPrimary -eq 'Network' -or $catRaw -match 'Global Secure Access|Private Access|Application Proxy') {
-            $portalName = 'Global Secure Access / Azure Portal (portal.azure.com)'
-            $requiredRole = 'Global Secure Access Administrator / Network Contributor'
+            'globalSecureAccess'
         } elseif ($domPrimary -eq 'SecOps' -or $tid -match '^SCUBA-MS\.SECURITYSUITE\.' -or $catRaw -match 'Defender|Exposure|Audit|Sentinel|Incident|Threat') {
-            $portalName = 'Microsoft Defender XDR / Sentinel (security.microsoft.com)'
-            $requiredRole = 'Security Administrator / Sentinel Contributor'
+            'defenderXdr'
         } elseif ($domPrimary -eq 'Identity') {
-            $portalName = 'Microsoft Entra yönetim merkezi (entra.microsoft.com)'
-            $requiredRole = 'Conditional Access Administrator / Security Administrator'
+            'entra'
         } else {
-            $portalName = 'Microsoft 365 Yönetim Merkezi'
-            $requiredRole = 'Security Administrator'
+            'm365Admin'
         }
+        $portalName = if ($i18n -and $i18n.portals.PSObject.Properties[$portalKey]) { [string]$i18n.portals.$portalKey } else { 'Microsoft 365 Admin Center' }
+        $requiredRole = if ($i18n -and $i18n.roles.PSObject.Properties[$portalKey]) { [string]$i18n.roles.$portalKey } else { 'Security Administrator' }
 
         # Extract concrete remediation bullet/step from Description when available; keep guidance compact.
         $remTr = ''
