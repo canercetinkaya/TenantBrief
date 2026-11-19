@@ -34,3 +34,17 @@
 - Yol haritası "Focus" metinleri sabit yazılmış.
 - `Connect-TenantBrief`: kullanıcı profilindeki Graph ve SPO modül sürümlerini `Remove-Item` ile siliyor, modülleri `-Force -AllowClobber` ile kuruyor. Bunlar "salt okunur" algısıyla çelişen yerel yan etkiler.
 - CI (`.github/workflows/ci.yml`) yalnızca Pester çalıştırıyor. Lint, şema ve kalite metriği adımı yok.
+
+## PSScriptAnalyzer tabanı (S0.2)
+
+- **Araç:** `PSScriptAnalyzer v1.25.0`, ayar: `PSScriptAnalyzerSettings.psd1` (`Error` + `Warning`)
+- **`TenantBrief.psm1` toplam:** **70** bulgu (`Error: 0`, `Warning: 70`) *(tüm repo genelinde: 84 Warning, 0 Error; yeni `tools/Measure-TenantBriefQuality.ps1`: 0 bulgu)*
+
+| Kural | Önem | `TenantBrief.psm1` Sayısı |
+|---|---|---:|
+| `PSAvoidUsingEmptyCatchBlock` | Warning | 31 |
+| `PSAvoidUsingWriteHost` | Warning | 18 |
+| `PSUseSingularNouns` | Warning | 11 |
+| `PSReviewUnusedParameter` | Warning | 5 |
+| `PSUseShouldProcessForStateChangingFunctions` | Warning | 4 |
+| `PSUseDeclaredVarsMoreThanAssignments` | Warning | 1 |
