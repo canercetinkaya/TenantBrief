@@ -98,6 +98,7 @@ Describe 'v2.0.2 - ScubaGear InvariantCulture Guard & Isolated Windows PowerShel
                             SHAREPOINT    = @([PSCustomObject]@{ Controls = @([PSCustomObject]@{ 'Control ID' = 'MS.SHAREPOINT.1.1v1'; Requirement = 'External sharing'; Result = 'Fail'; Criticality = 'Shall'; Details = 'Fail' }) })
                             TEAMS         = @([PSCustomObject]@{ Controls = @([PSCustomObject]@{ 'Control ID' = 'MS.TEAMS.1.1v1'; Requirement = 'External access'; Result = 'Pass'; Criticality = 'Shall'; Details = 'OK' }) })
                             SECURITYSUITE = @([PSCustomObject]@{ Controls = @([PSCustomObject]@{ 'Control ID' = 'MS.SECURITYSUITE.1.1v1'; Requirement = 'Defender policy'; Result = 'Pass'; Criticality = 'Shall'; Details = 'OK' }) })
+                            PowerBI       = $null
                         }
                     } | ConvertTo-Json -Depth 8 | Set-Content -Path (Join-Path $sub 'ScubaResults_v202.json') -Encoding UTF8
                     return 0

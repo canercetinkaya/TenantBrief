@@ -15,20 +15,27 @@ function Import-TenantBriefScubaResults {
     $scubaData = Get-Content -Path $scubaJson.FullName -Raw -Encoding UTF8 | ConvertFrom-Json
     $scCount = 0
     $scubaControlList = [System.Collections.Generic.List[object]]::new()
-    if ($scubaData.PSObject.Properties['Results']) {
+    if ($scubaData -and $scubaData.PSObject.Properties['Results'] -and $null -ne $scubaData.Results) {
         if ($scubaData.Results -is [System.Array]) {
             foreach ($grp in @($scubaData.Results)) {
+                if ($null -eq $grp) { continue }
                 if ($grp.PSObject.Properties['Controls']) {
-                    foreach ($c in @($grp.Controls)) { $scubaControlList.Add($c) }
+                    foreach ($c in @($grp.Controls)) {
+                        if ($null -ne $c) { $scubaControlList.Add($c) }
+                    }
                 } else {
                     $scubaControlList.Add($grp)
                 }
             }
         } else {
             foreach ($prop in $scubaData.Results.PSObject.Properties) {
+                if ($null -eq $prop.Value) { continue }
                 foreach ($entry in @($prop.Value)) {
+                    if ($null -eq $entry) { continue }
                     if ($entry.PSObject.Properties['Controls']) {
-                        foreach ($c in @($entry.Controls)) { $scubaControlList.Add([PSCustomObject]@{ Cat = [string]$prop.Name; Item = $c }) }
+                        foreach ($c in @($entry.Controls)) {
+                            if ($null -ne $c) { $scubaControlList.Add([PSCustomObject]@{ Cat = [string]$prop.Name; Item = $c }) }
+                        }
                     } else {
                         $scubaControlList.Add([PSCustomObject]@{ Cat = [string]$prop.Name; Item = $entry })
                     }
@@ -39,8 +46,10 @@ function Import-TenantBriefScubaResults {
 
     $out = [System.Collections.Generic.List[object]]::new()
     foreach ($wrap in $scubaControlList) {
+        if ($null -eq $wrap) { continue }
         $cat  = if ($wrap.PSObject.Properties['Cat']) { [string]$wrap.Cat } else { 'AAD' }
         $item = if ($wrap.PSObject.Properties['Item']) { $wrap.Item } else { $wrap }
+        if ($null -eq $item) { continue }
         $ctrl = if ($item.PSObject.Properties['Control ID']) { [string]$item.'Control ID' } elseif ($item.PSObject.Properties['Control']) { [string]$item.Control } else { "$($scCount + 1)" }
         $reqRaw = if ($item.PSObject.Properties['Requirement']) { [string]$item.Requirement } else { "SCuBA Control $ctrl" }
         $reqClean = ($reqRaw -replace "<div class=['""]policy-indicators['""]>[\s\S]*$", '') -replace '<[^>]+>', ' '
