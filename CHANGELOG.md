@@ -4,6 +4,13 @@ All notable changes to **TenantBrief** are documented in this file.
 
 ## [Unreleased]
 
+### Added
+- **Monthly Upstream Maintenance Check (`S8.1`):**
+  - `data/upstream-versions.json`: Pinned verified versions (`ZeroTrustAssessment 3.1.0`, `ScubaGear 2.0.0`, `ORCA 2.8.1`, `Maester 2.3.0`, `EntraFalcon V20261108 [ASSUMPTION]`).
+  - `tools/Invoke-TenantBriefUpstreamCheck.ps1`: Read-only monthly upstream version & sandboxed (`Save-Module` + detached `git worktree` in `%TEMP%`) compatibility check enforcing all 7 monthly/daily attempt lock rules, deduplicated `upstream` GitHub issue creation, and built-in Windows notifications (zero `Install-Module` / `Remove-Item`).
+  - `tools/Register-TenantBriefUpstreamCheck.ps1`: User-level (`RunLevel Limited`, 10-min logon delay, network-only, battery-allowed, 1h limit) Windows Scheduled Task installer/uninstaller (`-Unregister`).
+  - `tests/S8.1.UpstreamCheck.Tests.ps1`: 9 offline mocked Pester tests covering all 7 lock rules (`-Now` injected), issue deduplication, and AST safety.
+
 ## [2.0.1] - 2026-11-20
 
 ### Fixed

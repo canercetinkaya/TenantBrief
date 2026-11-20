@@ -204,6 +204,25 @@ TenantBrief stands on top of trusted Microsoft and community open-source securit
   - Weights: `Risk` (`Critical=45, High=35, Medium=18, Low=8`), `Status` (`Failed=30, Error=20, Investigate=15, Skipped=5`), `ImplementationCost` (`Low=15, Medium=10, High=5, Unknown=0`), corroboration (`+4` per extra engine, cap `+10`), and cross-engine status conflict (`+5`).
 - **Pre-Correlation Framework Scoring Rule (`S4.4`):** Benchmark/engine scorecards (`Frameworks[]`) are always computed **pre-correlation** on each engine's own evaluated source controls (`Passed / (Passed + Failed + Investigate + Error)`), so cross-engine deduplication never distorts an individual standard's score.
 
+## Bakım (Aylık Upstream Kontrolü)
+
+TenantBrief'in bağlı olduğu açık kaynak araçların (`ZeroTrustAssessment`, `ScubaGear`, `ORCA`, `Maester`, `EntraFalcon`) sabitlenen sürümleri `data/upstream-versions.json` dosyasında tutulur.
+
+- **Zamanlanmış Görevi Kurma (Kullanıcı Düzeyi, Yönetici Yetkisi Gerektirmez):**
+  ```powershell
+  pwsh -NoProfile -File .\tools\Register-TenantBriefUpstreamCheck.ps1
+  ```
+  Oturum açılışından 10 dakika sonra, yalnızca ağ erişilebilirken ve ayda en fazla 1 başarılı deneme (hata durumunda günde 1, ayda en fazla 3 deneme) yapacak şekilde çalışır.
+- **Zamanlanmış Görevi Kaldırma:**
+  ```powershell
+  pwsh -NoProfile -File .\tools\Register-TenantBriefUpstreamCheck.ps1 -Unregister
+  ```
+- **Elle / Dry-Run Tetikleme (Ay Bayrağı Yazmadan ve Issue Açmadan):**
+  ```powershell
+  pwsh -NoProfile -File .\tools\Invoke-TenantBriefUpstreamCheck.ps1 -DryRun
+  ```
+- **Güvenlik Garantileri:** Salt okunurdur; `Install-Module` veya `Remove-Item` çağırmaz, kullanıcı modüllerine veya çalışma dizinine dokunmaz (yeni sürümleri `Save-Module` ile `%TEMP%` altına indirip `git worktree` ile izole test eder), kiracıya bağlanmaz, commit/push/merge yapmaz. Raporlar `%LOCALAPPDATA%\TenantBrief\upstream-YYYY-MM.md` yoluna yazılır; değişiklik/kırılma varsa yalnızca bir kez `Upstream check YYYY-MM` (`upstream` etiketli) issue açılır.
+
 ---
 
 ## Development & Tests

@@ -57,3 +57,4 @@ TenantBrief, M365 ve Azure kiracıları için salt okunur CISO değerlendirme ra
   `Sprint N | PR linki | Pester x/y | Q metrikleri önce→sonra (araç çıktısından) | BLOCKED/PARTIAL maddeler | NEEDS-LIVE-TENANT komutları.`
 - Ayrıntılar walkthrough artefaktında kalır.
 - Kurallar değişmedi: DÜRÜSTLÜK PROTOKOLÜ, kırmızı→yeşil test, kanıtsız `DONE-VERIFIED` yok. Framework skorları ve önceki tüm testler gerilemeyecek; gerilerse merge etme.
+- `upstream` etiketli açık issue varsa oturum başında önce onu ele al; değişikliği test et, crosswalk/import güncellemesi için PR aç.
