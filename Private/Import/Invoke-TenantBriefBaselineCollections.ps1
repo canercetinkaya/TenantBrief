@@ -25,21 +25,21 @@
     $outLiteral = & $esc $OutPath
 
     $runnerPath = Join-Path ([System.IO.Path]::GetTempPath()) ("tb-scuba-winps51-" + [guid]::NewGuid().ToString('N').Substring(0, 8) + '.ps1')
+    $logPath = Join-Path $OutPath 'scuba-subprocess.log'
     $runnerScript = @"
 `$ErrorActionPreference = 'Continue'
 [System.Threading.Thread]::CurrentThread.CurrentCulture = [System.Globalization.CultureInfo]::InvariantCulture
 `$extraPaths = @($pathLiteral) | Where-Object { `$_ -and (Test-Path -LiteralPath `$_) }
-if (`$extraPaths.Count -gt 0) {
-    `$env:PSModulePath = ((`$extraPaths -join ';') + ';' + `$env:PSModulePath)
-}
+`$cleanPs51 = @(`$env:PSModulePath -split ';' | Where-Object { `$_ -and `$_ -notmatch '(?i)\\PowerShell\\7(\\|`$)' })
+`$env:PSModulePath = ((@(`$extraPaths) + `$cleanPs51) | Select-Object -Unique) -join ';'
 Import-Module ScubaGear -Force -ErrorAction Stop
 Invoke-SCuBA -ProductNames @($prodLiteral) -LogIn:`$true -DisconnectOnExit:`$false -OPAPath '$opaLiteral' -OutPath '$outLiteral' -Quiet
 "@
 
     try {
         Set-Content -LiteralPath $runnerPath -Value $runnerScript -Encoding UTF8
-        & $WinPowerShellPath -NoProfile -ExecutionPolicy Bypass -File $runnerPath
-        return $LASTEXITCODE
+        & $WinPowerShellPath -NoProfile -ExecutionPolicy Bypass -File $runnerPath *>&1 | Out-File -LiteralPath $logPath -Encoding UTF8
+        return [int]$LASTEXITCODE
     } finally {
         Remove-Item -LiteralPath $runnerPath -Force -ErrorAction SilentlyContinue
     }
@@ -158,12 +158,9 @@ function Invoke-TenantBriefBaselineCollections {
                 $extraModPaths = [System.Collections.Generic.List[string]]::new()
                 $modParent = Split-Path -Path ([string]$scubaMod.ModuleBase) -Parent
                 if ($modParent) {
-                    $extraModPaths.Add($modParent)
                     $modGrandParent = Split-Path -Path $modParent -Parent
                     if ($modGrandParent) { $extraModPaths.Add($modGrandParent) }
-                }
-                foreach ($mp in @($env:PSModulePath -split [System.IO.Path]::PathSeparator)) {
-                    if (-not [string]::IsNullOrWhiteSpace($mp)) { $extraModPaths.Add($mp) }
+                    $extraModPaths.Add($modParent)
                 }
                 $scubaExit = Invoke-TenantBriefScubaSubprocess -WinPowerShellPath $winPsCmd.Source -ProductNames $requestedScuba -OpaPath $opaDir -OutPath $scubaOut -ExtraModulePaths $extraModPaths.ToArray()
                 if ($null -ne $scubaExit -and $scubaExit -ne 0 -and $null -ne $Diagnostics) {
