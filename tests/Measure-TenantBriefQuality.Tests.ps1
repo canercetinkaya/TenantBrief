@@ -126,7 +126,8 @@ Describe 'tools/Measure-TenantBriefQuality.ps1 (Q01-Q15)' {
                     [PSCustomObject]@{ Id = '21882'; Sources = @('ZeroTrust', 'CISA SCuBA'); CorrelatedIds = @('21882', 'SCUBA-MS.AAD.3.2v1'); Category = 'Access control'; Status = 'Failed'; Risk = 'High'; Title = 'MFA zorunlu kıl' },
                     [PSCustomObject]@{ Id = '21860'; Sources = @('ZeroTrust', 'CISA SCuBA'); CorrelatedIds = @('21860', 'SCUBA-MS.AAD.1.1v1'); Category = 'Privileged access'; Status = 'Passed'; Risk = 'High'; Title = 'Eski kimlik doğrulama' },
                     [PSCustomObject]@{ Id = 'SCUBA-MS.DEFENDER.1.1v1'; Sources = @('CISA SCuBA'); CorrelatedIds = @('SCUBA-MS.DEFENDER.1.1v1'); Category = 'DEFENDER'; Status = 'Failed'; Risk = 'High'; Title = 'Defender check' },
-                    [PSCustomObject]@{ Id = 'SCUBA-MS.SECURITYSUITE.1.1v1'; Sources = @('CISA SCuBA'); CorrelatedIds = @('SCUBA-MS.SECURITYSUITE.1.1v1'); Category = 'SECURITYSUITE'; Status = 'Failed'; Risk = 'High'; Title = 'SecuritySuite check' }
+                    [PSCustomObject]@{ Id = 'SCUBA-MS.SECURITYSUITE.1.1v1'; Sources = @('CISA SCuBA'); CorrelatedIds = @('SCUBA-MS.SECURITYSUITE.1.1v1'); Category = 'SECURITYSUITE'; Status = 'Failed'; Risk = 'High'; Title = 'SecuritySuite check' },
+                    [PSCustomObject]@{ Id = 'SCUBA-CUSTOM-999'; Sources = @('CISA SCuBA'); CorrelatedIds = @('SCUBA-CUSTOM-999'); Category = 'EXO'; Status = 'Failed'; Risk = 'Medium'; Title = 'Non-MS-prefix item must not count via Category' }
                 )
             } | ConvertTo-Json -Depth 6 | Set-Content -Path $jPath -Encoding UTF8
 
@@ -138,6 +139,7 @@ Describe 'tools/Measure-TenantBriefQuality.ps1 (Q01-Q15)' {
             @($q12.SampleIds) | Should -Contain 'SECURITYSUITE'
             @($q12.SampleIds) | Should -Not -Contain 'Access control'
             @($q12.SampleIds) | Should -Not -Contain 'DEFENDER'
+            @($q12.SampleIds) | Should -Not -Contain 'EXO'
         } finally {
             Remove-Item -Path $tmpDir -Recurse -Force -ErrorAction SilentlyContinue
         }

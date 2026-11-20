@@ -92,9 +92,9 @@ jobs:
             $findings | Where-Object Severity -eq 'Error' | Format-Table ScriptName, Line, RuleName, Message -AutoSize
             throw "Blocking PSScriptAnalyzer gate failed: $errCount error(s)."
           }
-          if ($findings.Count -gt 84) {
+          if ($findings.Count -gt 82) {
             $findings | Group-Object ScriptName | Sort-Object Count -Descending | Format-Table Name, Count -AutoSize
-            throw "Blocking PSScriptAnalyzer gate failed: total findings $($findings.Count) exceeded baseline ceiling 84."
+            throw "Blocking PSScriptAnalyzer gate failed: total findings $($findings.Count) exceeded ratchet ceiling 82."
           }
 
       - name: Run JSON Schema & Quality Metrics Gate (Blocking)
