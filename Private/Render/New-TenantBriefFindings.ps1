@@ -218,7 +218,6 @@
             FrameworkRef       = $fwRef
             Result             = [string]$resultRaw
             UserImpact         = $fImp
-            Impact             = $fImp
             Description        = $fDesc
             SkippedReason      = [string]$skippedRaw
             ErrorRemedy        = $errRemedy

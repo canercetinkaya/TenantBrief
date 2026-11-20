@@ -96,12 +96,18 @@ $q03Items = @($findings | Where-Object {
     $dp -like '*,*'
 })
 
-# Q04a / Q04b / Q04: RiskImpactConflict
+# Q04a / Q04b / Q04: RiskImpactConflict (reads v2 UserImpact, falls back to v1 Impact for historical reports)
+$getImpactVal = {
+    param($item)
+    $u = [string](& $getProp $item 'UserImpact')
+    if ($u) { return $u }
+    return [string](& $getProp $item 'Impact')
+}
 $q04aItems = @($findings | Where-Object {
-    ([string](& $getProp $_ 'Risk')) -eq 'High' -and ([string](& $getProp $_ 'Impact')) -in @('Low', 'Düşük')
+    ([string](& $getProp $_ 'Risk')) -eq 'High' -and (& $getImpactVal $_) -in @('Low', 'Düşük')
 })
 $q04bItems = @($findings | Where-Object {
-    ([string](& $getProp $_ 'Risk')) -eq 'Low' -and ([string](& $getProp $_ 'Impact')) -in @('High', 'Yüksek')
+    ([string](& $getProp $_ 'Risk')) -eq 'Low' -and (& $getImpactVal $_) -in @('High', 'Yüksek')
 })
 $q04Items = @($q04aItems) + @($q04bItems)
 

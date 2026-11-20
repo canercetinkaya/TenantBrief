@@ -1,10 +1,11 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
   "$id": "https://github.com/canercetinkaya/TenantBrief/schemas/tenantbrief-report.schema.json",
-  "title": "TenantBrief Assessment Report (v1.1 Schema)",
-  "description": "Tightened Sprint 1 schema for TenantBriefReport-{TR,EN}.json with canonical 6-pillar findings, crosswalk correlation fields, Critical risk enum, PlannedFindings separation, and deprecated Impact.",
+  "title": "TenantBrief Assessment Report (v2.0.0 Schema)",
+  "description": "v2.0.0 schema for TenantBriefReport-{TR,EN}.json with mandatory SchemaVersion, canonical 6-pillar findings, crosswalk correlation fields, Critical risk enum, PlannedFindings separation, Trend diff, and UserImpact (deprecated Impact removed).",
   "type": "object",
   "required": [
+    "SchemaVersion",
     "Tenant",
     "Language",
     "Framework",
@@ -15,6 +16,7 @@
     "Findings"
   ],
   "properties": {
+    "SchemaVersion": { "type": "string", "const": "2.0.0" },
     "Tenant": { "type": "string" },
     "Language": { "type": "string", "enum": ["tr", "en"] },
     "Framework": { "type": "string" },
@@ -157,7 +159,6 @@
           "FrameworkRef": { "type": ["string", "null"] },
           "Result": { "type": ["string", "null"] },
           "UserImpact": { "type": ["string", "null"], "description": "End-user or business disruption impact of applying the control (distinct from security Risk)." },
-          "Impact": { "type": ["string", "null"], "deprecated": true, "description": "Deprecated alias for UserImpact; retained for one minor release for backward compatibility." },
           "Description": { "type": ["string", "null"] },
           "SkippedReason": { "type": ["string", "null"] },
           "Remediation": { "type": ["string", "null"] },

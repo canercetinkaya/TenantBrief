@@ -32,11 +32,11 @@ Describe 'S1.6 - ORCA ChiValue (Critical/High/Medium/Low), UserImpact & Template
         }
     }
 
-    It 'emits UserImpact while preserving deprecated Impact and adds Critical filter to report-template.html' {
+    It 'emits UserImpact without removed Impact alias and adds Critical filter to report-template.html' {
         InModuleScope TenantBrief {
             $f = @(New-TenantBriefFindings -Tests @([PSCustomObject]@{ TestId = '21796'; TestTitle = 'Legacy auth'; TestStatus = 'Failed'; TestRisk = 'High'; TestImpact = 'Low'; TestPillar = 'Identity' }) -Language tr)
             $f[0].UserImpact | Should -Be 'Düşük'
-            $f[0].Impact | Should -Be 'Düşük'
+            $f[0].PSObject.Properties['Impact'] | Should -BeNullOrEmpty
         }
 
         $html = Get-Content -LiteralPath $script:TemplatePath -Raw -Encoding UTF8

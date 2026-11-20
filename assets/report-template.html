@@ -1126,7 +1126,7 @@
         const trBox = isTr && trText
           ? `<div style="margin-bottom:10px;padding:8px 10px;background:rgba(56,189,248,.08);border-left:3px solid var(--accent);border-radius:4px;"><strong>Türkçe İyileştirme Adımları:</strong><div style="margin-top:4px;">${esc(trText)}</div></div>`
           : '';
-        const impBlock = f.Impact ? `<div style="margin-bottom:8px;"><strong>${isTr ? 'Etki:' : 'Impact:'}</strong> <span style="color:#fcd34d;">${esc(f.Impact)}</span></div>` : '';
+        const impBlock = f.UserImpact ? `<div style="margin-bottom:8px;"><strong>${isTr ? 'Etki:' : 'Impact:'}</strong> <span style="color:#fcd34d;">${esc(f.UserImpact)}</span></div>` : '';
         const resBlock = f.Result ? `<div style="margin-bottom:10px;"><strong>${isTr ? 'Tespit & Etkilenen Kaynaklar:' : 'Finding & Affected Resources:'}</strong>${renderMd(f.Result)}</div>` : '';
         const skipBlock = f.SkippedReason ? `<div style="margin-bottom:10px;color:#d8b4fe;"><strong>${isTr ? 'Atlanma Nedeni:' : 'Skipped Reason:'}</strong> ${renderMd(f.SkippedReason)}</div>` : '';
         const descBlock = f.Description ? `<div><strong>${isTr ? 'Açıklama ve Microsoft Önerisi:' : 'Description & Recommendation:'}</strong>${renderMd(f.Description)}</div>` : '';
