@@ -1,0 +1,51 @@
+{
+  "schemaVersion": "1.0.0",
+  "verifiedDate": "2026-11-20",
+  "tools": [
+    {
+      "name": "ZeroTrustAssessment",
+      "source": "PSGallery",
+      "moduleName": "ZeroTrustAssessment",
+      "pinnedVersion": "3.1.0",
+      "status": "VERIFIED",
+      "url": "https://www.powershellgallery.com/packages/ZeroTrustAssessment",
+      "notes": "Verified installed and tested locally (PowerShell 7.6+)."
+    },
+    {
+      "name": "ScubaGear",
+      "source": "PSGallery",
+      "moduleName": "ScubaGear",
+      "pinnedVersion": "2.0.0",
+      "status": "VERIFIED",
+      "url": "https://www.powershellgallery.com/packages/ScubaGear",
+      "notes": "Verified installed v2.0.0 (7 canonical products: aad, securitysuite, exo, powerplatform, sharepoint, teams, powerbi)."
+    },
+    {
+      "name": "ORCA",
+      "source": "PSGallery",
+      "moduleName": "ORCA",
+      "pinnedVersion": "2.8.1",
+      "status": "VERIFIED",
+      "url": "https://www.powershellgallery.com/packages/ORCA",
+      "notes": "Verified installed v2.8.1 with ORCACHI ChiValue risk enum."
+    },
+    {
+      "name": "Maester",
+      "source": "PSGallery",
+      "moduleName": "Maester",
+      "pinnedVersion": "2.3.0",
+      "status": "VERIFIED",
+      "url": "https://www.powershellgallery.com/packages/Maester",
+      "notes": "Verified installed v2.3.0 (EIDSCA, CIS M365, MT.* checks)."
+    },
+    {
+      "name": "EntraFalcon",
+      "source": "GitHubRelease",
+      "repo": "CompassSecurity/EntraFalcon",
+      "pinnedVersion": "V20261108",
+      "status": "ASSUMPTION",
+      "url": "https://github.com/CompassSecurity/EntraFalcon/releases/tag/V20261108",
+      "notes": "ASSUMPTION: Optional offline JSON consumer; latest GitHub release tag V20261108 verified via GitHub API on 2026-11-20, not installed locally."
+    }
+  ]
+}
