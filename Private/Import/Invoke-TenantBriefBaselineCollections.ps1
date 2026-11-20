@@ -1,4 +1,4 @@
-function Invoke-TenantBriefBaselineCollections {
+﻿function Invoke-TenantBriefBaselineCollections {
     [CmdletBinding()]
     param(
         [Parameter(Mandatory = $true)]

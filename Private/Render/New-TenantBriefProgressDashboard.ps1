@@ -1,4 +1,4 @@
-function New-TenantBriefProgressDashboard {
+﻿function New-TenantBriefProgressDashboard {
     [CmdletBinding()]
     param(
         [Parameter(Mandatory = $true)]

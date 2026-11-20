@@ -1,4 +1,4 @@
-function Import-TenantBriefPowerPlatformAgents {
+﻿function Import-TenantBriefPowerPlatformAgents {
     <#
     .SYNOPSIS
     Read-only parser for Microsoft FastTrack Inventory-PowerPlatformAgents.ps1 JSON or CSV exports.

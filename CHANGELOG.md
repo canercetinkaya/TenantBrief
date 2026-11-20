@@ -4,6 +4,13 @@ All notable changes to **TenantBrief** are documented in this file.
 
 ## [Unreleased]
 
+## [2.0.1] - 2026-11-20
+
+### Fixed
+- **Q12 ScubaGear Product Metric (`tools/Measure-TenantBriefQuality.ps1`):** Fixed false inflation (`Q12 = 8` on the 1035 dataset) where correlated ZeroTrust+ScubaGear findings had their ZeroTrust `Category` names counted as ScubaGear products. `Q12` now extracts only canonical ScubaGear 2.0 product codes (`AAD`, `SECURITYSUITE`, `EXO`, `POWERPLATFORM`, `SHAREPOINT`, `TEAMS`, `POWERBI` — max 7) from `SCUBA-MS.<PRODUCT>.*` IDs / `CorrelatedIds` and normalizes legacy `DEFENDER` to `SECURITYSUITE`. Added regression test in `tests/Measure-TenantBriefQuality.Tests.ps1`.
+- **PSScriptAnalyzer Regression Cleanup (`92 -> 83`, below `84` baseline):** Restored UTF-8 BOM on 6 split Unicode `.ps1` files (`PSUseBOMForUnicodeEncodedFile`, -6) and removed 3 unused variables in `Public/Invoke-TenantBriefAssessment.ps1` (`medRiskFailed`, `lowRiskFailed`, `baseScore`, -3). Tightened blocking CI ceiling in `.github/workflows/ci.yml` from `95` to `84`.
+- **Translation Cache Count Clarification:** Clarified exact provenance of all 619 entries in `data/tr-translation-cache.json`: **360** migrated from pre-Sprint-3 legacy cache (`Source = "machine"`, `Reviewed = false`) + **259** newly added machine translations in Sprint 3 (`Source = "machine"`, `Reviewed = false`), **0** live Azure Translator API entries, **0** human-reviewed (`Reviewed = true`).
+
 ## [2.0.0] - 2026-11-20
 
 ### BREAKING CHANGES
@@ -71,8 +78,8 @@ All notable changes to **TenantBrief** are documented in this file.
 
 ### Known Limitations
 - **Cross-Engine Correlation (`Q01 = 42`):** Only the 42 canonical controls verified directly against upstream ZeroTrustAssessment, CISA ScubaGear 2.0, Maester, and Microsoft ORCA catalogs (`data/control-crosswalk.json`) are merged across engines; unmapped controls remain separate engine-scoped entries.
-- **ScubaGear Product Coverage (`Q12 = 8`):** Multi-product execution covers the 7 ScubaGear 2.0 M365 baselines (`aad, securitysuite, exo, powerplatform, sharepoint, teams, powerbi`) plus Defender/SecuritySuite; in offline runs or when a service session is disconnected, unavailable products are skipped and reported in `run-manifest.json` (`ScubaProducts`).
-- **Turkish Machine Translations (`Reviewed = 0`):** All 619 entries in `data/tr-translation-cache.json` are machine-translated and have not yet completed human editorial review (`Reviewed = false`, tracked via `Summary.UnreviewedTranslations` and `docs/improvement/translation-review.md`).
+- **ScubaGear Product Coverage (`Q12 <= 7`):** Multi-product execution covers the 7 ScubaGear 2.0 M365 baselines (`aad, securitysuite, exo, powerplatform, sharepoint, teams, powerbi`); in offline runs or when a service session is disconnected, unavailable products are skipped and reported in `run-manifest.json` (`ScubaProducts`). *(Note: `Q12 = 8` reported during `v1.2.0` was a metric bug fixed in `v2.0.1`; the actual offline 1035 dataset covers `Q12 = 1` [`AAD`].)*
+- **Turkish Machine Translations (`619` total = `360` legacy cache + `259` Sprint 3 additions, `0` Azure Translator API, `Reviewed = 0`):** All 619 entries in `data/tr-translation-cache.json` have `Source = "machine"` and have not yet completed human editorial review (`Reviewed = false`, tracked via `Summary.UnreviewedTranslations` and `docs/improvement/translation-review.md`).
 
 ## [1.0.1] - 2026-11-19
 
