@@ -19,6 +19,9 @@ All notable changes to **TenantBrief** are documented in this file.
 - **PSScriptAnalyzer Regression Cleanup (`92 -> 83`, below `84` baseline):** Restored UTF-8 BOM on 6 split Unicode `.ps1` files (`PSUseBOMForUnicodeEncodedFile`, -6) and removed 3 unused variables in `Public/Invoke-TenantBriefAssessment.ps1` (`medRiskFailed`, `lowRiskFailed`, `baseScore`, -3). Tightened blocking CI ceiling in `.github/workflows/ci.yml` from `95` to `84`.
 - **Translation Cache Count Clarification:** Clarified exact provenance of all 619 entries in `data/tr-translation-cache.json`: **360** migrated from pre-Sprint-3 legacy cache (`Source = "machine"`, `Reviewed = false`) + **259** newly added machine translations in Sprint 3 (`Source = "machine"`, `Reviewed = false`), **0** live Azure Translator API entries, **0** human-reviewed (`Reviewed = true`).
 
+### Known Limitations
+- **`ScubaGear v2.0.0` + `Microsoft.Graph.Authentication 2.40.0` Upstream Incompatibility:** Verified in both clean `pwsh 7.7.0` and `powershell.exe 5.1` sessions: when `Microsoft.Graph.Authentication 2.40.0` (used by `ZeroTrustAssessment v3.1.0`) is present, `ScubaGear v2.0.0` (`ABOVE MAX: 2.25.0`) fails `Connect-Tenant` (`Connection.psm1:138/270/457`: `You cannot call a method on a null-valued expression` on `$TenantName.split(".")[0]`) for `exo`, `securitysuite`, `sharepoint`, `teams`, `powerplatform`, and `powerbi`; only `aad` succeeds (`Q12 = 1`). An upstream issue draft is prepared in `docs/improvement/scubagear-upstream-issue-draft.md`.
+
 ## [2.0.0] - 2026-11-20
 
 ### BREAKING CHANGES
