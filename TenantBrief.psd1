@@ -1,6 +1,6 @@
 ﻿@{
     RootModule        = 'TenantBrief.psm1'
-    ModuleVersion     = '2.0.1'
+    ModuleVersion     = '2.0.2'
     GUID              = 'b7e4c1a2-9d3f-4e8a-9b1c-5f2a8d4e6c10'
     Author            = 'Caner Çetinkaya'
     CompanyName       = 'canercetinkaya.com'

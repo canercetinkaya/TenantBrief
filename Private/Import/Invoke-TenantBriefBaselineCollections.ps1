@@ -1,4 +1,51 @@
-﻿function Invoke-TenantBriefBaselineCollections {
+﻿function Invoke-TenantBriefScubaSubprocess {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory = $true)]
+        [string]$WinPowerShellPath,
+
+        [Parameter(Mandatory = $true)]
+        [string[]]$ProductNames,
+
+        [Parameter(Mandatory = $true)]
+        [string]$OpaPath,
+
+        [Parameter(Mandatory = $true)]
+        [string]$OutPath,
+
+        [Parameter(Mandatory = $false)]
+        [string[]]$ExtraModulePaths = @()
+    )
+
+    $esc = { param([string]$s) $s -replace "'", "''" }
+    $prodLiteral = (@($ProductNames | ForEach-Object { "'" + (& $esc $_) + "'" }) -join ', ')
+    $pathItems = @($ExtraModulePaths | Where-Object { -not [string]::IsNullOrWhiteSpace($_) } | Select-Object -Unique)
+    $pathLiteral = (@($pathItems | ForEach-Object { "'" + (& $esc $_) + "'" }) -join ', ')
+    $opaLiteral = & $esc $OpaPath
+    $outLiteral = & $esc $OutPath
+
+    $runnerPath = Join-Path ([System.IO.Path]::GetTempPath()) ("tb-scuba-winps51-" + [guid]::NewGuid().ToString('N').Substring(0, 8) + '.ps1')
+    $runnerScript = @"
+`$ErrorActionPreference = 'Continue'
+[System.Threading.Thread]::CurrentThread.CurrentCulture = [System.Globalization.CultureInfo]::InvariantCulture
+`$extraPaths = @($pathLiteral) | Where-Object { `$_ -and (Test-Path -LiteralPath `$_) }
+if (`$extraPaths.Count -gt 0) {
+    `$env:PSModulePath = ((`$extraPaths -join ';') + ';' + `$env:PSModulePath)
+}
+Import-Module ScubaGear -Force -ErrorAction Stop
+Invoke-SCuBA -ProductNames @($prodLiteral) -LogIn:`$true -DisconnectOnExit:`$false -OPAPath '$opaLiteral' -OutPath '$outLiteral' -Quiet
+"@
+
+    try {
+        Set-Content -LiteralPath $runnerPath -Value $runnerScript -Encoding UTF8
+        & $WinPowerShellPath -NoProfile -ExecutionPolicy Bypass -File $runnerPath
+        return $LASTEXITCODE
+    } finally {
+        Remove-Item -LiteralPath $runnerPath -Force -ErrorAction SilentlyContinue
+    }
+}
+
+function Invoke-TenantBriefBaselineCollections {
     [CmdletBinding()]
     param(
         [Parameter(Mandatory = $true)]
@@ -76,16 +123,27 @@
                     & $note 2 'ScubaGear' 'Optional dependency powershell-yaml missing. Run: Install-Module powershell-yaml -Scope CurrentUser.'
                 }
             }
-            Set-StrictMode -Off
-            try {
-                Import-Module ScubaGear -ErrorAction Stop -WarningAction SilentlyContinue 6>$null 3>$null 2>$null | Out-Null
-            } finally {
-                Set-StrictMode -Version Latest
-            }
+            $scubaMod = Get-Module -ListAvailable -Name 'ScubaGear' | Select-Object -First 1
+            $winPsCmd = if ($ScubaInteractiveLogin) { Get-Command -Name 'powershell.exe' -ErrorAction SilentlyContinue | Select-Object -First 1 } else { $null }
+            $hasRealModuleBase = ($null -ne $scubaMod -and $scubaMod.PSObject.Properties['ModuleBase'] -and -not [string]::IsNullOrWhiteSpace([string]$scubaMod.ModuleBase))
+            $useWinPsSubprocess = ([bool]$ScubaInteractiveLogin -and $null -ne $winPsCmd -and $hasRealModuleBase)
+
             $opaDir = Join-Path $env:USERPROFILE '.scubagear\Tools'
             $opaExePath = Join-Path $opaDir 'opa_windows_amd64.exe'
+            if (-not $useWinPsSubprocess) {
+                Set-StrictMode -Off
+                try {
+                    Import-Module ScubaGear -ErrorAction Stop -WarningAction SilentlyContinue 6>$null 3>$null 2>$null | Out-Null
+                } finally {
+                    Set-StrictMode -Version Latest
+                }
+            }
             if (-not (Test-Path $opaExePath)) {
                 if ($AutoFixDependencies) {
+                    if ($useWinPsSubprocess) {
+                        Set-StrictMode -Off
+                        try { Import-Module ScubaGear -ErrorAction Stop -WarningAction SilentlyContinue 6>$null 3>$null 2>$null | Out-Null } finally { Set-StrictMode -Version Latest }
+                    }
                     & $Log "[Stage 2/5] Installing OPA executable for ScubaGear..."
                     Install-OPAforSCuBA | Out-Null
                 } else {
@@ -94,8 +152,33 @@
             }
             $requestedScuba = @($ScubaProducts | ForEach-Object { ([string]$_).Trim().ToLowerInvariant() } | Where-Object { $_ } | Select-Object -Unique)
             if ($requestedScuba.Count -eq 0) { $requestedScuba = @('aad', 'securitysuite', 'exo', 'powerplatform', 'sharepoint', 'teams', 'powerbi') }
-            & $Log "[Stage 2/5] Running CISA ScubaGear checks ($($requestedScuba -join ', ') — LogIn=$([bool]$ScubaInteractiveLogin))..."
-            $null = Invoke-SCuBA -ProductNames $requestedScuba -LogIn:([bool]$ScubaInteractiveLogin) -DisconnectOnExit:$false -OPAPath $opaDir -OutPath $scubaOut -Quiet 6>$null 3>$null
+
+            if ($useWinPsSubprocess) {
+                & $Log "[Stage 2/5] Running CISA ScubaGear checks in isolated Windows PowerShell 5.1 (InvariantCulture) ($($requestedScuba -join ', ') — LogIn=True)..."
+                $extraModPaths = [System.Collections.Generic.List[string]]::new()
+                $modParent = Split-Path -Path ([string]$scubaMod.ModuleBase) -Parent
+                if ($modParent) {
+                    $extraModPaths.Add($modParent)
+                    $modGrandParent = Split-Path -Path $modParent -Parent
+                    if ($modGrandParent) { $extraModPaths.Add($modGrandParent) }
+                }
+                foreach ($mp in @($env:PSModulePath -split [System.IO.Path]::PathSeparator)) {
+                    if (-not [string]::IsNullOrWhiteSpace($mp)) { $extraModPaths.Add($mp) }
+                }
+                $scubaExit = Invoke-TenantBriefScubaSubprocess -WinPowerShellPath $winPsCmd.Source -ProductNames $requestedScuba -OpaPath $opaDir -OutPath $scubaOut -ExtraModulePaths $extraModPaths.ToArray()
+                if ($null -ne $scubaExit -and $scubaExit -ne 0 -and $null -ne $Diagnostics) {
+                    Add-TenantBriefDiagnostic -Diagnostics $Diagnostics -Stage 2 -Component 'ScubaGear' -Message "ScubaGear Windows PowerShell 5.1 subprocess exited with code $scubaExit." -Severity 'Warning' -Remedy 'Check raw-scuba\DebugLogs\ScubaGear-DebugLog-ErrorReport.md for authentication or provider details.'
+                }
+            } else {
+                & $Log "[Stage 2/5] Running CISA ScubaGear checks ($($requestedScuba -join ', ') — LogIn=$([bool]$ScubaInteractiveLogin))..."
+                $prevCulture = [System.Threading.Thread]::CurrentThread.CurrentCulture
+                try {
+                    [System.Threading.Thread]::CurrentThread.CurrentCulture = [System.Globalization.CultureInfo]::InvariantCulture
+                    $null = Invoke-SCuBA -ProductNames $requestedScuba -LogIn:([bool]$ScubaInteractiveLogin) -DisconnectOnExit:$false -OPAPath $opaDir -OutPath $scubaOut -Quiet 6>$null 3>$null
+                } finally {
+                    [System.Threading.Thread]::CurrentThread.CurrentCulture = $prevCulture
+                }
+            }
             $scubaItems = @(Import-TenantBriefScubaResults -Path $scubaOut)
             $executedScuba = @($scubaItems | ForEach-Object { ([string]$_.TestCategory).Trim().ToLowerInvariant() } | Where-Object { $_ } | Select-Object -Unique)
             $skippedScuba = @($requestedScuba | Where-Object { $executedScuba -notcontains $_ })
