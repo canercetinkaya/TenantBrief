@@ -1,6 +1,6 @@
 ﻿@{
     RootModule        = 'TenantBrief.psm1'
-    ModuleVersion     = '1.2.0'
+    ModuleVersion     = '2.0.0'
     GUID              = 'b7e4c1a2-9d3f-4e8a-9b1c-5f2a8d4e6c10'
     Author            = 'Caner Çetinkaya'
     CompanyName       = 'canercetinkaya.com'
@@ -29,7 +29,7 @@
             Tags         = @('TenantBrief', 'ZeroTrust', 'Security', 'Microsoft365', 'Azure', 'EntraID', 'ScubaGear', 'Maester', 'EIDSCA', 'ORCA', 'CIS-M365', 'EntraFalcon', 'LicenseROI', 'Copilot')
             LicenseUri   = 'https://github.com/canercetinkaya/TenantBrief/blob/main/LICENSE'
             ProjectUri   = 'https://github.com/canercetinkaya/TenantBrief'
-            ReleaseNotes = 'v1.2.0 (Sprints 0-7): Crosswalk-only 4-engine correlation (42 canonical controls), ScubaGear 2.0 multi-product coverage, read-only Test-TenantBriefPrerequisites, -AutoFixDependencies safety gate, externalized TR/EN i18n + glossary, Copilot L1 maturity gate & dynamic 30-60-90 roadmap, offline CSP + deep -Anonymize + SecureString -TranslatorKey + SECURITY.md, modular Public/Private architecture with blocking Windows+Ubuntu CI, ARIA/keyboard accessibility, inline SVG charts, -PreviousReportJson Trend tab, compact HTML payload, and A4 print Executive Summary.'
+            ReleaseNotes = 'v2.0.0 (Breaking Change): Removes deprecated Finding.Impact alias (use Finding.UserImpact), adds mandatory SchemaVersion "2.0.0" to TenantBriefReport-*.json and schemas/tenantbrief-report.schema.json, ships docs/migration-v1-to-v2.md, and preserves cross-version v1->v2 Compare-TenantBriefReports compatibility.'
         }
     }
 }

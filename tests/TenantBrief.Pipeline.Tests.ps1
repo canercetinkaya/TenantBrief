@@ -124,7 +124,7 @@ Describe 'Invoke-TenantBriefAssessment (offline pipeline)' {
     It 'produces Turkish remediation guidance and localized impact labels' {
         $failed = $script:Report.Findings | Where-Object { $_.Status -eq 'Failed' } | Select-Object -First 1
         $failed.RemediationTr | Should -Match 'Denetim \(Report-only\) kipinde pilot gruba'
-        ($script:Report.Findings | Where-Object { $_.Impact -eq 'Yüksek' }).Count | Should -BeGreaterThan 0
+        ($script:Report.Findings | Where-Object { $_.UserImpact -eq 'Yüksek' }).Count | Should -BeGreaterThan 0
     }
 
     It 'keeps the machine-readable contract in English' {

@@ -4,6 +4,16 @@ All notable changes to **TenantBrief** are documented in this file.
 
 ## [Unreleased]
 
+## [2.0.0] - 2026-11-20
+
+### BREAKING CHANGES
+- **Removed `Finding.Impact` (`V2.1`):** The deprecated `Finding.Impact` alias has been removed from `TenantBriefReport-*.json`, `assets/report-template.html`, and `schemas/tenantbrief-report.schema.json`. Use `Finding.UserImpact` (end-user/business disruption impact) and `Finding.Risk` (security risk severity).
+- **JSON Schema v2 (`V2.2`):** Added mandatory root `SchemaVersion` (`"2.0.0"`) to `TenantBriefReport-*.json` and `schemas/tenantbrief-report.schema.json`.
+
+### Added
+- **Migration Guide (`V2.3`):** Added `docs/migration-v1-to-v2.md` with PowerShell/`jq` upgrade examples and cross-version comparison notes.
+- **Cross-Version & v2 Regression Tests (`V2.4`):** Added `tests/V2.BreakingSchemaMigration.Tests.ps1` verifying `SchemaVersion = "2.0.0"`, absence of `Finding.Impact`, and v1.x→v2.0.0 `Compare-TenantBriefReports` compatibility; updated `tests/golden/*.normalized.json` snapshots to Schema v2.
+
 ## [1.2.0] - 2026-11-19
 
 ### Security

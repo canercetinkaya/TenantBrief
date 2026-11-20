@@ -4,17 +4,18 @@
     $script:SchemaPath = Join-Path $script:RepoRoot 'schemas\tenantbrief-report.schema.json'
 }
 
-Describe 'S1.7 - Tightened Report Schema (with Critical & deprecated Impact) & Compare-TenantBriefReports Backward Compatibility' {
-    It 'defines Risk enum including Critical, Status enum, and deprecated Impact in tenantbrief-report.schema.json' {
+Describe 'S1.7 / V2.2 - Report Schema v2 (with Critical & UserImpact) & Compare-TenantBriefReports Backward Compatibility' {
+    It 'defines SchemaVersion 2.0.0, Risk enum including Critical, Status enum, and UserImpact (without removed Impact) in tenantbrief-report.schema.json' {
         $schema = Get-Content -LiteralPath $script:SchemaPath -Raw -Encoding UTF8 | ConvertFrom-Json
         $findingProps = $schema.properties.Findings.items.properties
 
+        $schema.properties.SchemaVersion.const | Should -Be '2.0.0'
         $findingProps.Risk.enum | Should -Contain 'Critical'
         $findingProps.Risk.enum | Should -Contain 'High'
         $findingProps.Risk.enum | Should -Contain 'Medium'
         $findingProps.Risk.enum | Should -Contain 'Low'
         $findingProps.Status.enum | Should -Contain 'Error'
-        $findingProps.Impact.deprecated | Should -BeTrue
+        $findingProps.PSObject.Properties['Impact'] | Should -BeNullOrEmpty
         $findingProps.PSObject.Properties['UserImpact'] | Should -Not -BeNullOrEmpty
         $findingProps.PSObject.Properties['CanonicalId'] | Should -Not -BeNullOrEmpty
         $findingProps.PSObject.Properties['EngineLabel'] | Should -Not -BeNullOrEmpty

@@ -753,6 +753,7 @@
     } else { 0 }
 
     $reportObj = [PSCustomObject]@{
+        SchemaVersion       = '2.0.0'
         Tenant              = $tenantDisplay
         Language            = $Language
         Framework           = $Framework
@@ -853,7 +854,7 @@
         foreach ($p in $cf.PSObject.Properties) {
             $val = $p.Value
             if ($p.Name -eq 'RemediationTr' -and $cf.PSObject.Properties['Remediation'] -and [string]$val -eq [string]$cf.Remediation) { continue }
-            if ($p.Name -in @('SkippedReason', 'ErrorRemedy', 'CanonicalId', 'MinimumLicense', 'Impact') -and [string]::IsNullOrEmpty([string]$val)) { continue }
+            if ($p.Name -in @('SkippedReason', 'ErrorRemedy', 'CanonicalId', 'MinimumLicense') -and [string]::IsNullOrEmpty([string]$val)) { continue }
             if ($p.Name -in @('Result', 'Description') -and $val -is [string] -and $val.Length -gt 4000) {
                 $val = $val.Substring(0, 4000) + "`n..."
             }
