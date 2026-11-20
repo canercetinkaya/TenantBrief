@@ -4,6 +4,14 @@ All notable changes to **TenantBrief** are documented in this file.
 
 ## [Unreleased]
 
+## [2.0.2] - 2026-11-20
+
+### Fixed
+- **ScubaGear v2.0.0 Turkish-`İ` (`tr-TR`) & PowerShell 7 MSAL Bypass (`Private/Import/Invoke-TenantBriefBaselineCollections.ps1`):**
+  - Wrapped in-process `Invoke-SCuBA` calls in `InvariantCulture` (`try/finally` restoring `CurrentCulture`), bypassing `ScubaGear v2.0.0` `Modules/Utility/Utility.psm1:406` (`"isInitial".Substring(0,1).ToUpper()` producing `"İsInitial"` on `tr-TR` systems).
+  - When `-ScubaInteractiveLogin` is specified on Windows (`powershell.exe` available), automatically executes `Invoke-SCuBA -LogIn:$true` in an isolated Windows PowerShell 5.1 (`powershell.exe -NoProfile`) subprocess under `InvariantCulture` with dynamic `PSModulePath` forwarding (zero changes to user modules), bypassing `ScubaGear v2.0.0` `Modules/Connection/ConnectHelpers.psm1:264` (`WithUseEmbeddedWebView($true)` failing on PowerShell 7 / .NET Core).
+  - Updated `docs/improvement/scubagear-upstream-issue-draft.md` with both verified root causes and added regression tests in `tests/V202.ScubaCultureAndSubprocess.Tests.ps1`.
+
 ### Added
 - **Monthly Upstream Maintenance Check (`S8.1`):**
   - `data/upstream-versions.json`: Pinned verified versions (`ZeroTrustAssessment 3.1.0`, `ScubaGear 2.0.0`, `ORCA 2.8.1`, `Maester 2.3.0`, `EntraFalcon V20261108 [ASSUMPTION]`).
