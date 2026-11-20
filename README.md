@@ -113,7 +113,7 @@ Invoke-TenantBriefAssessment -OutputPath "$HOME\TenantBriefReport" -Language tr 
 ## Security, Privacy & Upstream Maintenance (Bakım)
 
 - **Hardened Offline Deliverables:** Strict `Content-Security-Policy` (`default-src 'none'; connect-src 'none'`), HTML-escaped JSON payloads, headless Chromium XSS CI checks, and `-Anonymize` redaction. See [SECURITY.md](SECURITY.md).
-- **Upstream Open-Source Ecosystem:** Built on Microsoft `ZeroTrustAssessment`, CISA `ScubaGear`, Microsoft `ORCA`, `Maester` (`EIDSCA` / `CIS M365`), optional `EntraFalcon` JSON, and Microsoft FastTrack toolkits. Full attributions: [NOTICE.md](NOTICE.md). Tracked `ScubaGear v2.0.0` upstream bugs: [docs/improvement/scubagear-upstream-issue-draft.md](docs/improvement/scubagear-upstream-issue-draft.md).
+- **Upstream Open-Source Ecosystem:** Built on Microsoft `ZeroTrustAssessment`, CISA `ScubaGear`, Microsoft `ORCA`, `Maester` (`EIDSCA` / `CIS M365`), optional `EntraFalcon` JSON, and Microsoft FastTrack toolkits. Full attributions: [NOTICE.md](NOTICE.md). Tracked `ScubaGear v2.0.0` upstream bugs: [CHANGELOG.md](CHANGELOG.md) (`2.0.2`).
 - **Monthly Read-Only Upstream Check (`S8.1`):** Pinned versions live in `data/upstream-versions.json`. Register a user-level monthly sandbox check (`Save-Module` + detached `git worktree` in `%TEMP%`, zero module writes):
   ```powershell
   pwsh -NoProfile -File .\tools\Register-TenantBriefUpstreamCheck.ps1          # install (-Unregister to remove)

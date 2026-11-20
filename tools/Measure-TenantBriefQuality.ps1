@@ -3,7 +3,7 @@
 Measures data quality metrics (Q01-Q15) for a TenantBrief JSON/HTML assessment report.
 
 .DESCRIPTION
-Implements the fixed Q01-Q15 metric definitions from .agents/skills/report-quality-audit/SKILL.md.
+Implements the fixed Q01-Q15 report quality metric definitions.
 Returns a human-readable summary table by default or a machine-readable JSON object with -AsJson,
 including up to 3 sample finding IDs per metric for evidence-backed auditing.
 

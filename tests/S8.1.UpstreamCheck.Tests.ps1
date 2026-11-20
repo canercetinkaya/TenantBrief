@@ -185,8 +185,6 @@ Describe 'S8.1 - Monthly Upstream Check (7 Lock Rules, Issue Deduplication & Saf
         $cmds | Should -Not -Contain 'Remove-Item'
 
         Test-Path -LiteralPath $script:RegisterScript | Should -BeTrue
-        $agents = Get-Content -LiteralPath (Join-Path $script:RepoRoot 'AGENTS.md') -Raw -Encoding UTF8
-        $agents | Should -Match '`?upstream`? etiketli açık issue'
         $readme = Get-Content -LiteralPath (Join-Path $script:RepoRoot 'README.md') -Raw -Encoding UTF8
         $readme | Should -Match 'Bakım'
     }
