@@ -183,7 +183,7 @@ $q10Items = @($findings | Where-Object {
 # Q11: PlannedInScore
 $q11Items = @($findings | Where-Object { ([string](& $getProp $_ 'Status')) -eq 'Planned' })
 
-# Q12: ScubaProductsCovered (canonical ScubaGear 2.0 product set: max 7; DEFENDER normalizes to SECURITYSUITE; ignores ZeroTrust categories)
+# Q12: ScubaProductsCovered (strictly canonical ScubaGear 2.0 MS.<PRODUCT>.* ID prefixes only — max 7; DEFENDER -> SECURITYSUITE; never counts Category strings)
 $canonicalScubaProducts = @('AAD', 'SECURITYSUITE', 'EXO', 'POWERPLATFORM', 'SHAREPOINT', 'TEAMS', 'POWERBI')
 $scubaProdSet = [System.Collections.Generic.HashSet[string]]::new([System.StringComparer]::OrdinalIgnoreCase)
 foreach ($f in $findings) {
@@ -192,23 +192,14 @@ foreach ($f in $findings) {
     if ($fid -notlike 'SCUBA-*' -and ($srcs -notcontains 'CISA SCuBA')) { continue }
 
     $candidateIds = @($fid) + @(& $getProp $f 'CorrelatedIds')
-    $matchedFromId = $false
     foreach ($cid in $candidateIds) {
         $cStr = [string]$cid
-        if ($cStr -match '(?i)^SCUBA-MS\.([A-Z0-9]+)\.') {
+        if ($cStr -match '(?i)^(?:SCUBA-)?MS\.([A-Z0-9]+)\.') {
             $prod = $Matches[1].ToUpperInvariant()
             if ($prod -eq 'DEFENDER') { $prod = 'SECURITYSUITE' }
             if ($canonicalScubaProducts -contains $prod) {
                 [void]$scubaProdSet.Add($prod)
-                $matchedFromId = $true
             }
-        }
-    }
-    if (-not $matchedFromId -and $fid -like 'SCUBA-*') {
-        $catNorm = ([string](& $getProp $f 'Category')).Trim().ToUpperInvariant()
-        if ($catNorm -eq 'DEFENDER') { $catNorm = 'SECURITYSUITE' }
-        if ($canonicalScubaProducts -contains $catNorm) {
-            [void]$scubaProdSet.Add($catNorm)
         }
     }
 }

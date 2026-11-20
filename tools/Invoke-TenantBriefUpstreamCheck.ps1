@@ -183,7 +183,7 @@ function Invoke-UpstreamSandboxCheck {
         }
 
         $maesterSaved = Join-Path $modDir 'Maester'
-        if (Test-Path -LiteralPath $maesterSaved -and $cw) {
+        if ((Test-Path -LiteralPath $maesterSaved) -and $cw) {
             $mtText = (Get-ChildItem -Path $maesterSaved -Filter '*.ps1' -Recurse -File -ErrorAction SilentlyContinue | ForEach-Object { Get-Content -LiteralPath $_.FullName -Raw -ErrorAction SilentlyContinue }) -join "`n"
             $missingMt = [System.Collections.Generic.List[string]]::new()
             foreach ($ctrl in @($cw.controls)) {
@@ -308,7 +308,7 @@ try {
     }
 
     $sandboxNotes = @()
-    if ($changes.Count -gt 0 -and -not $DryRun -and -not $SkipSandbox) {
+    if ($changes.Count -gt 0 -and -not $SkipSandbox) {
         $sandboxNotes = @(Invoke-UpstreamSandboxCheck -ChangedTools $changes.ToArray() -RepoRoot $RepoPath)
     }
 
@@ -339,7 +339,12 @@ try {
     $issueResult = 'NONE'
     if ($changes.Count -gt 0) {
         $issueTitle = "Upstream check $thisMonth"
-        if (-not $DryRun) {
+        if ($DryRun) {
+            $issueResult = 'DRY_RUN_WOULD_CREATE'
+            $mdLines.Add('')
+            $mdLines.Add("> **DRY-RUN:** Issue would be created: ``$issueTitle`` (label: ``upstream``). No GitHub issue was opened and no monthly state file was written.")
+            [System.IO.File]::WriteAllText($reportPath, ($mdLines -join "`n"), [System.Text.UTF8Encoding]::new($false))
+        } else {
             $issueResult = Invoke-UpstreamGitHubIssue -IssueTitle $issueTitle -ReportPath $reportPath
             Send-UpstreamNotification -Title "TenantBrief: $issueTitle" -Message "$($changes.Count) upstream aracında yeni sürüm tespit edildi. Ayrıntı: $reportPath"
         }
