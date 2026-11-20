@@ -9,3 +9,14 @@ Thumbs.db
 testResults.xml
 *.TestResults.xml
 artifacts/
+
+# Local AI agent configuration & internal sprint notes (not part of the module)
+AGENTS.md
+ANTIGRAVITY-KICKOFF.md
+.agents/
+.gemini/
+.claude/
+.cursor/
+CLAUDE.md
+GEMINI.md
+docs/improvement/
