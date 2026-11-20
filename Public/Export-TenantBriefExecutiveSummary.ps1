@@ -44,7 +44,12 @@
     $htmlEncode = { param($v) [System.Net.WebUtility]::HtmlEncode([string]$v) }
 
     $fwRows = ($data.Frameworks | ForEach-Object {
-        "<tr><td>$(& $htmlEncode $_.Name)</td><td>$(& $htmlEncode $_.Passed) / $(& $htmlEncode $_.Evaluated)</td><td><strong>$(& $htmlEncode $_.Score)%</strong></td></tr>"
+        $covBadge = ''
+        if ($_.PSObject.Properties['CoverageNote'] -and $_.CoverageNote) {
+            $covBadge = " <span style='display:inline-block;margin-left:6px;padding:1px 6px;border-radius:4px;background:#fef3c7;color:#92400e;border:1px solid #f59e0b;font-size:11px;font-weight:600;'>$(& $htmlEncode $_.CoverageNote)</span>"
+        }
+        $evalVal = if ($_.PSObject.Properties['Evaluated'] -and $null -ne $_.Evaluated) { $_.Evaluated } else { $_.Total }
+        "<tr><td>$(& $htmlEncode $_.Name)$covBadge</td><td>$(& $htmlEncode $_.Passed) / $(& $htmlEncode $evalVal)</td><td><strong>$(& $htmlEncode $_.Score)%</strong></td></tr>"
     }) -join "`n"
 
     # Priority order for the printable brief: cheapest high-risk fixes first, then by control id so

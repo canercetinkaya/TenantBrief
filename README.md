@@ -185,6 +185,18 @@ TenantBrief stands on top of trusted Microsoft and community open-source securit
 - Run `Test-TenantBriefPrerequisites` for a strictly read-only preflight check of installed modules, OPA, and active M365 sessions.
 - Pass **`-AutoFixDependencies`** explicitly to `Connect-TenantBrief` only if you want TenantBrief to install missing PSGallery modules, OPA, or prune conflicting local `Microsoft.Graph.Authentication` / `SharePoint` copies automatically.
 
+## ScubaGear 2.0 Full Coverage (`-ScubaInteractiveLogin` & Non-Interactive Certificate Auth)
+
+- **Default (`-LogIn:$false`):** `Invoke-TenantBriefAssessment` reuses the active Microsoft Graph session without opening additional login prompts. In ScubaGear 2.0 (REST-first architecture), non-AAD providers (`securitysuite`, `exo`, `powerplatform`, `sharepoint`, `teams`, `powerbi`) require ScubaGear's own token/endpoint context; skipped products are recorded in `run-manifest.json` (`ScubaProducts.Skipped`), `Diagnostics` (`Warning`), the `CISA_SCuBA` scorecard (`X/7`), and the Executive Summary.
+- **Interactive Full 7-Product Coverage:** Pass **`-ScubaInteractiveLogin`** to `Invoke-TenantBriefAssessment` (calls `Invoke-SCuBA -LogIn:$true` for all 7 products).
+- **Non-Interactive Full Coverage (App-Only Certificate Auth — verified in `ScubaGear v2.0.0` `Modules/Orchestrator.psm1` L175–210):** Run ScubaGear non-interactively with an Entra App Registration + certificate and feed the output to TenantBrief offline:
+  ```powershell
+  Invoke-SCuBA -ProductNames @('aad','securitysuite','exo','powerplatform','sharepoint','teams','powerbi') `
+    -LogIn:$true -AppID '<AppId>' -CertificateThumbprint '<Thumbprint>' -Organization 'contoso.onmicrosoft.com' `
+    -OutPath '.\raw-scuba' -Quiet
+  Invoke-TenantBriefAssessment -InputReportJson '.\ZeroTrustAssessmentReport.json' -InputScubaJsonPath '.\raw-scuba' -OutputPath '.\out' -Language tr
+  ```
+
 ## Remediation Prioritization (`PriorityScore` & `data/scoring.json`)
 
 - Every finding receives a deterministic **`PriorityScore`** (`0–100`) driven by `data/scoring.json`:

@@ -30,7 +30,10 @@
         [string[]]$ScubaProducts = @('aad', 'securitysuite', 'exo', 'powerplatform', 'sharepoint', 'teams', 'powerbi'),
 
         [Parameter(Mandatory = $false)]
-        [switch]$AutoFixDependencies
+        [switch]$AutoFixDependencies,
+
+        [Parameter(Mandatory = $false)]
+        [switch]$ScubaInteractiveLogin
     )
 
     $markStage = {
@@ -91,8 +94,8 @@
             }
             $requestedScuba = @($ScubaProducts | ForEach-Object { ([string]$_).Trim().ToLowerInvariant() } | Where-Object { $_ } | Select-Object -Unique)
             if ($requestedScuba.Count -eq 0) { $requestedScuba = @('aad', 'securitysuite', 'exo', 'powerplatform', 'sharepoint', 'teams', 'powerbi') }
-            & $Log "[Stage 2/5] Running CISA ScubaGear checks ($($requestedScuba -join ', ') — reusing active session)..."
-            $null = Invoke-SCuBA -ProductNames $requestedScuba -LogIn:$false -DisconnectOnExit:$false -OPAPath $opaDir -OutPath $scubaOut -Quiet 6>$null 3>$null
+            & $Log "[Stage 2/5] Running CISA ScubaGear checks ($($requestedScuba -join ', ') — LogIn=$([bool]$ScubaInteractiveLogin))..."
+            $null = Invoke-SCuBA -ProductNames $requestedScuba -LogIn:([bool]$ScubaInteractiveLogin) -DisconnectOnExit:$false -OPAPath $opaDir -OutPath $scubaOut -Quiet 6>$null 3>$null
             $scubaItems = @(Import-TenantBriefScubaResults -Path $scubaOut)
             $executedScuba = @($scubaItems | ForEach-Object { ([string]$_.TestCategory).Trim().ToLowerInvariant() } | Where-Object { $_ } | Select-Object -Unique)
             $skippedScuba = @($requestedScuba | Where-Object { $executedScuba -notcontains $_ })
@@ -103,6 +106,12 @@
                     Skipped   = @($skippedScuba)
                 }
                 $Manifest | Add-Member -NotePropertyName 'ScubaProducts' -NotePropertyValue $scubaSummaryObj -Force
+            }
+            if ($skippedScuba.Count -gt 0 -and $null -ne $Diagnostics) {
+                $skipListStr = $skippedScuba -join ', '
+                $msgScuba = "ScubaGear partial coverage ($($executedScuba.Count)/$($requestedScuba.Count) products executed). Skipped: $skipListStr."
+                $remScuba = "ScubaGear 2.0 requires its own authentication context for non-AAD providers. Re-run with -ScubaInteractiveLogin for interactive full 7-product coverage, or run Invoke-SCuBA directly with -AppID, -CertificateThumbprint, and -Organization for non-interactive coverage."
+                Add-TenantBriefDiagnostic -Diagnostics $Diagnostics -Stage 2 -Component 'ScubaGear' -Message $msgScuba -Severity 'Warning' -Remedy $remScuba
             }
             if ($scubaItems.Count -gt 0) {
                 $collected += $scubaItems
