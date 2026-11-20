@@ -1,4 +1,4 @@
-function Import-TenantBriefSharePointRisk {
+﻿function Import-TenantBriefSharePointRisk {
     <#
     .SYNOPSIS
     Read-only parser & risk scorer for SharePoint permissions CSV exports (Microsoft SAM DAG / FastTrack Analyze-SharePointRisk).

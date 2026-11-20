@@ -1,4 +1,4 @@
-function Get-TenantBriefCopilotReadiness {
+﻿function Get-TenantBriefCopilotReadiness {
     <#
     .SYNOPSIS
     Evaluates M365 Copilot / Agent 365 readiness with L1-L4 maturity and warnings.

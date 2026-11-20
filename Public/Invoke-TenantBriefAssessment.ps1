@@ -340,13 +340,6 @@
     $plannedExcludedCount = $plannedTests.Count
     $errorCount = @($tests | Where-Object { $_.TestStatus -eq 'Error' }).Count
     $highRiskFailed = @($tests | Where-Object { $_.TestStatus -eq 'Failed' -and $_.TestRisk -in @('Critical', 'High') }).Count
-    $medRiskFailed = @($tests | Where-Object { $_.TestStatus -eq 'Failed' -and $_.TestRisk -eq 'Medium' }).Count
-    $lowRiskFailed = @($tests | Where-Object { $_.TestStatus -eq 'Failed' -and $_.TestRisk -eq 'Low' }).Count
-
-    # 'Error' controls should have been evaluated but the engine failed; they count as non-passes
-    # so an unmeasured control never inflates the posture score.
-    $evaluatedTotal = $passedCount + $failedCount + $errorCount
-    $baseScore = if ($evaluatedTotal -gt 0) { [math]::Round(($passedCount / $evaluatedTotal) * 100, 1) } else { 0 }
 
     $allFwIds = @($fwConfig.PSObject.Properties | ForEach-Object { $_.Name })
     $selectedFwIds = if ($Framework -eq 'All') { $allFwIds } else { @($Framework) }

@@ -1,4 +1,4 @@
-function Get-TenantBriefFrameworkScorecard {
+﻿function Get-TenantBriefFrameworkScorecard {
     [CmdletBinding()]
     param(
         [Parameter(Mandatory = $true)][AllowEmptyCollection()][object[]]$Tests,

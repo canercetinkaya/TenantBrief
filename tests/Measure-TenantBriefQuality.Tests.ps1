@@ -113,4 +113,33 @@ Describe 'tools/Measure-TenantBriefQuality.ps1 (Q01-Q15)' {
         (Test-Json -Json $trRaw -SchemaFile $script:SchemaPath) | Should -BeTrue
         (Test-Json -Json $enRaw -SchemaFile $script:SchemaPath) | Should -BeTrue
     }
+
+    It 'counts only canonical ScubaGear 2.0 products (max 7) for Q12 without ZT categories or DEFENDER/SECURITYSUITE double-counting' {
+        $tmpDir = Join-Path ([System.IO.Path]::GetTempPath()) ("tb-q12-" + [guid]::NewGuid().ToString('N').Substring(0, 8))
+        New-Item -ItemType Directory -Path $tmpDir -Force | Out-Null
+        $jPath = Join-Path $tmpDir 'q12.json'
+        try {
+            [PSCustomObject]@{
+                Tenant   = 'contoso.onmicrosoft.com'
+                Language = 'tr'
+                Findings = @(
+                    [PSCustomObject]@{ Id = '21882'; Sources = @('ZeroTrust', 'CISA SCuBA'); CorrelatedIds = @('21882', 'SCUBA-MS.AAD.3.2v1'); Category = 'Access control'; Status = 'Failed'; Risk = 'High'; Title = 'MFA zorunlu kıl' },
+                    [PSCustomObject]@{ Id = '21860'; Sources = @('ZeroTrust', 'CISA SCuBA'); CorrelatedIds = @('21860', 'SCUBA-MS.AAD.1.1v1'); Category = 'Privileged access'; Status = 'Passed'; Risk = 'High'; Title = 'Eski kimlik doğrulama' },
+                    [PSCustomObject]@{ Id = 'SCUBA-MS.DEFENDER.1.1v1'; Sources = @('CISA SCuBA'); CorrelatedIds = @('SCUBA-MS.DEFENDER.1.1v1'); Category = 'DEFENDER'; Status = 'Failed'; Risk = 'High'; Title = 'Defender check' },
+                    [PSCustomObject]@{ Id = 'SCUBA-MS.SECURITYSUITE.1.1v1'; Sources = @('CISA SCuBA'); CorrelatedIds = @('SCUBA-MS.SECURITYSUITE.1.1v1'); Category = 'SECURITYSUITE'; Status = 'Failed'; Risk = 'High'; Title = 'SecuritySuite check' }
+                )
+            } | ConvertTo-Json -Depth 6 | Set-Content -Path $jPath -Encoding UTF8
+
+            $res = & $script:MeasureScript -Path $jPath
+            $q12 = $res.Metrics | Where-Object { $_.Code -eq 'Q12' }
+            $q12.Value | Should -Be 2
+            $q12.Value | Should -BeLessOrEqual 7
+            @($q12.SampleIds) | Should -Contain 'AAD'
+            @($q12.SampleIds) | Should -Contain 'SECURITYSUITE'
+            @($q12.SampleIds) | Should -Not -Contain 'Access control'
+            @($q12.SampleIds) | Should -Not -Contain 'DEFENDER'
+        } finally {
+            Remove-Item -Path $tmpDir -Recurse -Force -ErrorAction SilentlyContinue
+        }
+    }
 }
