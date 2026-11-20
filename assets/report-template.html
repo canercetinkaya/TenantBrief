@@ -553,9 +553,10 @@
       const subCounts = (typeof f.Total === 'number')
         ? `<div style="font-size:11px;color:var(--muted);margin-top:3px;">${isTr ? 'Başarısız' : 'Failed'}: ${f.Failed ?? 0} · ${isTr ? 'İncele' : 'Investigate'}: ${f.Investigate ?? 0} · ${isTr ? 'Atlandı' : 'Skipped'}: ${f.Skipped ?? 0} · ${isTr ? 'Hata' : 'Err'}: ${f.Errors ?? 0} · ${isTr ? 'Toplam' : 'Total'}: ${f.Total}</div>`
         : '';
+      const covBadge = f.CoverageNote ? `<span style="margin-left:8px;padding:1px 7px;border-radius:999px;font-size:11px;font-weight:600;background:rgba(245,158,11,.16);color:#fcd34d;border:1px solid rgba(245,158,11,.4);">${esc(f.CoverageNote)}</span>` : '';
       return `
       <div class="bar-row" ${clickAttr}>
-        <div class="bar-head"><span>${esc(f.Name)}</span><span>${f.Passed} / ${f.Evaluated} (<strong>${f.Score}%</strong>)</span></div>
+        <div class="bar-head"><span>${esc(f.Name)}${covBadge}</span><span>${f.Passed} / ${f.Evaluated} (<strong>${f.Score}%</strong>)</span></div>
         <div class="bar-track"><div class="bar-fill" style="width:${f.Score}%"></div></div>
         ${subCounts}
       </div>`;

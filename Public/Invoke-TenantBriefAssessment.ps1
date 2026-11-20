@@ -76,6 +76,9 @@
         [switch]$SkipMaester,
 
         [Parameter()]
+        [switch]$ScubaInteractiveLogin,
+
+        [Parameter()]
         [switch]$Resume
     )
 
@@ -243,7 +246,7 @@
     $collectedTests = [System.Collections.Generic.List[object]]::new()
     if (-not $InputReportJson) {
         $accountName = if ($mgCheck -and $mgCheck.Account) { [string]$mgCheck.Account } else { '' }
-        foreach ($ct in @(Invoke-TenantBriefBaselineCollections -OutputPath $OutputPath -Account $accountName -Log $addLog -State $progressState -Diagnostics $diagnostics -Manifest $manifest -ManifestPath $manifestPath -SkipMaester:$SkipMaester)) {
+        foreach ($ct in @(Invoke-TenantBriefBaselineCollections -OutputPath $OutputPath -Account $accountName -Log $addLog -State $progressState -Diagnostics $diagnostics -Manifest $manifest -ManifestPath $manifestPath -SkipMaester:$SkipMaester -ScubaInteractiveLogin:$ScubaInteractiveLogin)) {
             if ($null -ne $ct) { $collectedTests.Add($ct) }
         }
     } else {
@@ -346,6 +349,17 @@
     $frameworkCards = @(Get-TenantBriefFrameworkScorecard -Tests $rawAllTests -FrameworkConfig $fwConfig -FrameworkIds $selectedFwIds -Language $Language)
     if ($Framework -eq 'All') {
         $frameworkCards = @($frameworkCards | Where-Object { $_.Total -gt 0 })
+    }
+    $scubaProdManifest = if ($manifest -and $manifest.PSObject.Properties['ScubaProducts'] -and $manifest.ScubaProducts) { $manifest.ScubaProducts } else { $null }
+    if ($scubaProdManifest -and @($scubaProdManifest.Skipped).Count -gt 0) {
+        $execCnt = @($scubaProdManifest.Executed).Count
+        $reqCnt  = @($scubaProdManifest.Requested).Count
+        $covNote = if ($Language -eq 'tr') { "$execCnt/$reqCnt ürün tarandı" } else { "$execCnt/$reqCnt products scanned" }
+        foreach ($fwCard in $frameworkCards) {
+            if ($fwCard.Id -eq 'CISA_SCuBA') {
+                $fwCard | Add-Member -NotePropertyName 'CoverageNote' -NotePropertyValue $covNote -Force
+            }
+        }
     }
 
     # License ROI & Blind Spot Analysis from SkippedReason
