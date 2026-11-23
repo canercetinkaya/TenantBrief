@@ -14,6 +14,20 @@
       --ease:cubic-bezier(0.22,1,0.36,1);
       --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
     }
+    html[data-theme="light"] {
+      --bg:#f5f7fa; --surface:#ffffff; --card:#ffffff; --card2:#ffffff; --raised:#eceff4;
+      --border:rgba(17,24,39,.10); --border-strong:rgba(17,24,39,.18);
+      --text:#111827; --text2:#4b5565; --muted:#5b6475; --accent:#0284c7;
+      --ok:#16a34a; --fail:#dc2626; --warn:#d97706; --skip:#7c3aed;
+    }
+    html[data-theme="light"] .btn:hover { background:#e2e8f0; border-color:rgba(17,24,39,.26); }
+    html[data-theme="light"] #btnPrint { background:#111827; color:#ffffff; border-color:#111827; }
+    html[data-theme="light"] #btnPrint:hover { background:#1f2937; }
+    html[data-theme="light"] .nav-btn:hover { background:rgba(17,24,39,.04); }
+    html[data-theme="light"] .nav-btn.active { box-shadow:none; }
+    html[data-theme="light"] .cnt { background:rgba(17,24,39,.06); }
+    html[data-theme="light"] #donutChart text, html[data-theme="light"] #pillarSvgChart text, html[data-theme="light"] #riskEffortHeatmap text { fill:#111827; }
+    .kbd { display:inline-flex; align-items:center; justify-content:center; min-width:24px; height:24px; padding:0 6px; border-radius:4px; font-family:var(--mono); font-size:11px; color:var(--muted); background:var(--raised); border:1px solid var(--border-strong); user-select:none; }
     * { box-sizing:border-box; margin:0; padding:0; }
     body { font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif; font-size:14px; line-height:1.5; background:var(--bg); color:var(--text); display:flex; min-height:100vh; -webkit-font-smoothing:antialiased; }
     .sidebar { width:264px; background:var(--surface); border-right:1px solid var(--border); padding:20px 12px; display:flex; flex-direction:column; gap:2px; position:sticky; top:0; height:100vh; overflow-y:auto; flex-shrink:0; }
@@ -94,7 +108,8 @@
       .card, .finding, .rem-box { background:#fff !important; border-color:#cbd5e1 !important; color:#111827 !important; break-inside:avoid; padding:12px; }
       .bar-track { background:#e2e8f0 !important; }
       .bar-fill { background:#0284c7 !important; }
-      #donutChart text { fill:#111827 !important; }
+      #donutChart text, #pillarSvgChart text, #riskEffortHeatmap text { fill:#111827 !important; }
+      .kbd { display:none !important; }
       .tab-panel { display:block !important; margin-bottom:20px; }
       #tab-findings { display:none !important; }
     }
@@ -131,7 +146,8 @@
         <h1 id="pageTitle">TenantBrief</h1>
         <div class="meta" id="tenantMeta"></div>
       </div>
-      <div style="display:flex;gap:8px;">
+      <div style="display:flex;gap:8px;flex-wrap:wrap;">
+        <button class="btn" id="btnTheme" type="button" aria-label="Toggle light or dark theme">Açık Tema</button>
         <button class="btn" onclick="exportCsv()" id="btnCsv">CSV İndir</button>
         <button class="btn" onclick="window.print()" id="btnPrint">PDF / Yazdır</button>
       </div>
@@ -215,6 +231,7 @@
       <div class="filter-bar">
         <div class="filter-row">
           <input type="text" id="searchInput" placeholder="ID, başlık, kaynak, kategori, portal veya lisans ara..." oninput="renderFindings()" />
+          <kbd class="kbd" id="searchKbd" title="/ ile ara, Esc ile temizle">/</kbd>
           <select id="sfiFilter" onchange="renderFindings()"><option value="ALL">Tüm SFI Sütunları</option></select>
           <select id="catFilter" onchange="renderFindings()"><option value="ALL">Tüm Kategoriler</option></select>
           <select id="costFilter" onchange="renderFindings()">
@@ -556,11 +573,11 @@
     const total = Math.max(1, s.Total);
     const pPct = (s.Passed / total) * 100, fPct = (s.Failed / total) * 100, skPct = (s.Skipped / total) * 100;
     document.getElementById('donutChart').innerHTML = `
-      <circle cx="21" cy="21" r="15.915" fill="transparent" stroke="#1e293b" stroke-width="5"></circle>
-      <circle cx="21" cy="21" r="15.915" fill="transparent" stroke="#22c55e" stroke-width="5" stroke-dasharray="${pPct} ${100 - pPct}" stroke-dashoffset="25"></circle>
-      <circle cx="21" cy="21" r="15.915" fill="transparent" stroke="#ef4444" stroke-width="5" stroke-dasharray="${fPct} ${100 - fPct}" stroke-dashoffset="${25 - pPct}"></circle>
-      <circle cx="21" cy="21" r="15.915" fill="transparent" stroke="#a855f7" stroke-width="5" stroke-dasharray="${skPct} ${100 - skPct}" stroke-dashoffset="${25 - pPct - fPct}"></circle>
-      <text x="21" y="22.5" text-anchor="middle" fill="#e2e8f0" font-size="6" font-weight="700">${Math.round(pPct)}%</text>
+      <circle cx="21" cy="21" r="15.915" fill="transparent" stroke="var(--raised)" stroke-width="5"></circle>
+      <circle cx="21" cy="21" r="15.915" fill="transparent" stroke="var(--ok)" stroke-width="5" stroke-dasharray="${pPct} ${100 - pPct}" stroke-dashoffset="25"></circle>
+      <circle cx="21" cy="21" r="15.915" fill="transparent" stroke="var(--fail)" stroke-width="5" stroke-dasharray="${fPct} ${100 - fPct}" stroke-dashoffset="${25 - pPct}"></circle>
+      <circle cx="21" cy="21" r="15.915" fill="transparent" stroke="var(--skip)" stroke-width="5" stroke-dasharray="${skPct} ${100 - skPct}" stroke-dashoffset="${25 - pPct - fPct}"></circle>
+      <text x="21" y="22.5" text-anchor="middle" fill="var(--text)" font-size="6" font-weight="600">${Math.round(pPct)}%</text>
     `;
 
     const fwHtml = (DATA.Frameworks || []).map(f => {
@@ -1225,12 +1242,12 @@
           const y = idx * rowH + 6;
           const wOk = (ok / tot) * barW, wFl = (fl / tot) * barW, wInv = (inv / tot) * barW, wSk = (sk / tot) * barW;
           return `<g>
-            <text x="0" y="${y + 13}" fill="#cbd5e1" font-size="11.5" font-weight="600">${esc(p)}</text>
-            <rect x="${padL}" y="${y + 2}" width="${wOk.toFixed(1)}" height="14" fill="#22c55e"><title>Passed: ${ok}</title></rect>
-            <rect x="${(padL + wOk).toFixed(1)}" y="${y + 2}" width="${wFl.toFixed(1)}" height="14" fill="#ef4444"><title>Failed: ${fl}</title></rect>
-            <rect x="${(padL + wOk + wFl).toFixed(1)}" y="${y + 2}" width="${wInv.toFixed(1)}" height="14" fill="#f59e0b"><title>Investigate/Error: ${inv}</title></rect>
-            <rect x="${(padL + wOk + wFl + wInv).toFixed(1)}" y="${y + 2}" width="${wSk.toFixed(1)}" height="14" fill="#a855f7"><title>Skipped: ${sk}</title></rect>
-            <text x="${padL + barW + 8}" y="${y + 13}" fill="#94a3b8" font-size="11">${ok}/${items.length}</text>
+            <text x="0" y="${y + 13}" fill="var(--text2)" font-size="11.5" font-weight="500">${esc(p)}</text>
+            <rect x="${padL}" y="${y + 3}" width="${wOk.toFixed(1)}" height="12" rx="2" fill="var(--ok)"><title>Passed: ${ok}</title></rect>
+            <rect x="${(padL + wOk).toFixed(1)}" y="${y + 3}" width="${wFl.toFixed(1)}" height="12" fill="var(--fail)"><title>Failed: ${fl}</title></rect>
+            <rect x="${(padL + wOk + wFl).toFixed(1)}" y="${y + 3}" width="${wInv.toFixed(1)}" height="12" fill="var(--warn)"><title>Investigate/Error: ${inv}</title></rect>
+            <rect x="${(padL + wOk + wFl + wInv).toFixed(1)}" y="${y + 3}" width="${wSk.toFixed(1)}" height="12" rx="2" fill="var(--skip)"><title>Skipped: ${sk}</title></rect>
+            <text x="${padL + barW + 8}" y="${y + 13}" fill="var(--muted)" font-size="11" font-family="var(--mono)">${ok}/${items.length}</text>
           </g>`;
         }).join('');
         pillarEl.innerHTML = `<svg viewBox="0 0 ${svgW} ${svgH}" width="100%" role="img" aria-label="${esc(pillarLbl ? pillarLbl.textContent : 'Pillar chart')}">${rows}</svg>`;
@@ -1249,15 +1266,15 @@
         }));
         const cw = 68, ch = 28, padL = 70, padT = 22;
         const svgW = padL + costs.length * cw + 8, svgH = padT + risks.length * ch + 10;
-        const colHdrs = costs.map((c, j) => `<text x="${padL + j * cw + cw / 2}" y="14" text-anchor="middle" fill="#94a3b8" font-size="11">${esc(costLabel(c))}</text>`).join('');
+        const colHdrs = costs.map((c, j) => `<text x="${padL + j * cw + cw / 2}" y="14" text-anchor="middle" fill="var(--muted)" font-size="11">${esc(costLabel(c))}</text>`).join('');
         const cells = risks.map((r, i) => {
           const y = padT + i * ch;
-          const rLbl = `<text x="0" y="${y + 18}" fill="#cbd5e1" font-size="11.5" font-weight="600">${esc(riskLabel(r))}</text>`;
+          const rLbl = `<text x="0" y="${y + 18}" fill="var(--text2)" font-size="11.5" font-weight="500">${esc(riskLabel(r))}</text>`;
           const rowCells = costs.map((c, j) => {
             const cnt = grid[r + '|' + c];
-            const alpha = cnt === 0 ? 0.08 : (0.22 + 0.72 * (cnt / maxCnt));
-            const baseRgb = (r === 'Critical' || r === 'High') ? '239,68,68' : (r === 'Medium' ? '245,158,11' : '56,189,248');
-            return `<g><rect x="${padL + j * cw + 2}" y="${y + 2}" width="${cw - 4}" height="${ch - 4}" rx="5" fill="rgba(${baseRgb},${alpha.toFixed(2)})" stroke="#1e293b"></rect><text x="${padL + j * cw + cw / 2}" y="${y + 18}" text-anchor="middle" fill="${cnt > 0 ? '#f8fafc' : '#64748b'}" font-size="12" font-weight="700">${cnt}</text></g>`;
+            const alpha = cnt === 0 ? 0.07 : (0.20 + 0.68 * (cnt / maxCnt));
+            const baseRgb = (r === 'Critical' || r === 'High') ? '229,72,77' : (r === 'Medium' ? '229,169,59' : '56,189,248');
+            return `<g><rect x="${padL + j * cw + 2}" y="${y + 2}" width="${cw - 4}" height="${ch - 4}" rx="4" fill="rgba(${baseRgb},${alpha.toFixed(2)})" stroke="var(--border)"></rect><text x="${padL + j * cw + cw / 2}" y="${y + 18}" text-anchor="middle" fill="${cnt > 0 ? 'var(--text)' : 'var(--muted)'}" font-size="12" font-weight="600" font-family="var(--mono)">${cnt}</text></g>`;
           }).join('');
           return rLbl + rowCells;
         }).join('');
@@ -1298,6 +1315,44 @@
 
     renderSprint7Visuals();
     renderFilterChips();
+
+    (function initThemeAndShortcuts() {
+      const btn = document.getElementById('btnTheme');
+      const kbd = document.getElementById('searchKbd');
+      if (kbd) kbd.title = isTr ? '/ ile ara, Esc ile temizle' : 'Press / to search, Esc to clear';
+      function applyTheme(mode) {
+        const isLight = mode === 'light';
+        if (isLight) { document.documentElement.setAttribute('data-theme', 'light'); }
+        else { document.documentElement.removeAttribute('data-theme'); }
+        if (btn) btn.textContent = isLight ? (isTr ? 'Koyu Tema' : 'Dark') : (isTr ? 'Açık Tema' : 'Light');
+        try { localStorage.setItem('tenantbrief-theme', isLight ? 'light' : 'dark'); } catch {}
+      }
+      let saved = 'dark';
+      try { saved = localStorage.getItem('tenantbrief-theme') || 'dark'; } catch {}
+      applyTheme(saved);
+      if (btn) {
+        btn.addEventListener('click', () => {
+          const cur = document.documentElement.getAttribute('data-theme') === 'light' ? 'dark' : 'light';
+          applyTheme(cur);
+        });
+      }
+      document.addEventListener('keydown', (e) => {
+        const tag = (e.target && e.target.tagName) ? e.target.tagName.toLowerCase() : '';
+        const inp = document.getElementById('searchInput');
+        if (e.key === '/' && tag !== 'input' && tag !== 'textarea' && tag !== 'select') {
+          e.preventDefault();
+          const allBtn = document.getElementById('navAllFindings');
+          if (allBtn && !document.getElementById('tab-findings').classList.contains('active')) {
+            switchView('findings', 'ALL', allBtn);
+          }
+          if (inp) { inp.focus(); inp.select(); }
+        } else if (e.key === 'Escape' && document.activeElement === inp && inp) {
+          inp.value = '';
+          renderFindings();
+          inp.blur();
+        }
+      });
+    })();
   </script>
 </body>
 </html>
