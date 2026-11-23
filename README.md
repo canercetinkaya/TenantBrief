@@ -126,4 +126,4 @@ Invoke-TenantBriefAssessment -OutputPath "$HOME\TenantBriefReport" -Language tr 
   pwsh -NoProfile -File .\tools\Invoke-TenantBriefUpstreamCheck.ps1 -DryRun   # manual dry-run
   ```
 - **Tests & Quality Gates:** `Invoke-Pester ./tests` (**130/130 PASS**), `PSScriptAnalyzer 1.25.0` CI ceiling (`<= 82`, `0 Errors`), `PriorityScore` weights (`data/scoring.json`), `tools/Measure-TenantBriefQuality.ps1` (`Q01–Q15`), and JSON Schema v2.0.0 (`schemas/tenantbrief-report.schema.json`).
-- **License:** MIT ([LICENSE](LICENSE)) · Full architecture & governance notes: [canercetinkaya.com](https://canercetinkaya.com/tr/blog/tenantbrief-m365-lisans-roi-uyumluluk-analizi)
+- **License:** MIT ([LICENSE](LICENSE)) · Design pass: [unslop](https://github.com/heydamir/unslop) by Damir Sokolovsky (CC BY 4.0) · Full architecture & governance notes: [canercetinkaya.com](https://canercetinkaya.com/tr/blog/tenantbrief-m365-lisans-roi-uyumluluk-analizi)
