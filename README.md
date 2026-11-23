@@ -58,7 +58,7 @@ Invoke-TenantBriefAssessment -OutputPath "$HOME\TenantBriefReport" -Language tr 
 Initialize-TenantBriefApp -Remove
 ```
 
-> Sertifika destek matrisi ve en az ayrıcalıklı izin listesi için: [docs/unattended-auth.md](docs/unattended-auth.md)
+> Manuel parametreyle bağlanmak isterseniz `Connect-TenantBrief -AppId '<AppId>' -CertificateThumbprint '<Thumbprint>' -Organization 'contoso.onmicrosoft.com'` kullanılabilir. Sertifika destek matrisi ve en az ayrıcalıklı izin listesi için: [docs/unattended-auth.md](docs/unattended-auth.md)
 
 ### 2. Hızlı Etkileşimli Başlangıç (`Quick` Varsayılan — 0–3 Pencere)
 
@@ -155,7 +155,7 @@ TenantBrief **varsayılan olarak yerel PowerShell modüllerinizi asla kurmaz, g�
 
 ## Güvenlik, Gizlilik ve Bakım
 
-- **Sertleştirilmiş Çevrimdışı Çıktılar:** Katı `Content-Security-Policy` (`default-src 'none'; connect-src 'none'`), HTML-escaped JSON yükleri, headless Chromium XSS CI kontrolleri ve `-Anonymize` maskeleme. Ayrıntılar: [SECURITY.md](SECURITY.md).
+- **Sertleştirilmiş Çevrimdışı Çıktılar:** Katı `Content-Security-Policy` (`default-src 'none'; connect-src 'none'`), HTML-escaped JSON yükleri, headless Chromium XSS CI kontrolleri ve `-Anonymize` maskeleme. İsteğe bağlı `-TranslatorKey` (`AZURE_TRANSLATOR_KEY`) varsayılan olarak kapalıdır; yalnızca açıkça anahtar verildiğinde UPN, GUID ve kiracı alan adları temizlendikten sonra önbellekte olmayan Türkçe metinler çevrilir. Ayrıntılar: [SECURITY.md](SECURITY.md).
 - **Açık Kaynak Ekosistem Atıfları:** Microsoft `ZeroTrustAssessment`, CISA `ScubaGear`, Microsoft `ORCA`, `Maester` (`EIDSCA` / `CIS M365`), isteğe bağlı `EntraFalcon` ve Microsoft FastTrack araçları üzerine inşa edilmiştir. Tam atıflar: [NOTICE.md](NOTICE.md).
 - **Aylık Salt Okunur Yukarı Akış Sürüm Denetimi:** Sabitlenen sürümler `data/upstream-versions.json` içindedir (`Save-Module` + `%TEMP%` üzerinde izole `git worktree`, yerel modüllere dokunmaz):
   ```powershell
