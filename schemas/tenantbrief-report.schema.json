@@ -1,0 +1,188 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://github.com/canercetinkaya/TenantBrief/schemas/tenantbrief-report.schema.json",
+  "title": "TenantBrief Assessment Report (v2.0.0 Schema)",
+  "description": "v2.0.0 schema for TenantBriefReport-{TR,EN}.json with mandatory SchemaVersion, canonical 6-pillar findings, crosswalk correlation fields, Critical risk enum, PlannedFindings separation, Trend diff, and UserImpact (deprecated Impact removed).",
+  "type": "object",
+  "required": [
+    "SchemaVersion",
+    "Tenant",
+    "Language",
+    "Framework",
+    "Summary",
+    "Frameworks",
+    "LicenseROI",
+    "Roadmap",
+    "Findings"
+  ],
+  "properties": {
+    "SchemaVersion": { "type": "string", "const": "2.0.0" },
+    "Tenant": { "type": "string" },
+    "Language": { "type": "string", "enum": ["tr", "en"] },
+    "Framework": { "type": "string" },
+    "TenantInsights": {
+      "type": ["object", "null"],
+      "properties": {
+        "UserCount": { "type": ["integer", "null"] },
+        "GuestCount": { "type": ["integer", "null"] },
+        "GroupCount": { "type": ["integer", "null"] },
+        "ApplicationCount": { "type": ["integer", "null"] },
+        "DeviceCount": { "type": ["integer", "null"] },
+        "ManagedDeviceCount": { "type": ["integer", "null"] },
+        "CompliantDevices": { "type": ["integer", "null"] },
+        "NonCompliantDevices": { "type": ["integer", "null"] },
+        "TotalAgents": { "type": ["integer", "null"] },
+        "SecureScoreCurrent": { "type": ["number", "null"] },
+        "SecureScoreMax": { "type": ["number", "null"] },
+        "MfaCoverageDesc": { "type": ["string", "null"] }
+      }
+    },
+    "UsageAdoption": { "type": ["object", "null"] },
+    "SharePointRisk": { "type": ["object", "null"] },
+    "PowerPlatformAgents": { "type": ["object", "null"] },
+    "Summary": {
+      "type": "object",
+      "required": ["Total", "Passed", "Failed", "Investigate", "Skipped", "Planned", "Error", "HighRiskFailed"],
+      "properties": {
+        "Total": { "type": "integer", "minimum": 0 },
+        "UniqueControls": { "type": "integer", "minimum": 0 },
+        "SourceControls": { "type": "integer", "minimum": 0 },
+        "Passed": { "type": "integer", "minimum": 0 },
+        "Failed": { "type": "integer", "minimum": 0 },
+        "Investigate": { "type": "integer", "minimum": 0 },
+        "Skipped": { "type": "integer", "minimum": 0 },
+        "Planned": { "type": "integer", "minimum": 0 },
+        "PlannedExcluded": { "type": "integer", "minimum": 0 },
+        "Error": { "type": "integer", "minimum": 0 },
+        "HighRiskFailed": { "type": "integer", "minimum": 0 },
+        "UnreviewedTranslations": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "Run": {
+      "type": ["object", "null"],
+      "properties": {
+        "Status": { "type": "string" },
+        "StartedAt": { "type": ["string", "null"] },
+        "CompletedAt": { "type": ["string", "null"] },
+        "Resumed": { "type": "boolean" },
+        "SourceReport": { "type": ["string", "null"] },
+        "Stages": { "type": "array" }
+      }
+    },
+    "Diagnostics": { "type": ["array", "null"] },
+    "Prerequisites": { "type": ["array", "null"] },
+    "Frameworks": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["Id", "Name", "Score", "Passed", "Total"],
+        "properties": {
+          "Id": { "type": "string" },
+          "Name": { "type": "string" },
+          "SourceTag": { "type": ["string", "null"] },
+          "Score": { "type": "number", "minimum": 0, "maximum": 100 },
+          "Passed": { "type": "integer", "minimum": 0 },
+          "Evaluated": { "type": "integer", "minimum": 0 },
+          "Failed": { "type": "integer", "minimum": 0 },
+          "Investigate": { "type": "integer", "minimum": 0 },
+          "Skipped": { "type": "integer", "minimum": 0 },
+          "Errors": { "type": "integer", "minimum": 0 },
+          "Total": { "type": "integer", "minimum": 0 }
+        }
+      }
+    },
+    "LicenseROI": {
+      "type": "object",
+      "properties": {
+        "Summary": { "type": ["string", "null"] },
+        "Gaps": { "type": ["array", "null"] },
+        "Skus": { "type": ["array", "null"] },
+        "WasteAnalysis": { "type": ["object", "null"] },
+        "TotalIdleUsdMo": { "type": ["number", "null"] },
+        "TotalIdleUsdYr": { "type": ["number", "null"] }
+      }
+    },
+    "CopilotReadiness": {
+      "type": ["object", "null"],
+      "properties": {
+        "Score": { "type": "number" },
+        "MaturityLevel": { "type": "string" },
+        "EligibleBaseSeats": { "type": "integer" },
+        "CopilotSeats": { "type": "integer" },
+        "FastTrackImported": { "type": "boolean" },
+        "Warnings": { "type": "array" },
+        "Checks": { "type": "array" }
+      }
+    },
+    "Roadmap": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["Phase", "Count", "Focus"],
+        "properties": {
+          "Phase": { "type": "string" },
+          "Count": { "type": "integer", "minimum": 0 },
+          "Focus": { "type": "string" },
+          "FindingIds": { "type": ["array", "null"], "items": { "type": "string" } }
+        }
+      }
+    },
+    "Findings": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["Id", "Status", "Risk", "Title"],
+        "properties": {
+          "Id": { "type": "string" },
+          "CanonicalId": { "type": ["string", "null"] },
+          "CorrelatedIds": { "type": ["array", "null"], "items": { "type": "string" } },
+          "Pillar": { "type": ["string", "null"] },
+          "PrimaryPillar": { "type": ["string", "null"] },
+          "DomainPillar": { "type": ["string", "null"] },
+          "DomainPillars": { "type": ["array", "null"], "items": { "type": "string" } },
+          "EngineLabel": { "type": ["string", "null"] },
+          "Source": { "type": ["string", "null"] },
+          "Sources": { "type": ["array", "null"], "items": { "type": "string" } },
+          "SourceStatuses": { "type": ["object", "null"] },
+          "StatusConflict": { "type": ["boolean", "null"] },
+          "Category": { "type": ["string", "null"] },
+          "SfiPillar": { "type": ["string", "null"] },
+          "ImplementationCost": { "type": ["string", "null"] },
+          "MinimumLicense": { "type": ["string", "null"] },
+          "RequiredRole": { "type": ["string", "null"] },
+          "AdminPortal": { "type": ["string", "null"] },
+          "Status": { "type": "string", "enum": ["Passed", "Failed", "Investigate", "Skipped", "Planned", "Error"] },
+          "Risk": { "type": "string", "enum": ["Critical", "High", "Medium", "Low"] },
+          "PriorityScore": { "type": ["integer", "null"], "minimum": 0, "maximum": 100 },
+          "ErrorRemedy": { "type": ["string", "null"] },
+          "Title": { "type": "string" },
+          "FrameworkRef": { "type": ["string", "null"] },
+          "Result": { "type": ["string", "null"] },
+          "UserImpact": { "type": ["string", "null"], "description": "End-user or business disruption impact of applying the control (distinct from security Risk)." },
+          "Description": { "type": ["string", "null"] },
+          "SkippedReason": { "type": ["string", "null"] },
+          "Remediation": { "type": ["string", "null"] },
+          "RemediationTr": { "type": ["string", "null"] }
+        }
+      }
+    },
+    "PlannedFindings": {
+      "type": ["array", "null"],
+      "description": "Upstream Planned controls excluded from active Findings and posture scoring (Q11=0)."
+    },
+    "Trend": {
+      "type": ["object", "null"],
+      "description": "Optional comparison against -PreviousReportJson (PreviousScore, CurrentScore, ScoreDelta, Improved, Regressed, NewFailed, Resolved).",
+      "properties": {
+        "PreviousDate": { "type": ["string", "null"] },
+        "PreviousScore": { "type": ["number", "null"] },
+        "CurrentScore": { "type": ["number", "null"] },
+        "ScoreDelta": { "type": ["number", "null"] },
+        "Improved": { "type": ["array", "null"] },
+        "Regressed": { "type": ["array", "null"] },
+        "NewFailed": { "type": ["array", "null"] },
+        "Resolved": { "type": ["array", "null"] }
+      }
+    }
+  }
+}

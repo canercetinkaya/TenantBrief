@@ -1,0 +1,48 @@
+name: XSS & Hotfix Security Gate
+
+on:
+  push:
+    branches: [master, 'hotfix/**']
+  pull_request:
+    branches: [master]
+
+jobs:
+  xss-security-check:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Install Pester
+        shell: pwsh
+        run: |
+          if (-not (Get-Module -ListAvailable -Name Pester | Where-Object { $_.Version -ge [version]'5.5.0' })) {
+            Install-Module -Name Pester -MinimumVersion 5.5.0 -Force -Scope CurrentUser -SkipPublisherCheck
+          }
+
+      - name: Run Pester tests (including Hotfix.XssHtmlEncode.Tests.ps1)
+        shell: pwsh
+        run: |
+          $config = New-PesterConfiguration
+          $config.Run.Path = './tests'
+          $config.Run.Exit = $true
+          $config.Output.Verbosity = 'Detailed'
+          Invoke-Pester -Configuration $config
+
+      - name: Install playwright-core
+        shell: pwsh
+        run: |
+          npm install --no-save playwright-core@1.52.0
+
+      - name: Run Headless Browser (Playwright) XSS verification
+        shell: pwsh
+        run: |
+          $outDir = Join-Path $env:RUNNER_TEMP 'tb-xss-e2e'
+          $jsonOut = pwsh -NoProfile -File ./tests/e2e/generate-xss-fixture.ps1 -OutDir $outDir | Select-Object -Last 1
+          $paths = $jsonOut | ConvertFrom-Json
+          node ./tests/e2e/xss-check.mjs $paths.HtmlPath $paths.ExecutiveSummaryPath

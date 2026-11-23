@@ -1,0 +1,3 @@
+# TenantBrief Turkish localization denylist (bad machine-translation terms, Q09 = 0)
+tasdiqi
+tasdiği

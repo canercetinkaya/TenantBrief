@@ -1,0 +1,26 @@
+{
+  "Tests": [
+    {
+      "Id": "MT.1006",
+      "Name": "MT.1006: Require MFA for all users",
+      "Result": "Failed",
+      "Tag": ["Maester", "CA", "All"],
+      "Severity": "High",
+      "ResultDetail": {
+        "TestDescription": "Ensure Conditional Access requires MFA for all users.",
+        "TestResult": "No active CA policy covers all users."
+      }
+    },
+    {
+      "Id": "CIS.M365.1.1.1",
+      "Name": "CIS.M365.1.1.1: Ensure Administrative accounts are cloud-only",
+      "Result": "Passed",
+      "Tag": ["CIS", "Identity", "All"],
+      "Severity": "Medium",
+      "ResultDetail": {
+        "TestDescription": "Cloud-only admin accounts reduce hybrid blast radius.",
+        "TestResult": "All Global Admins are cloud-only."
+      }
+    }
+  ]
+}

@@ -1,0 +1,1288 @@
+<!DOCTYPE html>
+<html lang="{{LANG}}">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; connect-src 'none'; img-src 'self' data:; style-src 'unsafe-inline'; script-src 'unsafe-inline'; font-src 'none'; base-uri 'none'; form-action 'none';" />
+  <title>TenantBrief — {{TITLE}}</title>
+  <style>
+    :root {
+      --bg:#090d16; --card:#111827; --card2:#0d1320; --border:#1e293b;
+      --text:#e2e8f0; --muted:#94a3b8; --accent:#38bdf8;
+      --ok:#22c55e; --fail:#ef4444; --warn:#f59e0b; --skip:#a855f7;
+    }
+    * { box-sizing:border-box; margin:0; padding:0; }
+    body { font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif; background:var(--bg); color:var(--text); display:flex; min-height:100vh; }
+    .sidebar { width:270px; background:var(--card2); border-right:1px solid var(--border); padding:20px 14px; display:flex; flex-direction:column; gap:4px; position:sticky; top:0; height:100vh; overflow-y:auto; flex-shrink:0; }
+    .brand { display:flex; align-items:center; gap:10px; font-size:18px; font-weight:700; padding:0 8px 14px; border-bottom:1px solid var(--border); margin-bottom:8px; }
+    .logo { width:32px; height:32px; border-radius:8px; background:linear-gradient(135deg,#0ea5e9,#6366f1); display:flex; align-items:center; justify-content:center; font-weight:800; color:#fff; font-size:14px; }
+    .nav-grp { font-size:11px; text-transform:uppercase; letter-spacing:.06em; color:var(--muted); padding:10px 10px 4px; font-weight:700; }
+    .nav-btn { background:transparent; border:none; color:var(--muted); text-align:left; padding:9px 10px; border-radius:8px; cursor:pointer; font-size:13.5px; font-weight:500; transition:.15s; display:flex; justify-content:space-between; align-items:center; width:100%; }
+    .nav-btn:hover { background:rgba(56,189,248,.08); color:var(--text); }
+    .nav-btn.active { background:rgba(56,189,248,.16); color:var(--accent); font-weight:600; }
+    .cnt { font-size:11px; background:#1e293b; color:var(--muted); padding:2px 7px; border-radius:999px; }
+    .nav-btn.active .cnt { background:rgba(56,189,248,.22); color:var(--accent); }
+    .main { flex:1; padding:26px 30px; max-width:1360px; margin:0 auto; width:100%; }
+    .header { display:flex; justify-content:space-between; align-items:center; margin-bottom:22px; flex-wrap:wrap; gap:12px; border-bottom:1px solid var(--border); padding-bottom:16px; }
+    .meta { font-size:13px; color:var(--muted); margin-top:4px; }
+    .btn { background:rgba(56,189,248,.14); color:var(--accent); border:1px solid rgba(56,189,248,.35); padding:7px 13px; border-radius:8px; font-size:12.5px; font-weight:600; cursor:pointer; }
+    .btn:hover { background:rgba(56,189,248,.24); }
+    .tab-panel { display:none; }
+    .tab-panel.active { display:block; }
+    .cards { display:grid; grid-template-columns:repeat(auto-fit,minmax(175px,1fr)); gap:12px; margin-bottom:20px; }
+    .card { background:var(--card); border:1px solid var(--border); border-radius:12px; padding:15px; }
+    .card .lbl { font-size:12px; color:var(--muted); margin-bottom:5px; }
+    .card .val { font-size:26px; font-weight:700; }
+    .charts-row { display:grid; grid-template-columns:280px 1fr; gap:16px; margin-bottom:20px; }
+    @media (max-width:960px) { body { flex-direction:column; } .sidebar { width:100%; height:auto; position:static; flex-direction:row; flex-wrap:wrap; } .charts-row { grid-template-columns:1fr; } }
+    .bar-row { margin-bottom:12px; }
+    .bar-head { display:flex; justify-content:space-between; font-size:13px; margin-bottom:5px; }
+    .bar-track { height:10px; background:#1e293b; border-radius:999px; overflow:hidden; }
+    .bar-fill { height:100%; background:linear-gradient(90deg,#0ea5e9,#22c55e); border-radius:999px; }
+    .filter-bar { background:var(--card); border:1px solid var(--border); border-radius:12px; padding:14px; margin-bottom:14px; display:flex; flex-direction:column; gap:10px; }
+    .filter-row { display:flex; gap:8px; flex-wrap:wrap; align-items:center; }
+    .chip { background:#0b1120; border:1px solid var(--border); color:var(--muted); padding:5px 10px; border-radius:999px; font-size:12px; cursor:pointer; transition:.15s; }
+    .chip:hover { border-color:var(--accent); color:var(--text); }
+    .chip.active { background:rgba(56,189,248,.16); border-color:var(--accent); color:var(--accent); font-weight:600; }
+    input, select { background:#0b1120; color:var(--text); border:1px solid var(--border); border-radius:8px; padding:7px 11px; font-size:13px; }
+    input { min-width:240px; flex:1; }
+    .finding { background:var(--card); border:1px solid var(--border); border-radius:10px; padding:14px 16px; margin-bottom:10px; }
+    .finding-top { display:flex; justify-content:space-between; align-items:flex-start; gap:12px; flex-wrap:wrap; }
+    .f-meta { display:flex; gap:6px; flex-wrap:wrap; margin-top:6px; font-size:11.5px; color:var(--muted); }
+    .tag { background:#1e293b; padding:2px 8px; border-radius:6px; }
+    .tag.idtag { font-family:ui-monospace,SFMono-Regular,Menlo,monospace; color:var(--accent); background:rgba(56,189,248,.10); border:1px solid rgba(56,189,248,.25); }
+    .tag.src { background:rgba(99,102,241,.16); color:#c7d2fe; border:1px solid rgba(99,102,241,.35); font-weight:600; }
+    .tag.portal { background:rgba(20,184,166,.12); color:#5eead4; border:1px solid rgba(20,184,166,.3); }
+    .pill { font-size:11px; padding:3px 9px; border-radius:999px; font-weight:600; display:inline-block; }
+    .pill.Passed { background:rgba(34,197,94,.15); color:var(--ok); }
+    .pill.Failed { background:rgba(239,68,68,.15); color:var(--fail); }
+    .pill.Skipped { background:rgba(168,85,247,.15); color:var(--skip); }
+    .pill.Investigate, .pill.Planned { background:rgba(245,158,11,.15); color:var(--warn); }
+    .pill.Error { background:rgba(244,63,94,.22); color:#fda4af; border:1px solid rgba(244,63,94,.45); }
+    details { margin-top:10px; border-top:1px solid var(--border); padding-top:10px; }
+    summary { cursor:pointer; color:var(--accent); font-size:13px; font-weight:600; }
+    .rem-box { margin-top:8px; background:#090d16; border:1px solid var(--border); border-radius:8px; padding:14px; font-size:13px; line-height:1.6; }
+    .md-table { width:100%; border-collapse:collapse; margin:10px 0; font-size:12.5px; }
+    .md-table th, .md-table td { border:1px solid var(--border); padding:7px 10px; text-align:left; }
+    .md-table th { background:#131c31; color:var(--accent); }
+    .md-ul { margin:6px 0 8px 20px; }
+    a { color:var(--accent); text-decoration:none; }
+    a:hover { text-decoration:underline; }
+    .road-card { cursor:pointer; transition:.15s; }
+    .road-card:hover, .road-card.active { border-color:var(--accent); background:rgba(56,189,248,.08); }
+    .sr-only { position:absolute; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden; clip:rect(0,0,0,0); border:0; }
+    .sr-only:focus { position:fixed; top:8px; left:8px; width:auto; height:auto; margin:0; padding:8px 14px; clip:auto; background:#0ea5e9; color:#090d16; font-weight:700; border-radius:6px; z-index:9999; }
+    button:focus-visible, input:focus-visible, select:focus-visible, a:focus-visible, summary:focus-visible { outline:2px solid var(--accent); outline-offset:2px; }
+    .svg-grid { display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:20px; }
+    @media (max-width:960px) { .svg-grid { grid-template-columns:1fr; } }
+    @media print {
+      body { background:#fff; color:#0f172a; display:block; }
+      .sidebar, .btn, .filter-bar, details summary { display:none !important; }
+      .main { padding:0; max-width:100%; }
+      .card, .finding, .rem-box { background:#fff; border-color:#cbd5e1; color:#0f172a; break-inside:avoid; }
+      .tab-panel { display:block !important; margin-bottom:24px; }
+      #tab-findings { display:none !important; }
+    }
+  </style>
+</head>
+<body>
+  <a href="#mainContent" class="sr-only">Skip to main content</a>
+  <aside class="sidebar" role="navigation" aria-label="TenantBrief Navigation">
+    <div class="brand"><div class="logo" aria-hidden="true">TB</div><span>TenantBrief</span></div>
+    <div role="tablist" aria-orientation="vertical" id="sidebarTablist">
+    <button class="nav-btn active" role="tab" aria-selected="true" aria-controls="tab-overview" onclick="switchView('overview', null, this)" id="navOverview">Genel Bakış</button>
+    <div class="nav-grp" id="grpPillars">Güvenlik Sütunları</div>
+    <button class="nav-btn" role="tab" aria-selected="false" aria-controls="tab-findings" onclick="switchView('findings', 'ALL', this)" id="navAllFindings"><span>Tüm Kontroller</span><span class="cnt" id="cntAll">0</span></button>
+    <button class="nav-btn" role="tab" aria-selected="false" aria-controls="tab-findings" onclick="switchView('findings', 'Identity', this)" id="navIdentity"><span>Identity (Kimlik &amp; Erişim)</span><span class="cnt" id="cntIdentity">0</span></button>
+    <button class="nav-btn" role="tab" aria-selected="false" aria-controls="tab-findings" onclick="switchView('findings', 'Devices', this)" id="navDevices"><span>Devices (Cihaz &amp; Uç Nokta)</span><span class="cnt" id="cntDevices">0</span></button>
+    <button class="nav-btn" role="tab" aria-selected="false" aria-controls="tab-findings" onclick="switchView('findings', 'Network', this)" id="navNetwork"><span>Network &amp; Infra (Ağ &amp; Altyapı)</span><span class="cnt" id="cntNetwork">0</span></button>
+    <button class="nav-btn" role="tab" aria-selected="false" aria-controls="tab-findings" onclick="switchView('findings', 'Data', this)" id="navData"><span>Data (Veri &amp; Purview)</span><span class="cnt" id="cntData">0</span></button>
+    <button class="nav-btn" role="tab" aria-selected="false" aria-controls="tab-findings" onclick="switchView('findings', 'AI', this)" id="navAI"><span>AI &amp; Agents (Yapay Zekâ)</span><span class="cnt" id="cntAI">0</span></button>
+    <button class="nav-btn" role="tab" aria-selected="false" aria-controls="tab-findings" onclick="switchView('findings', 'SecOps', this)" id="navSecOps"><span>SecOps &amp; E-posta (Defender/EXO)</span><span class="cnt" id="cntSecOps">0</span></button>
+    <div class="nav-grp" id="grpExec">Yönetici &amp; CISO</div>
+    <button class="nav-btn" role="tab" aria-selected="false" aria-controls="tab-findings" onclick="switchView('findings', 'QUICKWINS', this)" id="navQuickWins"><span>Hızlı Kazanımlar</span><span class="cnt" id="cntQuick">0</span></button>
+    <button class="nav-btn" role="tab" aria-selected="false" aria-controls="tab-frameworks" onclick="switchView('frameworks', null, this)" id="navFrameworks">Standart &amp; Motor Skorları</button>
+    <button class="nav-btn" role="tab" aria-selected="false" aria-controls="tab-roi" onclick="switchView('roi', null, this)" id="navRoi">Lisans ROI &amp; Simülatör</button>
+    <button class="nav-btn" role="tab" aria-selected="false" aria-controls="tab-usage" onclick="switchView('usage', null, this)" id="navUsage">Kullanım &amp; Benimsenme</button>
+    <button class="nav-btn" role="tab" aria-selected="false" aria-controls="tab-copilot" onclick="switchView('copilot', null, this)" id="navCopilot">Copilot Hazırlık &amp; Maliyet</button>
+    <button class="nav-btn" role="tab" aria-selected="false" aria-controls="tab-roadmap" onclick="switchView('roadmap', null, this)" id="navRoadmap">30-60-90 Gün Planı</button>
+    <button class="nav-btn" role="tab" aria-selected="false" aria-controls="tab-trend" onclick="switchView('trend', null, this)" id="navTrend" style="display:none;">Önceki Rapora Göre</button>
+    </div>
+  </aside>
+
+  <main class="main" id="mainContent" role="main">
+    <div class="header">
+      <div>
+        <h1 id="pageTitle">TenantBrief</h1>
+        <div class="meta" id="tenantMeta"></div>
+      </div>
+      <div style="display:flex;gap:8px;">
+        <button class="btn" onclick="exportCsv()" id="btnCsv">CSV İndir</button>
+        <button class="btn" onclick="window.print()" id="btnPrint">PDF / Yazdır</button>
+      </div>
+    </div>
+
+    {{DIAGNOSTICS_BANNER}}
+
+    <section id="tab-overview" class="tab-panel active">
+      <div class="cards" id="summaryCards"></div>
+      <div class="cards" id="tenantInsightCards"></div>
+      <div class="charts-row">
+        <div class="card" style="display:flex;flex-direction:column;align-items:center;justify-content:center;">
+          <div class="lbl" id="donutLbl">Kontrol Dağılımı</div>
+          <svg id="donutChart" width="180" height="180" viewBox="0 0 42 42"></svg>
+        </div>
+        <div class="card">
+          <div class="lbl" style="margin-bottom:12px;" id="fwChartLbl">Doğrulanmış Standart &amp; Motor Skorları</div>
+          <div id="overviewFwBars"></div>
+        </div>
+      </div>
+      <div class="svg-grid">
+        <div class="card">
+          <div class="lbl" id="pillarSvgLbl" style="margin-bottom:10px;">Sütun Bazında Kontrol Dağılımı (SVG)</div>
+          <div id="pillarSvgChart"></div>
+        </div>
+        <div class="card">
+          <div class="lbl" id="heatmapLbl" style="margin-bottom:10px;">Risk × Efor Isı Haritası (Açık Bulgular)</div>
+          <div id="riskEffortHeatmap"></div>
+        </div>
+      </div>
+      <div class="card" id="mfaBanner" style="margin-bottom:20px;font-size:13.5px;color:var(--muted);"></div>
+      <div class="card" id="skippedOverviewBanner" style="display:none;margin-bottom:20px;font-size:13px;border-color:rgba(168,85,247,.35);background:rgba(168,85,247,.06);"></div>
+      <div class="card" id="pillarMatrixCard" style="margin-bottom:20px;"></div>
+      <div class="card" id="sourceCoverageCard" style="margin-bottom:20px;"></div>
+      <div class="card" id="prereqCoverageCard" style="display:none;margin-bottom:20px;"></div>
+      <div class="card" id="errorActionCard" style="display:none;margin-bottom:20px;border-color:rgba(239,68,68,.45);background:rgba(239,68,68,.06);"></div>
+      <div class="card" id="plannedUpstreamCard" style="display:none;margin-bottom:20px;"></div>
+      <div class="card" id="execActionDigest" style="margin-bottom:20px;"></div>
+    </section>
+
+    <section id="tab-frameworks" class="tab-panel">
+      <div class="card"><div id="fwDetailBars"></div></div>
+    </section>
+
+    <section id="tab-roi" class="tab-panel">
+      <div class="card" id="roiBox" style="margin-bottom:16px;"></div>
+      <div class="card" id="skippedBox" style="margin-bottom:16px;"></div>
+      <div class="card" id="skuRoiBox" style="margin-bottom:16px;"></div>
+      <div class="card" id="wasteRoiBox" style="margin-bottom:16px;"></div>
+      <div class="card" id="minLicBox"></div>
+    </section>
+
+    <section id="tab-usage" class="tab-panel">
+      <div class="cards" id="usageSummaryCards"></div>
+      <div class="card" id="usageServicesBox" style="margin-bottom:16px;"></div>
+      <div class="card" id="usageCopilotBox" style="margin-bottom:16px;"></div>
+      <div class="card" id="usagePlatformAuthBox" style="margin-bottom:16px;"></div>
+      <div class="card" id="usageSecOpsBox"></div>
+    </section>
+
+    <section id="tab-copilot" class="tab-panel">
+      <div class="cards" id="copilotSummaryCards"></div>
+      <div class="card" id="copilotWarningsBox" style="margin-bottom:16px;"></div>
+      <div class="card" id="copilotChecksBox" style="margin-bottom:16px;"></div>
+      <div class="card" id="sharePointRiskBox" style="margin-bottom:16px;"></div>
+      <div class="card" id="ppAgentsBox" style="margin-bottom:16px;"></div>
+      <div class="card" id="copilotCalcBox"></div>
+    </section>
+
+    <section id="tab-roadmap" class="tab-panel" role="tabpanel" aria-labelledby="navRoadmap">
+      <div class="cards" id="roadmapCards"></div>
+      <div class="card" id="roadmapDetail"></div>
+    </section>
+
+    <section id="tab-trend" class="tab-panel" role="tabpanel" aria-labelledby="navTrend">
+      <div class="cards" id="trendSummaryCards"></div>
+      <div class="card" id="trendDetailBox"></div>
+    </section>
+
+    <section id="tab-findings" class="tab-panel">
+      <div class="filter-bar">
+        <div class="filter-row">
+          <input type="text" id="searchInput" placeholder="ID, başlık, kaynak, kategori, portal veya lisans ara..." oninput="renderFindings()" />
+          <select id="sfiFilter" onchange="renderFindings()"><option value="ALL">Tüm SFI Sütunları</option></select>
+          <select id="catFilter" onchange="renderFindings()"><option value="ALL">Tüm Kategoriler</option></select>
+          <select id="costFilter" onchange="renderFindings()">
+            <option value="ALL">Tüm Maliyetler</option>
+            <option value="Low">Düşük Maliyet (Hızlı)</option>
+            <option value="Medium">Orta Maliyet</option>
+            <option value="High">Yüksek Maliyet</option>
+            <option value="Unknown">Bilinmeyen Maliyet</option>
+          </select>
+        </div>
+        <div class="filter-row" id="sourceChips"></div>
+        <div class="filter-row" id="statusChips"></div>
+        <div class="filter-row" id="riskChips"></div>
+        <div style="display:flex;justify-content:space-between;align-items:center;font-size:12.5px;color:var(--muted);">
+          <span id="showingCount"></span>
+          <div style="display:flex;gap:8px;">
+            <button class="chip" onclick="toggleAllDetails(true)" id="btnExpandAll">Tümünü Aç</button>
+            <button class="chip" onclick="toggleAllDetails(false)" id="btnCollapseAll">Tümünü Kapat</button>
+          </div>
+        </div>
+      </div>
+      <div id="findingsList"></div>
+    </section>
+
+    <footer id="reportFooter" style="margin-top:28px;padding-top:16px;border-top:1px solid var(--border);font-size:12px;color:var(--muted);line-height:1.6;">
+      <strong style="color:var(--text);">TenantBrief · Read-Only Security Architecture</strong> —
+      Powered by open-source assessment engines:
+      <a href="https://github.com/microsoft/zerotrustassessment" target="_blank" rel="noopener noreferrer">Microsoft ZeroTrustAssessment</a> ·
+      <a href="https://github.com/cisagov/ScubaGear" target="_blank" rel="noopener noreferrer">CISA ScubaGear</a> ·
+      <a href="https://github.com/martin9700/ORCA" target="_blank" rel="noopener noreferrer">Microsoft ORCA</a> ·
+      <a href="https://github.com/maester365/maester" target="_blank" rel="noopener noreferrer">Maester (EIDSCA / CIS M365)</a> ·
+      <a href="https://github.com/CompassSecurity/EntraFalcon" target="_blank" rel="noopener noreferrer">EntraFalcon</a>
+    </footer>
+  </main>
+
+  <script>
+    const DATA = {{REPORT_JSON}};
+    const isTr = DATA.Language === 'tr';
+    const statusLabel = s => !isTr ? (s || '') : ({ Passed: 'Geçti', Failed: 'Başarısız', Skipped: 'Atlandı', Investigate: 'İncele', Planned: 'Planlandı', Error: 'Hata', Pass: 'Geçti', Fail: 'Başarısız' }[s] || s || '');
+    const riskLabel = r => !isTr ? (r || '') : ({ Critical: 'Kritik', High: 'Yüksek', Medium: 'Orta', Low: 'Düşük' }[r] || r || '');
+    const costLabel = c => !isTr ? (c || '') : ({ Low: 'Düşük', Medium: 'Orta', High: 'Yüksek', Unknown: 'Bilinmiyor' }[c] || c || '');
+    let activePillarFilter = 'ALL';
+    let activeSourceFilter = 'ALL';
+    let activeStatusFilter = 'ALL';
+    let activeRiskFilter = 'ALL';
+    let currentFiltered = [];
+
+    if (!isTr) {
+      document.getElementById('navOverview').textContent = 'Overview';
+      document.getElementById('grpPillars').textContent = 'Security Pillars';
+      document.getElementById('navAllFindings').firstChild.textContent = 'All Controls';
+      document.getElementById('navIdentity').firstChild.textContent = 'Identity & Access';
+      document.getElementById('navDevices').firstChild.textContent = 'Devices & Endpoint';
+      document.getElementById('navNetwork').firstChild.textContent = 'Network & Infra';
+      document.getElementById('navData').firstChild.textContent = 'Data & Purview';
+      document.getElementById('navAI').firstChild.textContent = 'AI & Agents';
+      document.getElementById('navSecOps').firstChild.textContent = 'SecOps & Email (MDO/EXO)';
+      document.getElementById('grpExec').textContent = 'Executive & CISO';
+      document.getElementById('navQuickWins').firstChild.textContent = 'Quick Wins';
+      document.getElementById('navFrameworks').textContent = 'Benchmark & Engine Scores';
+      document.getElementById('navRoi').textContent = 'License ROI & Simulator';
+      document.getElementById('navUsage').textContent = 'Usage & Adoption';
+      document.getElementById('navCopilot').textContent = 'Copilot Readiness & Cost';
+      document.getElementById('navRoadmap').textContent = '30-60-90 Roadmap';
+      document.getElementById('btnCsv').textContent = 'Export CSV';
+      document.getElementById('btnPrint').textContent = 'Print / PDF';
+      document.getElementById('donutLbl').textContent = 'Control Distribution';
+      document.getElementById('fwChartLbl').textContent = 'Verified Benchmark & Engine Scores';
+      document.getElementById('searchInput').placeholder = 'Search ID, title, source, category, portal or license...';
+      document.getElementById('sfiFilter').options[0].text = 'All SFI Pillars';
+      document.getElementById('catFilter').options[0].text = 'All Categories';
+      document.getElementById('costFilter').options[0].text = 'All Costs';
+      document.getElementById('btnExpandAll').textContent = 'Expand All';
+      document.getElementById('btnCollapseAll').textContent = 'Collapse All';
+    }
+
+    document.getElementById('tenantMeta').textContent = `${DATA.Tenant} | ${isTr ? 'Salt Okunur Değerlendirme' : 'Read-Only Assessment'}`;
+
+    function esc(s) {
+      return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+    }
+
+    function renderMd(md) {
+      if (!md) return '';
+      const lines = esc(md).split(/\r?\n/);
+      let out = '', inTable = false, inList = false;
+      for (let i = 0; i < lines.length; i++) {
+        let ln = lines[i].trim();
+        if (ln.startsWith('|') && ln.endsWith('|')) {
+          if (/^\|[\s\-:|]+\|$/.test(ln)) continue;
+          if (inList) { out += '</ul>'; inList = false; }
+          if (!inTable) { out += '<table class="md-table"><tbody>'; inTable = true; }
+          const cells = ln.slice(1, -1).split('|').map(c => c.trim());
+          const tag = (i + 1 < lines.length && /^\|[\s\-:|]+\|$/.test(lines[i+1].trim())) ? 'th' : 'td';
+          out += '<tr>' + cells.map(c => `<${tag}>${inlineMd(c)}</${tag}>`).join('') + '</tr>';
+          continue;
+        }
+        if (inTable) { out += '</tbody></table>'; inTable = false; }
+        if (ln.startsWith('- ') || ln.startsWith('* ')) {
+          if (!inList) { out += '<ul class="md-ul">'; inList = true; }
+          out += `<li>${inlineMd(ln.slice(2))}</li>`;
+          continue;
+        }
+        if (inList) { out += '</ul>'; inList = false; }
+        if (ln) out += `<p style="margin-bottom:6px;">${inlineMd(ln)}</p>`;
+      }
+      if (inTable) out += '</tbody></table>';
+      if (inList) out += '</ul>';
+      return out;
+    }
+
+    function inlineMd(s) {
+      return s
+        .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
+        .replace(/\[([^\]]+)\]\((https?:\/\/[^)]+)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer">$1 ↗</a>');
+    }
+
+    function getDomains(f) {
+      if (Array.isArray(f.DomainPillars) && f.DomainPillars.length) return f.DomainPillars;
+      if (f.DomainPillar) return String(f.DomainPillar).split(/\s*,\s*/).filter(Boolean);
+      const p = String(f.Pillar || '');
+      if (p.includes('Devices')) return ['Devices'];
+      if (p.includes('Network') || p.includes('Infrastructure')) return ['Network'];
+      if (p.includes('Data')) return ['Data'];
+      if (p.includes('AI')) return ['AI'];
+      if (p.includes('SecOps') || p.includes('ORCA')) return ['SecOps'];
+      return ['Identity'];
+    }
+
+    function getSources(f) {
+      if (Array.isArray(f.Sources) && f.Sources.length) return f.Sources;
+      if (f.Source) return String(f.Source).split(/\s*,\s*/).filter(Boolean);
+      const p = String(f.Pillar || '');
+      if (p.includes('SCuBA')) return ['CISA SCuBA'];
+      if (p.includes('ORCA')) return ['MDO / ORCA'];
+      if (p.includes('Maester')) return ['Maester'];
+      if (p.includes('EntraFalcon')) return ['EntraFalcon'];
+      return ['ZeroTrust'];
+    }
+
+    function switchView(tabId, pillarMode, btn, sourceMode) {
+      document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+      document.querySelectorAll('.nav-btn').forEach(b => { b.classList.remove('active'); b.setAttribute('aria-selected', 'false'); });
+      const panel = document.getElementById('tab-' + tabId);
+      if (panel) panel.classList.add('active');
+      if (btn) { btn.classList.add('active'); btn.setAttribute('aria-selected', 'true'); }
+      if (tabId === 'findings') {
+        activePillarFilter = pillarMode || 'ALL';
+        activeSourceFilter = sourceMode || 'ALL';
+        activeStatusFilter = 'ALL';
+        activeRiskFilter = 'ALL';
+        renderFilterChips();
+        renderFindings();
+      }
+    }
+
+    (function initKeyboardTabNav() {
+      const list = document.getElementById('sidebarTablist');
+      if (!list) return;
+      list.addEventListener('keydown', (e) => {
+        const tabs = [...list.querySelectorAll('[role="tab"]')].filter(el => el.style.display !== 'none');
+        const idx = tabs.indexOf(document.activeElement);
+        if (idx < 0) return;
+        let next = -1;
+        if (e.key === 'ArrowDown' || e.key === 'ArrowRight') next = (idx + 1) % tabs.length;
+        else if (e.key === 'ArrowUp' || e.key === 'ArrowLeft') next = (idx - 1 + tabs.length) % tabs.length;
+        else if (e.key === 'Home') next = 0;
+        else if (e.key === 'End') next = tabs.length - 1;
+        if (next >= 0) {
+          e.preventDefault();
+          tabs[next].focus();
+          tabs[next].click();
+        }
+      });
+    })();
+
+    // Populate Canonical Pillar Counts
+    const F = DATA.Findings || [];
+    const cntByDomain = dom => F.filter(x => getDomains(x).includes(dom)).length;
+    document.getElementById('cntAll').textContent = F.length;
+    document.getElementById('cntIdentity').textContent = cntByDomain('Identity');
+    document.getElementById('cntDevices').textContent = cntByDomain('Devices');
+    document.getElementById('cntNetwork').textContent = cntByDomain('Network');
+    document.getElementById('cntData').textContent = cntByDomain('Data');
+    document.getElementById('cntAI').textContent = cntByDomain('AI');
+    document.getElementById('cntSecOps').textContent = cntByDomain('SecOps');
+    document.getElementById('cntQuick').textContent = F.filter(x => x.Status === 'Failed' && x.ImplementationCost === 'Low').length;
+
+    // Populate SFI & Category Dropdowns
+    const sfiSet = [...new Set(F.map(x => x.SfiPillar).filter(Boolean))].sort();
+    sfiSet.forEach(s => document.getElementById('sfiFilter').innerHTML += `<option value="${esc(s)}">${esc(s)}</option>`);
+    const catSet = [...new Set(F.map(x => x.Category).filter(Boolean))].sort();
+    catSet.forEach(c => document.getElementById('catFilter').innerHTML += `<option value="${esc(c)}">${esc(c)}</option>`);
+
+    // Summary & Tenant Insights
+    const s = DATA.Summary;
+    document.getElementById('summaryCards').innerHTML = `
+      <div class="card"><div class="lbl">${isTr ? 'Toplam Kontrol' : 'Total Checks'}</div><div class="val">${s.Total}</div></div>
+      <div class="card"><div class="lbl">${isTr ? 'Başarılı' : 'Passed'}</div><div class="val" style="color:var(--ok)">${s.Passed}</div></div>
+      <div class="card"><div class="lbl">${isTr ? 'Başarısız (Yüksek)' : 'Failed (High)'}</div><div class="val" style="color:var(--fail)">${s.Failed} (${s.HighRiskFailed})</div></div>
+      <div class="card"><div class="lbl">${isTr ? 'İnceleme / Planlanan' : 'Investigate / Planned'}</div><div class="val" style="color:var(--warn)">${s.Investigate + s.Planned}</div></div>
+      <div class="card" style="cursor:pointer;" onclick="openSkippedBreakdown()" title="${isTr ? 'Atlanma nedenlerini görüntüle' : 'View skipped reasons breakdown'}"><div class="lbl">${isTr ? 'Atlanan Kontroller' : 'Skipped Controls'}</div><div class="val" style="color:var(--skip)">${s.Skipped}</div><div style="font-size:11px;color:var(--muted);margin-top:2px;">${isTr ? 'Nedenleri gör →' : 'See reasons →'}</div></div>
+    `;
+
+    const ti = DATA.TenantInsights || {};
+    const secureLabel = ti.SecureScoreCurrent !== null && ti.SecureScoreCurrent !== undefined
+      ? `${ti.SecureScoreCurrent} / ${ti.SecureScoreMax}`
+      : (isTr ? 'Canlı Oturumda Çekilir' : 'Live Run Only');
+    document.getElementById('tenantInsightCards').innerHTML = `
+      <div class="card"><div class="lbl">${isTr ? 'Kullanıcı / Misafir' : 'Users / Guests'}</div><div class="val">${ti.UserCount ?? '-'} / ${ti.GuestCount ?? '-'}</div></div>
+      <div class="card"><div class="lbl">${isTr ? 'Grup / Uygulama' : 'Groups / Apps'}</div><div class="val">${ti.GroupCount ?? '-'} / ${ti.ApplicationCount ?? '-'}</div></div>
+      <div class="card"><div class="lbl">${isTr ? 'Cihaz / Uyumlu' : 'Devices / Compliant'}</div><div class="val">${ti.DeviceCount ?? '-'} / ${ti.CompliantDevices ?? 0}</div></div>
+      <div class="card"><div class="lbl">${isTr ? 'Ayrıcalıklı MFA (Phish-Res / Zayıf)' : 'Priv. MFA (Phish-Res / Phishable)'}</div><div class="val" style="font-size:20px;">${ti.PrivPhishResistant ?? 0} / ${(ti.PrivPhishable ?? 0) + (ti.PrivSingleFactor ?? 0)}</div></div>
+      <div class="card"><div class="lbl">${isTr ? 'Microsoft Secure Score / AI Agent' : 'Secure Score / AI Agents'}</div><div class="val" style="font-size:18px;">${esc(secureLabel)} · ${ti.TotalAgents ?? 0}</div></div>
+    `;
+    document.getElementById('mfaBanner').innerHTML = `<strong>${isTr ? 'MFA & Koşullu Erişim Kapsamı:' : 'MFA & Conditional Access Coverage:'}</strong> ${esc(ti.MfaCoverageDesc || (isTr ? 'Veri yok' : 'No data'))}`;
+    const skBannerEl = document.getElementById('skippedOverviewBanner');
+    if ((s.Skipped || 0) > 0 && DATA.LicenseROI?.Summary) {
+      skBannerEl.style.display = 'block';
+      skBannerEl.innerHTML = `<div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;"><div><strong style="color:#d8b4fe;">${isTr ? 'Atlanan Kontrol Özeti (Skipped):' : 'Skipped Controls Breakdown:'}</strong> <span style="color:var(--text);">${esc(DATA.LicenseROI.Summary)}</span></div><div style="display:flex;gap:8px;flex-shrink:0;"><button class="chip" onclick="openSkippedBreakdown()">${isTr ? 'Dağılımı Gör' : 'View Breakdown'}</button><button class="chip" onclick="filterSkippedGap('')">${isTr ? 'Atlananları Listele' : 'Filter Skipped'}</button></div></div>`;
+    }
+
+    // CISO Risk Posture Matrix across 6 Canonical Security Domains
+    const matrixPillars = [
+      { key: 'Identity', label: isTr ? 'Identity (Kimlik & Erişim)' : 'Identity & Access', nav: 'navIdentity' },
+      { key: 'Devices', label: isTr ? 'Devices (Cihaz & Uç Nokta)' : 'Devices & Endpoint', nav: 'navDevices' },
+      { key: 'Network', label: isTr ? 'Network & Infra (Ağ & Altyapı)' : 'Network & Infra', nav: 'navNetwork' },
+      { key: 'Data', label: isTr ? 'Data (Veri & Purview)' : 'Data & Purview', nav: 'navData' },
+      { key: 'AI', label: isTr ? 'AI & Agents (Yapay Zekâ)' : 'AI & Agents', nav: 'navAI' },
+      { key: 'SecOps', label: isTr ? 'SecOps & E-posta (Defender/EXO)' : 'SecOps & Email (MDO/EXO)', nav: 'navSecOps' }
+    ];
+    const matrixRows = matrixPillars.map(mp => {
+      const items = F.filter(x => getDomains(x).includes(mp.key));
+      const pass = items.filter(x => x.Status === 'Passed').length;
+      const fail = items.filter(x => x.Status === 'Failed').length;
+      const hi   = items.filter(x => x.Status === 'Failed' && (x.Risk === 'Critical' || x.Risk === 'High')).length;
+      const med  = items.filter(x => x.Status === 'Failed' && x.Risk === 'Medium').length;
+      const lowF = items.filter(x => x.Status === 'Failed' && x.Risk === 'Low').length;
+      const invErr = items.filter(x => x.Status === 'Investigate' || x.Status === 'Error').length;
+      const skPlan = items.filter(x => x.Status === 'Skipped' || x.Status === 'Planned').length;
+      const evalC = pass + fail + invErr;
+      const pct = evalC > 0 ? Math.round((pass / evalC) * 100) : 0;
+      return `<tr style="cursor:pointer;" onclick="switchView('findings', '${mp.key}', document.getElementById('${mp.nav}'))">
+        <td><strong>${mp.label}</strong></td>
+        <td>${items.length}</td>
+        <td style="color:var(--ok)">${pass}</td>
+        <td style="color:var(--fail)"><strong>${hi}</strong></td>
+        <td style="color:var(--warn)">${med}</td>
+        <td>${lowF}</td>
+        <td style="color:var(--warn)">${invErr}</td>
+        <td style="color:var(--skip)">${skPlan}</td>
+        <td><strong>${pct}%</strong></td>
+      </tr>`;
+    }).join('');
+    document.getElementById('pillarMatrixCard').innerHTML = `
+      <h3 style="margin-bottom:8px;">${isTr ? 'Birleşik Güvenlik Sütunu Risk ve Olgunluk Matrisi (Detay için satıra tıklayın)' : 'Unified Security Pillar Risk & Maturity Matrix (Click row to drill down)'}</h3>
+      <table class="md-table">
+        <thead><tr>
+          <th>${isTr ? 'Güvenlik Sütunu' : 'Security Pillar'}</th>
+          <th>${isTr ? 'Toplam' : 'Total'}</th>
+          <th>${isTr ? 'Geçti' : 'Passed'}</th>
+          <th>${isTr ? 'Yüksek Açık' : 'High Fail'}</th>
+          <th>${isTr ? 'Orta Açık' : 'Med Fail'}</th>
+          <th>${isTr ? 'Düşük Açık' : 'Low Fail'}</th>
+          <th>${isTr ? 'İncele / Hata' : 'Inv / Err'}</th>
+          <th>${isTr ? 'Atlandı / Plan' : 'Skip / Plan'}</th>
+          <th>${isTr ? 'Olgunluk' : 'Maturity'}</th>
+        </tr></thead>
+        <tbody>${matrixRows}</tbody>
+      </table>
+    `;
+
+    // Engine & Standard Source Coverage Summary (click badge to filter Findings by Source)
+    const sourceOrder = ['ZeroTrust', 'CISA SCuBA', 'MDO / ORCA', 'CIS M365', 'EIDSCA', 'Maester', 'EntraFalcon'];
+    const allSources = [...new Set(F.flatMap(getSources))];
+    allSources.sort((a, b) => {
+      const ia = sourceOrder.indexOf(a), ib = sourceOrder.indexOf(b);
+      return (ia === -1 ? 99 : ia) - (ib === -1 ? 99 : ib) || a.localeCompare(b);
+    });
+    const sourceCardsHtml = allSources.map(src => {
+      const items = F.filter(x => getSources(x).includes(src));
+      const pCnt = items.filter(x => x.Status === 'Passed').length;
+      const fCnt = items.filter(x => x.Status === 'Failed').length;
+      const sCnt = items.filter(x => x.Status === 'Skipped' || x.Status === 'Planned').length;
+      return `<div class="card road-card" data-source="${esc(src)}" onclick="switchView('findings', 'ALL', document.getElementById('navAllFindings'), this.dataset.source)" style="padding:12px;">
+        <div class="lbl" style="color:#c7d2fe;font-weight:600;">${esc(src)}</div>
+        <div class="val" style="font-size:22px;">${items.length}</div>
+        <div style="font-size:11.5px;color:var(--muted);margin-top:4px;">
+          <span style="color:var(--ok)">${pCnt} ${isTr ? 'Geçti' : 'Pass'}</span> ·
+          <span style="color:var(--fail)">${fCnt} ${isTr ? 'Açık' : 'Fail'}</span> ·
+          <span style="color:var(--skip)">${sCnt} ${isTr ? 'Atlandı' : 'Skip'}</span>
+        </div>
+      </div>`;
+    }).join('');
+    document.getElementById('sourceCoverageCard').innerHTML = `
+      <h3 style="margin-bottom:10px;">${isTr ? 'Tarama Motoru ve Standart Kaynak Dağılımı (Filtrelemek için tıklayın)' : 'Engine & Standard Source Coverage (Click card to filter)'}</h3>
+      <div class="cards" style="margin-bottom:0;">${sourceCardsHtml}</div>
+    `;
+
+    const prereqs = DATA.Prerequisites || [];
+    const prereqEl = document.getElementById('prereqCoverageCard');
+    if (prereqs.length > 0 && prereqEl) {
+      prereqEl.style.display = 'block';
+      const pRows = prereqs.map(pr => {
+        const stCol = pr.Status === 'Ready' ? 'var(--ok)' : (pr.Status === 'Missing' ? 'var(--fail)' : 'var(--warn)');
+        return `<tr><td>${esc(pr.Category)}</td><td><strong>${esc(pr.Name)}</strong></td><td style="color:${stCol};font-weight:600;">${esc(pr.Status)}</td><td>${esc(pr.InstalledVersion || '-')}</td><td style="font-size:12px;color:var(--muted);">${esc(pr.Details || '')}</td></tr>`;
+      }).join('');
+      prereqEl.innerHTML = `
+        <h3 style="margin-bottom:6px;">${isTr ? 'Kapsam ve Kör Noktalar (Preflight Ön Kontrol)' : 'Scope & Blind Spots (Preflight Check)'}</h3>
+        <table class="md-table"><thead><tr><th>${isTr ? 'Kategori' : 'Category'}</th><th>${isTr ? 'Bileşen' : 'Component'}</th><th>${isTr ? 'Durum' : 'Status'}</th><th>${isTr ? 'Sürüm' : 'Version'}</th><th>${isTr ? 'Detay' : 'Details'}</th></tr></thead><tbody>${pRows}</tbody></table>
+      `;
+    }
+
+    const errItems = F.filter(x => x.Status === 'Error');
+    const errEl = document.getElementById('errorActionCard');
+    if (errItems.length > 0 && errEl) {
+      errEl.style.display = 'block';
+      const eRows = errItems.map(x => `<tr><td><code>${esc(x.Id)}</code></td><td><strong>${esc(x.Title)}</strong></td><td style="font-size:12px;">${esc(x.ErrorRemedy || x.Result || '')}</td></tr>`).join('');
+      errEl.innerHTML = `
+        <h3 style="margin-bottom:6px;color:var(--fail);">${isTr ? 'Eksik İzin / Motor Hataları (' + errItems.length + ')' : 'Missing Permissions & Engine Errors (' + errItems.length + ')'}</h3>
+        <table class="md-table"><thead><tr><th>ID</th><th>${isTr ? 'Kontrol' : 'Control'}</th><th>${isTr ? 'Önerilen Aksiyon' : 'Recommended Action'}</th></tr></thead><tbody>${eRows}</tbody></table>
+      `;
+    }
+
+    const plannedList = DATA.PlannedFindings || [];
+    const planEl = document.getElementById('plannedUpstreamCard');
+    if (plannedList.length > 0 && planEl) {
+      planEl.style.display = 'block';
+      const plRows = plannedList.slice(0, 50).map(x => `<tr><td><code>${esc(x.Id)}</code></td><td>${esc(x.DomainPillar || x.Pillar || '')}</td><td>${esc(x.Title)}</td></tr>`).join('');
+      planEl.innerHTML = `
+        <details>
+          <summary style="cursor:pointer;font-weight:600;">${isTr ? 'Yakında (Upstream Planned — Skordan Dışlanan ' + plannedList.length + ' Kontrol)' : 'Upcoming (Upstream Planned — ' + plannedList.length + ' Controls Excluded from Score)'}</summary>
+          <table class="md-table" style="margin-top:10px;"><thead><tr><th>ID</th><th>${isTr ? 'Sütun' : 'Pillar'}</th><th>${isTr ? 'Kontrol' : 'Control'}</th></tr></thead><tbody>${plRows}</tbody></table>
+        </details>
+      `;
+    }
+
+    // SVG Donut Chart
+    const total = Math.max(1, s.Total);
+    const pPct = (s.Passed / total) * 100, fPct = (s.Failed / total) * 100, skPct = (s.Skipped / total) * 100;
+    document.getElementById('donutChart').innerHTML = `
+      <circle cx="21" cy="21" r="15.915" fill="transparent" stroke="#1e293b" stroke-width="5"></circle>
+      <circle cx="21" cy="21" r="15.915" fill="transparent" stroke="#22c55e" stroke-width="5" stroke-dasharray="${pPct} ${100 - pPct}" stroke-dashoffset="25"></circle>
+      <circle cx="21" cy="21" r="15.915" fill="transparent" stroke="#ef4444" stroke-width="5" stroke-dasharray="${fPct} ${100 - fPct}" stroke-dashoffset="${25 - pPct}"></circle>
+      <circle cx="21" cy="21" r="15.915" fill="transparent" stroke="#a855f7" stroke-width="5" stroke-dasharray="${skPct} ${100 - skPct}" stroke-dashoffset="${25 - pPct - fPct}"></circle>
+      <text x="21" y="22.5" text-anchor="middle" fill="#e2e8f0" font-size="6" font-weight="700">${Math.round(pPct)}%</text>
+    `;
+
+    const fwHtml = (DATA.Frameworks || []).map(f => {
+      const clickAttr = f.SourceTag ? `style="cursor:pointer;" data-source="${esc(f.SourceTag)}" onclick="switchView('findings', 'ALL', document.getElementById('navAllFindings'), this.dataset.source)"` : '';
+      const subCounts = (typeof f.Total === 'number')
+        ? `<div style="font-size:11px;color:var(--muted);margin-top:3px;">${isTr ? 'Başarısız' : 'Failed'}: ${f.Failed ?? 0} · ${isTr ? 'İncele' : 'Investigate'}: ${f.Investigate ?? 0} · ${isTr ? 'Atlandı' : 'Skipped'}: ${f.Skipped ?? 0} · ${isTr ? 'Hata' : 'Err'}: ${f.Errors ?? 0} · ${isTr ? 'Toplam' : 'Total'}: ${f.Total}</div>`
+        : '';
+      const covBadge = f.CoverageNote ? `<span style="margin-left:8px;padding:1px 7px;border-radius:999px;font-size:11px;font-weight:600;background:rgba(245,158,11,.16);color:#fcd34d;border:1px solid rgba(245,158,11,.4);">${esc(f.CoverageNote)}</span>` : '';
+      return `
+      <div class="bar-row" ${clickAttr}>
+        <div class="bar-head"><span>${esc(f.Name)}${covBadge}</span><span>${f.Passed} / ${f.Evaluated} (<strong>${f.Score}%</strong>)</span></div>
+        <div class="bar-track"><div class="bar-fill" style="width:${f.Score}%"></div></div>
+        ${subCounts}
+      </div>`;
+    }).join('');
+    document.getElementById('overviewFwBars').innerHTML = fwHtml;
+    document.getElementById('fwDetailBars').innerHTML = `<h3 style="margin-bottom:12px;">${isTr ? 'Doğrulanmış Standart ve Motor Skorları (Detay için çubuğa tıklayın)' : 'Verified Benchmark & Engine Scores (Click bar to filter)'}</h3>` + fwHtml;
+
+    // License ROI + Per-Standard What-If Simulator + Minimum License Breakdown
+    document.getElementById('roiBox').innerHTML = `
+      <h3 style="margin-bottom:10px;">${isTr ? 'Lisans ROI & Standart Bazlı Etki Simülasyonu' : 'License ROI & Per-Benchmark Impact Simulator'}</h3>
+      <p style="color:var(--muted);font-size:13.5px;line-height:1.6;margin-bottom:14px;">${esc(DATA.LicenseROI?.Summary || '')}</p>
+      <div style="display:flex;gap:16px;flex-wrap:wrap;margin-bottom:14px;">
+        <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13.5px;">
+          <input type="checkbox" id="simHigh" onchange="runSim()" /> ${isTr ? `Yüksek riskli ${s.HighRiskFailed} bulguyu çöz` : `Fix ${s.HighRiskFailed} High-risk findings`}
+        </label>
+        <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13.5px;">
+          <input type="checkbox" id="simSkipped" onchange="runSim()" /> ${isTr ? `Atlanan ${s.Skipped} kontrolü etkinleştir` : `Activate ${s.Skipped} Skipped controls`}
+        </label>
+      </div>
+      <div id="simResults"></div>
+    `;
+    function runSim() {
+      const fixHigh = document.getElementById('simHigh').checked;
+      const fixSkip = document.getElementById('simSkipped').checked;
+      document.getElementById('simResults').innerHTML = (DATA.Frameworks || []).map(f => {
+        const scoped = f.SourceTag ? F.filter(x => getSources(x).includes(f.SourceTag)) : [];
+        const fHigh = scoped.length ? scoped.filter(x => x.Status === 'Failed' && (x.Risk === 'Critical' || x.Risk === 'High')).length : Math.min(f.Failed || 0, s.HighRiskFailed);
+        const fSkip = scoped.length ? scoped.filter(x => x.Status === 'Skipped').length : (f.Skipped || 0);
+        const addedPass = (fixHigh ? fHigh : 0) + (fixSkip ? fSkip : 0);
+        const newEval = Math.max(1, (f.Evaluated || 0) + (fixSkip ? fSkip : 0));
+        const simScore = Math.min(100, Math.round((((f.Passed || 0) + addedPass) / newEval) * 1000) / 10);
+        const delta = Math.round((simScore - f.Score) * 10) / 10;
+        return `<div class="bar-row"><div class="bar-head"><span>${esc(f.Name)}</span><span>${f.Score}% → <strong style="color:var(--ok)">${simScore}%</strong> (+${delta}%)</span></div><div class="bar-track"><div class="bar-fill" style="width:${simScore}%"></div></div></div>`;
+      }).join('');
+    }
+    runSim();
+
+    // Skipped Controls Breakdown (Why Controls Were Skipped)
+    const gapCatLabel = cat => {
+      if (isTr) return ({ License: 'Lisans Eksikliği', Connection: 'Bağlantı Eksikliği', Permission: 'API / Yetki Eksikliği', Scope: 'Kapsam Dışı / Kullanılmıyor' }[cat] || 'Diğer');
+      return ({ License: 'Missing License', Connection: 'Disconnected Service', Permission: 'Missing API Scope', Scope: 'Not Applicable / Unused' }[cat] || 'Other');
+    };
+    const gapCatColor = cat => ({ License: 'var(--warn)', Connection: 'var(--fail)', Permission: 'var(--fail)', Scope: 'var(--skip)' }[cat] || 'var(--muted)');
+    window.openSkippedBreakdown = function() {
+      switchView('roi', null, document.getElementById('navRoi'));
+      setTimeout(() => document.getElementById('skippedBox')?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 40);
+    };
+    window.filterSkippedGap = function(searchTerm) {
+      switchView('findings', 'ALL', document.getElementById('navAllFindings'));
+      activeStatusFilter = 'Skipped';
+      activeRiskFilter = 'ALL';
+      activeSourceFilter = 'ALL';
+      document.getElementById('searchInput').value = searchTerm || '';
+      renderFilterChips();
+      renderFindings();
+    };
+    window.filterByMinLicense = function(rawTerm) {
+      switchView('findings', 'ALL', document.getElementById('navAllFindings'));
+      activeStatusFilter = 'ALL';
+      activeRiskFilter = 'ALL';
+      activeSourceFilter = 'ALL';
+      document.getElementById('searchInput').value = rawTerm || '';
+      renderFilterChips();
+      renderFindings();
+    };
+
+    const gaps = DATA.LicenseROI?.Gaps || [];
+    if (gaps.length > 0 || (s.Skipped || 0) > 0) {
+      const gapRows = gaps.map(g => {
+        const cat = g.Category || 'Scope';
+        return `<tr>
+          <td><strong>${esc(g.License)}</strong></td>
+          <td><span class="tag" style="color:${gapCatColor(cat)};border-color:${gapCatColor(cat)};">${esc(gapCatLabel(cat))}</span></td>
+          <td><strong>${g.Count}</strong></td>
+          <td style="font-size:12.5px;color:var(--muted);">${esc(g.Note || '')}</td>
+          <td><button class="chip" data-q="${esc(g.Search || '')}" onclick="filterSkippedGap(this.dataset.q)">${isTr ? 'Kontrollerde Gör →' : 'View Controls →'}</button></td>
+        </tr>`;
+      }).join('');
+      document.getElementById('skippedBox').innerHTML = `
+        <h3 style="margin-bottom:6px;">${isTr ? 'Atlanan Kontrollerin Nedenleri (Skipped Analizi)' : 'Why Controls Were Skipped (Blind Spot & Scope Analysis)'}</h3>
+        <p style="font-size:13px;color:var(--muted);margin-bottom:12px;">${esc(DATA.LicenseROI?.Summary || '')}</p>
+        ${gapRows ? `<table class="md-table"><thead><tr><th>${isTr ? 'Atlanma Nedeni' : 'Skip Reason'}</th><th>${isTr ? 'Kategori' : 'Category'}</th><th>${isTr ? 'Adet' : 'Count'}</th><th>${isTr ? 'Açıklama' : 'Explanation'}</th><th></th></tr></thead><tbody>${gapRows}</tbody></table>` : ''}
+      `;
+    } else {
+      document.getElementById('skippedBox').innerHTML = `<h3 style="margin-bottom:6px;">${isTr ? 'Atlanan Kontrollerin Nedenleri (Skipped Analizi)' : 'Why Controls Were Skipped (Blind Spot & Scope Analysis)'}</h3><p style="font-size:13px;color:var(--ok);">✓ ${isTr ? 'Bu değerlendirmede atlanan kontrol bulunmuyor.' : 'No controls were skipped in this assessment.'}</p>`;
+    }
+
+    // Human-friendly Product Name normalization for Minimum License Requirements
+    const LICENSE_PRODUCT_MAP = {
+      'AAD_BASIC': isTr ? 'Microsoft Entra ID (Temel / Free)' : 'Microsoft Entra ID (Basic / Free)',
+      'FREE': isTr ? 'Ücretsiz / Temel Kiracı Özelliği' : 'Free / Baseline Tenant Feature',
+      'AAD_PREMIUM': 'Microsoft Entra ID P1',
+      'P1': 'Microsoft Entra ID P1',
+      'ENTRA_PREMIUM_P1': 'Microsoft Entra ID P1',
+      'AAD_PREMIUM_P2': 'Microsoft Entra ID P2',
+      'P2': 'Microsoft Entra ID P2',
+      'ENTRA_PREMIUM_P2': 'Microsoft Entra ID P2',
+      'ENTRA_IDENTITY_GOVERNANCE': 'Microsoft Entra ID Governance',
+      'GOVERNANCE': 'Microsoft Entra ID Governance',
+      'ENTRA_PREMIUM_INTERNET_ACCESS': 'Microsoft Entra Internet Access (SSE)',
+      'ENTRA_PREMIUM_PRIVATE_ACCESS': 'Microsoft Entra Private Access (SSE)',
+      'WORKLOAD': 'Microsoft Entra Workload ID',
+      'INTUNE_A': 'Microsoft Intune (Plan 1)',
+      'INTUNE': 'Microsoft Intune (Plan 1)',
+      'WINDEFATP': 'Microsoft Defender for Endpoint (P1/P2)',
+      'WIN_DEF_ATP': 'Microsoft Defender for Endpoint (P1/P2)',
+      'MDATP_XPLAT': 'Microsoft Defender for Endpoint (P1/P2)',
+      'MDE_LITE': 'Microsoft Defender for Endpoint (P1/P2)',
+      'MDE_SMB': 'Microsoft Defender for Endpoint (P1/P2)',
+      'ATP_ENTERPRISE': 'Microsoft Defender for Office 365 (Plan 1 / Plan 2)',
+      'THREAT_INTELLIGENCE': 'Microsoft Defender for Office 365 (Plan 1 / Plan 2)',
+      'ATA': 'Microsoft Defender for Identity',
+      'ADALLOM_STANDALONE': 'Microsoft Defender for Cloud Apps',
+      'ADALLOM_S_STANDALONE': 'Microsoft Defender for Cloud Apps',
+      'ADALLOM_S_O365': 'Microsoft Defender for Cloud Apps',
+      'IDENTITY_THREAT_PROTECTION': 'Microsoft Defender XDR / Identity Threat Protection',
+      'RMS_S_PREMIUM': 'Microsoft Purview Information Protection (P1)',
+      'MIP_S_CLP1': 'Microsoft Purview Information Protection (P1)',
+      'RMS_S_PREMIUM2': 'Microsoft Purview Information Protection (P2)',
+      'INFORMATION_PROTECTION_COMPLIANCE': 'Microsoft Purview Information Protection & Compliance',
+      'EXCHANGE_S_STANDARD': 'Exchange Online (Plan 1)',
+      'EXCHANGE_S_ENTERPRISE': 'Exchange Online (Plan 2)',
+      'MICROSOFT_365_COPILOT': 'Microsoft 365 Copilot',
+      'AGENT_365': 'Microsoft Agent 365',
+      'MICROSOFT_SENTINEL': isTr ? 'Microsoft Sentinel (Tüketim Bazlı)' : 'Microsoft Sentinel (Consumption-based)',
+      'CONSUMPTION-BASED: MICROSOFT SENTINEL': isTr ? 'Microsoft Sentinel (Tüketim Bazlı)' : 'Microsoft Sentinel (Consumption-based)',
+      'CONSUMPTION-BASED: MICROSOFT SECURITY COPILOT': isTr ? 'Microsoft Security Copilot (SCU)' : 'Microsoft Security Copilot (SCU)',
+      'MICROSOFT_DEFENDER_FOR_AI_SERVICES': 'Microsoft Defender for AI Services',
+      'MICROSOFT_DEFENDER_FOR_CLOUD': 'Microsoft Defender for Cloud',
+      'AZURE_FIREWALL_STANDARD': 'Azure Firewall (Standard / Premium)',
+      'AZURE_FIREWALL_PREMIUM': 'Azure Firewall (Standard / Premium)',
+      'AZURE WAF': 'Azure Web Application Firewall (WAF)',
+      'AZURE_WAF': 'Azure Web Application Firewall (WAF)',
+      'AZURE_APPLICATION_GATEWAY_WAF': 'Azure Web Application Firewall (WAF)',
+      'AZURE APPLICATION GATEWAY STANDARD SKU': 'Azure Application Gateway (Standard)',
+      'CONSUMPTION-BASED: AZURE WAF ON AZURE FRONT DOOR PREMIUM': 'Azure Web Application Firewall (WAF)',
+      'AZURE WAF ON AZURE FRONT DOOR PREMIUM SKU': 'Azure Web Application Firewall (WAF)',
+      'AZURE STANDARD SKU': 'Azure Front Door / Gateway (Standard)',
+      'AZURE_FRONT_DOOR_PREMIUM': 'Azure Front Door (Standard / Premium)',
+      'AZURE_FRONTDOOR_STANDARD': 'Azure Front Door (Standard / Premium)',
+      'AZURE_FRONTDOOR_PREMIUM': 'Azure Front Door (Standard / Premium)',
+      'DDOS_NETWORK_PROTECTION': 'Azure DDoS Protection',
+      'DDOS_IP_PROTECTION': 'Azure DDoS Protection'
+    };
+    const normalizeLicenseProduct = raw => {
+      const clean = String(raw || '').trim();
+      if (!clean || clean.toUpperCase() === 'N/A') return null;
+      const mapped = LICENSE_PRODUCT_MAP[clean.toUpperCase()];
+      if (mapped) return mapped;
+      return clean.replace(/_/g, ' ');
+    };
+
+    const licCounts = {};
+    F.filter(x => x.MinimumLicense).forEach(x => {
+      const tokens = String(x.MinimumLicense)
+        .split(/,|\s+AND\s+/i)
+        .map(z => z.trim())
+        .filter(Boolean);
+      const seenProducts = new Set();
+      tokens.forEach(tok => {
+        const prodName = normalizeLicenseProduct(tok);
+        if (!prodName) return;
+        if (!licCounts[prodName]) licCounts[prodName] = { total: 0, passed: 0, failed: 0, skipped: 0, rawCodes: new Set(), firstRaw: tok };
+        licCounts[prodName].rawCodes.add(tok);
+        if (seenProducts.has(prodName)) return;
+        seenProducts.add(prodName);
+        licCounts[prodName].total++;
+        if (x.Status === 'Passed') licCounts[prodName].passed++;
+        else if (x.Status === 'Failed') licCounts[prodName].failed++;
+        else if (x.Status === 'Skipped') licCounts[prodName].skipped++;
+      });
+    });
+    const licRows = Object.entries(licCounts).sort((a,b) => b[1].total - a[1].total).map(([prod,v]) => {
+      const rawHint = [...v.rawCodes].slice(0, 4).join(', ') + (v.rawCodes.size > 4 ? '…' : '');
+      return `<tr style="cursor:pointer;" data-lic="${esc(v.firstRaw || '')}" onclick="filterByMinLicense(this.dataset.lic)" title="${isTr ? 'Bu lisansla eşleşen kontrolleri filtrele' : 'Filter controls matching this product'}"><td><strong>${esc(prod)}</strong><div style="font-size:11px;color:var(--muted);">${esc(rawHint)}</div></td><td>${v.total}</td><td style="color:var(--ok)">${v.passed}</td><td style="color:var(--fail)">${v.failed}</td><td style="color:var(--skip)">${v.skipped}</td></tr>`;
+    }).join('');
+    document.getElementById('minLicBox').innerHTML = `
+      <h3 style="margin-bottom:6px;">${isTr ? 'Kontrollerin Minimum Ürün / Lisans Gereksinimi Dağılımı' : 'Minimum Product & License Requirements Breakdown'}</h3>
+      <p style="font-size:13px;color:var(--muted);margin-bottom:12px;">${isTr ? 'Bu tablo, tarama kapsamındaki güvenlik kontrollerinin çalıştırılabilmesi veya sıkılaştırılabilmesi için kiracıda bulunması gereken en düşük Microsoft ürün kademesini gösterir. Aynı ürüne karşılık gelen teknik servis planı kodları (ör. AAD_PREMIUM + P1) tek ürün altında birleştirilmiştir; satıra tıklayarak ilgili kontrolleri listeleyebilirsiniz.' : 'This breakdown maps evaluated security checks to the minimum Microsoft product or license tier required to enforce or assess each control. Equivalent service plan codes (e.g., AAD_PREMIUM + P1) are grouped under their canonical product name; click any row to inspect matching controls.'}</p>
+      <table class="md-table"><thead><tr><th>${isTr ? 'Microsoft Ürünü / Lisans Kademesi' : 'Microsoft Product / License Tier'}</th><th>${isTr ? 'Toplam' : 'Total'}</th><th>${isTr ? 'Geçti' : 'Passed'}</th><th>${isTr ? 'Başarısız' : 'Failed'}</th><th>${isTr ? 'Atlandı' : 'Skipped'}</th></tr></thead><tbody>${licRows}</tbody></table>
+    `;
+
+    const skus = DATA.LicenseROI?.Skus || [];
+    if (skus.length > 0) {
+      const skuRows = skus.map(k => `<tr><td><strong>${esc(k.ProductName)}</strong><div style="font-size:11px;color:var(--muted);">${esc(k.SkuPartNumber)}</div></td><td>${k.Purchased}</td><td>${k.Assigned}</td><td style="color:var(--warn)">${k.Unassigned}</td><td>${k.UtilizationPercent}%</td><td style="color:var(--fail)"><strong>$${k.EstimatedIdleUsdMo}</strong></td></tr>`).join('');
+      document.getElementById('skuRoiBox').innerHTML = `
+        <h3 style="margin-bottom:10px;">${isTr ? 'Gerçek Kiracı Lisans Kullanımı ve Atıl Maliyet (USD)' : 'Live Tenant License Utilization & Idle Cost (USD)'}</h3>
+        <div class="cards" style="margin-bottom:12px;">
+          <div class="card"><div class="lbl">${isTr ? 'Tahmini Aylık Atıl Bütçe' : 'Est. Monthly Idle Spend'}</div><div class="val" style="color:var(--fail)">$${DATA.LicenseROI.TotalIdleUsdMo ?? 0}</div></div>
+          <div class="card"><div class="lbl">${isTr ? 'Tahmini Yıllık Atıl Bütçe' : 'Est. Annual Idle Spend'}</div><div class="val" style="color:var(--fail)">$${DATA.LicenseROI.TotalIdleUsdYr ?? 0}</div></div>
+        </div>
+        <table class="md-table"><thead><tr><th>${isTr ? 'Ürün / SKU' : 'Product / SKU'}</th><th>${isTr ? 'Satın Alınan' : 'Purchased'}</th><th>${isTr ? 'Atanan' : 'Assigned'}</th><th>${isTr ? 'Atıl' : 'Unassigned'}</th><th>${isTr ? 'Kullanım' : 'Utilization'}</th><th>${isTr ? 'Atıl $/Ay' : 'Idle $/Mo'}</th></tr></thead><tbody>${skuRows}</tbody></table>
+      `;
+    } else {
+      document.getElementById('skuRoiBox').innerHTML = `<h3 style="margin-bottom:6px;">${isTr ? 'Gerçek Kiracı Lisans Kullanımı (subscribedSkus)' : 'Live Tenant License Utilization (subscribedSkus)'}</h3><p style="font-size:13px;color:var(--muted);">${isTr ? 'Canlı kiracı bağlantısı (Connect-TenantBrief + Invoke-TenantBriefAssessment) ile çalıştırıldığında satın alınan/atanan lisanslar ve tahmini aylık atıl USD bütçesi burada otomatik listelenir.' : 'When executed with a live tenant session, purchased vs. assigned SKUs and estimated monthly idle USD spend are automatically populated here.'}</p>`;
+    }
+
+    // M365 License Waste & Overlap Analysis (R1-R7)
+    const waste = DATA.LicenseROI?.WasteAnalysis;
+    if (waste) {
+      const ovRows = (waste.OverlapSamples || []).map(o => `<tr><td><code>${esc(o.Pair)}</code></td><td><code>${esc(o.Redundant)}</code></td><td style="color:var(--ok)"><strong>$${o.SavedMo}/ay</strong></td><td style="font-size:12px;">${esc(o.Reason)}</td></tr>`).join('');
+      document.getElementById('wasteRoiBox').innerHTML = `
+        <h3 style="margin-bottom:10px;">${isTr ? 'Lisans İsrafı ve Mükerrer SKU Çakışma Denetimi (R1–R7)' : 'License Waste & Redundant SKU Overlap Audit (R1–R7)'}</h3>
+        <div class="cards" style="margin-bottom:12px;">
+          <div class="card"><div class="lbl">${isTr ? 'Devre Dışı Lisanslı Hesap' : 'Disabled Licensed Users'}</div><div class="val" style="color:var(--fail)">${waste.DisabledLicensedUsers}</div><div style="font-size:11.5px;color:var(--muted);">$${waste.DisabledUsdMo}/mo</div></div>
+          <div class="card"><div class="lbl">${isTr ? '90+ Gün Pasif Lisanslı' : 'Inactive 90+ Days'}</div><div class="val" style="color:var(--warn)">${waste.SignInActivityAvailable ? waste.Inactive90dUsers : (isTr ? 'Yetki Yok' : 'N/A')}</div><div style="font-size:11.5px;color:var(--muted);">${waste.SignInActivityAvailable ? ('$' + waste.InactiveUsdMo + '/mo') : 'AuditLog.Read.All'}</div></div>
+          <div class="card"><div class="lbl">${isTr ? 'Mükerrer / Çakışan SKU' : 'Duplicate SKU Overlaps'}</div><div class="val" style="color:var(--warn)">${waste.DuplicateOverlapCount}</div><div style="font-size:11.5px;color:var(--muted);">$${waste.DuplicateOverlapUsdMo}/mo</div></div>
+          <div class="card"><div class="lbl">${isTr ? 'Lisanslı Misafir Hesap' : 'Licensed Guests'}</div><div class="val" style="color:var(--warn)">${waste.LicensedGuests}</div><div style="font-size:11.5px;color:var(--muted);">$${waste.GuestUsdMo}/mo</div></div>
+          <div class="card"><div class="lbl">${isTr ? 'Kurtarılabilir Yıllık Tasarruf' : 'Recoverable Annual Savings'}</div><div class="val" style="color:var(--ok)">$${waste.TotalRecoverableUsdYr}</div><div style="font-size:11.5px;color:var(--muted);">$${waste.TotalRecoverableUsdMo}/mo</div></div>
+        </div>
+        ${ovRows ? `<table class="md-table"><thead><tr><th>${isTr ? 'Çakışan SKU Çifti' : 'Overlapping SKUs'}</th><th>${isTr ? 'Fazla SKU' : 'Redundant'}</th><th>${isTr ? 'Tasarruf' : 'Savings'}</th><th>${isTr ? 'Açıklama' : 'Rationale'}</th></tr></thead><tbody>${ovRows}</tbody></table>` : `<p style="font-size:12.5px;color:var(--muted);">${isTr ? 'Kullanıcı bazında bilinen mükerrer SKU çakışması (E5+E3, E3+EXO Plan 1 vb.) tespit edilmedi.' : 'No duplicate/overlapping user SKU assignments detected.'}</p>`}
+      `;
+    } else {
+      document.getElementById('wasteRoiBox').innerHTML = `<h3 style="margin-bottom:6px;">${isTr ? 'Lisans İsrafı ve Çakışma Denetimi (R1–R7)' : 'License Waste & Overlap Audit (R1–R7)'}</h3><p style="font-size:13px;color:var(--muted);">${isTr ? 'Canlı kiracı oturumunda devre dışı bırakılmış lisanslı kullanıcılar, 90+ gün pasif lisanslar, lisanslı misafirler ve mükerrer SKU çakışmaları (E5+E3 vb.) otomatik analiz edilir.' : 'In live tenant mode, disabled licensed accounts, 90+ day inactive users, licensed guests, and overlapping SKUs are audited automatically.'}</p>`;
+    }
+
+    // Usage & Adoption Executive Tab (Existing Reader Graph scopes: Reports.Read.All, DeviceManagement, SecurityIncident)
+    const ua = DATA.UsageAdoption;
+    if (ua) {
+      const svcs = ua.Services || [];
+      const copU = ua.CopilotUsage;
+      const authA = ua.AuthAdoption;
+      const spU = ua.SharePointUsage;
+      const secO = ua.SecOps;
+      const avgAdopt = svcs.length ? Math.round(svcs.reduce((acc, x) => acc + (Number(x.AdoptionPct) || 0), 0) / svcs.length * 10) / 10 : null;
+
+      document.getElementById('usageSummaryCards').innerHTML = `
+        <div class="card"><div class="lbl">${isTr ? 'Ortalama M365 Benimsenme (30g)' : 'Avg M365 Adoption (30d)'}</div><div class="val" style="color:var(--accent)">${avgAdopt !== null ? (avgAdopt + '%') : '-'}</div></div>
+        <div class="card"><div class="lbl">${isTr ? 'Copilot Aktif / Etkin (30g)' : 'Copilot Active / Enabled (30d)'}</div><div class="val" style="color:${copU && copU.AdoptionPct >= 60 ? 'var(--ok)' : 'var(--warn)'}">${copU ? (copU.ActiveUsers + ' / ' + copU.EnabledUsers) : (isTr ? 'Veri Yok' : 'N/A')}</div></div>
+        <div class="card"><div class="lbl">${isTr ? 'MFA / Parolasız Kayıt (Tüm Kiracı)' : 'MFA / Passwordless (All Users)'}</div><div class="val" style="font-size:20px;">${authA ? (authA.MfaPct + '% / ' + authA.PasswordlessPct + '%') : '-'}</div></div>
+        <div class="card"><div class="lbl">${isTr ? 'SharePoint Aktif Site / Depolama' : 'SharePoint Active Sites / Storage'}</div><div class="val" style="font-size:18px;">${spU ? (spU.ActiveSites + ' / ' + spU.TotalSites + ' · ' + spU.StorageUsedGB + ' GB') : '-'}</div></div>
+        <div class="card"><div class="lbl">${isTr ? 'Açık Defender Olayı / Riskli Kullanıcı' : 'Open Incidents / Risky Users'}</div><div class="val" style="color:${secO && (secO.HighIncidents > 0 || secO.ActiveRiskyUsers > 0) ? 'var(--fail)' : 'var(--ok)'};font-size:20px;">${secO ? ((secO.IncidentsAvailable ? secO.ActiveIncidents : '-') + ' / ' + (secO.RiskyUsersAvailable ? secO.ActiveRiskyUsers : '-')) : '-'}</div></div>
+      `;
+
+      const svcBars = svcs.map(x => `<div class="bar-row"><div class="bar-head"><span><strong>${esc(x.Service)}</strong> (${isTr ? 'Aktif' : 'Active'}: ${x.ActiveUsers} · ${isTr ? 'Pasif' : 'Inactive'}: ${x.InactiveUsers} · ${isTr ? 'Toplam' : 'Total'}: ${x.TotalEnabled})</span><span><strong>${x.AdoptionPct}%</strong></span></div><div class="bar-track"><div class="bar-fill" style="width:${Math.min(100, x.AdoptionPct)}%"></div></div></div>`).join('');
+      document.getElementById('usageServicesBox').innerHTML = `
+        <h3 style="margin-bottom:6px;">${isTr ? 'Microsoft 365 Servis Benimsenme Oranları (Son 30 Gün · Reports.Read.All)' : 'Microsoft 365 Service Adoption Rates (Last 30 Days · Reports.Read.All)'}</h3>
+        <p style="font-size:12.5px;color:var(--muted);margin-bottom:12px;">${isTr ? 'Yalnızca kiracı geneli toplu kullanıcı sayıları gösterilir (kişi bazlı izleme yapılmaz; M365 rapor gizliliği açık olsa bile çalışır).' : 'Displays tenant-level aggregate counts only (no individual user surveillance; works even when M365 report name concealment is enabled).'}</p>
+        ${svcBars || `<p style="font-size:13px;color:var(--muted);">${isTr ? 'Servis kullanım verisi dönmedi (Reports.Read.All veya Reports Reader rolü gerekir).' : 'No service usage metrics returned (requires Reports.Read.All / Reports Reader).'}</p>`}
+      `;
+
+      if (copU && (copU.EnabledUsers > 0 || copU.ActiveUsers > 0)) {
+        document.getElementById('usageCopilotBox').innerHTML = `
+          <h3 style="margin-bottom:8px;">${isTr ? 'Microsoft 365 Copilot Gerçek Kullanım ve Uygulama Kırılımı (Son 30 Gün)' : 'Microsoft 365 Copilot Real Usage & App Breakdown (Last 30 Days)'}</h3>
+          <div class="cards" style="margin-bottom:12px;">
+            <div class="card"><div class="lbl">${isTr ? 'Etkin Copilot Koltuğu' : 'Enabled Copilot Seats'}</div><div class="val">${copU.EnabledUsers}</div></div>
+            <div class="card"><div class="lbl">${isTr ? 'Son 30g Aktif Kullanıcı' : 'Active Users (30d)'}</div><div class="val" style="color:var(--ok)">${copU.ActiveUsers} (${copU.AdoptionPct}%)</div></div>
+            <div class="card"><div class="lbl">${isTr ? 'Kullanılmayan Atıl Koltuk' : 'Idle Assigned Seats'}</div><div class="val" style="color:var(--fail)">${copU.IdleUsers}</div></div>
+            <div class="card"><div class="lbl">${isTr ? 'Tahmini Atıl Copilot $/Ay' : 'Est. Idle Copilot $/Mo'}</div><div class="val" style="color:var(--fail)">$${copU.EstIdleUsdMo}</div></div>
+          </div>
+          <table class="md-table"><thead><tr><th>Teams</th><th>Outlook</th><th>Word</th><th>Excel</th><th>PowerPoint</th><th>Copilot Chat</th></tr></thead><tbody><tr><td>${copU.TeamsActive}</td><td>${copU.OutlookActive}</td><td>${copU.WordActive}</td><td>${copU.ExcelActive}</td><td>${copU.PowerPointActive}</td><td>${copU.CopilotChatActive}</td></tr></tbody></table>
+        `;
+      } else {
+        document.getElementById('usageCopilotBox').innerHTML = `<h3 style="margin-bottom:6px;">${isTr ? 'Microsoft 365 Copilot Gerçek Kullanımı' : 'Microsoft 365 Copilot Real Usage'}</h3><p style="font-size:12.5px;color:var(--muted);">${isTr ? 'Kiracıda etkin Microsoft 365 Copilot kullanım kaydı bulunamadı veya /beta/reports/getMicrosoft365CopilotUserCountSummary veri döndürmedi.' : 'No active Microsoft 365 Copilot usage telemetry found for this tenant.'}</p>`;
+      }
+
+      const platRows = (ua.Platforms || []).map(p => `<tr><td><strong>${esc(p.Platform)}</strong></td><td>${p.Users}</td></tr>`).join('');
+      const devRows = (ua.ManagedDevices || []).map(d => `<tr><td><strong>${esc(d.OS)}</strong></td><td>${d.Total}</td><td style="color:var(--ok)">${d.Compliant}</td><td style="color:var(--fail)">${d.NonCompliant}</td><td><strong>${d.CompliantPct}%</strong></td></tr>`).join('');
+      document.getElementById('usagePlatformAuthBox').innerHTML = `
+        <h3 style="margin-bottom:10px;">${isTr ? 'Kimlik Yöntemleri, Uygulama Platformları ve Yönetilen Cihaz Uyumluluğu' : 'Identity Auth Adoption, App Platforms & Managed Device Compliance'}</h3>
+        ${authA ? `<div class="cards" style="margin-bottom:12px;">
+          <div class="card"><div class="lbl">${isTr ? 'Toplam Değerlendirilen Kullanıcı' : 'Evaluated Users'}</div><div class="val">${authA.TotalUsers}</div></div>
+          <div class="card"><div class="lbl">${isTr ? 'MFA Kayıtlı' : 'MFA Registered'}</div><div class="val" style="color:var(--ok)">${authA.MfaRegistered} (${authA.MfaPct}%)</div></div>
+          <div class="card"><div class="lbl">${isTr ? 'Parolasız (FIDO2/WHfB/Passkey)' : 'Passwordless Capable'}</div><div class="val" style="color:var(--accent)">${authA.Passwordless} (${authA.PasswordlessPct}%)</div></div>
+          <div class="card"><div class="lbl">${isTr ? 'SSPR Kayıtlı' : 'SSPR Registered'}</div><div class="val">${authA.SsprRegistered} (${authA.SsprPct}%)</div></div>
+        </div>` : ''}
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px;">
+          <div><h4 style="margin-bottom:8px;font-size:13.5px;">${isTr ? 'M365 Uygulama Platformları (30g)' : 'M365 App Platforms (30d)'}</h4>${platRows ? `<table class="md-table"><thead><tr><th>${isTr ? 'Platform' : 'Platform'}</th><th>${isTr ? 'Aktif Kullanıcı' : 'Active Users'}</th></tr></thead><tbody>${platRows}</tbody></table>` : `<p style="font-size:12.5px;color:var(--muted);">-</p>`}</div>
+          <div><h4 style="margin-bottom:8px;font-size:13.5px;">${isTr ? 'Intune Yönetilen Cihaz OS & Uyumluluk' : 'Intune Managed Device OS & Compliance'}</h4>${devRows ? `<table class="md-table"><thead><tr><th>OS</th><th>${isTr ? 'Toplam' : 'Total'}</th><th>${isTr ? 'Uyumlu' : 'Compliant'}</th><th>${isTr ? 'Uyumsuz' : 'Non-Comp.'}</th><th>%</th></tr></thead><tbody>${devRows}</tbody></table>` : `<p style="font-size:12.5px;color:var(--muted);">-</p>`}</div>
+        </div>
+      `;
+
+      document.getElementById('usageSecOpsBox').innerHTML = `
+        <h3 style="margin-bottom:10px;">${isTr ? 'Güvenlik Operasyonları Anlık Özeti (Defender XDR & Entra ID Protection)' : 'Security Operations Snapshot (Defender XDR & Entra ID Protection)'}</h3>
+        <div class="cards" style="margin-bottom:0;">
+          <div class="card"><div class="lbl">${isTr ? 'Açık Defender XDR Olayı' : 'Open Defender XDR Incidents'}</div><div class="val">${secO?.IncidentsAvailable ? secO.ActiveIncidents : (isTr ? 'Yetki/Veri Yok' : 'N/A')}</div></div>
+          <div class="card"><div class="lbl">${isTr ? 'Yüksek Önemli (High)' : 'High Severity'}</div><div class="val" style="color:var(--fail)">${secO?.IncidentsAvailable ? secO.HighIncidents : '-'}</div></div>
+          <div class="card"><div class="lbl">${isTr ? 'Orta / Düşük' : 'Medium / Low'}</div><div class="val" style="color:var(--warn)">${secO?.IncidentsAvailable ? (secO.MediumIncidents + ' / ' + secO.LowIncidents) : '-'}</div></div>
+          <div class="card"><div class="lbl">${isTr ? 'Aktif Riskli Kullanıcı (atRisk)' : 'Active Risky Users (atRisk)'}</div><div class="val" style="color:${secO?.ActiveRiskyUsers > 0 ? 'var(--fail)' : 'var(--ok)'}">${secO?.RiskyUsersAvailable ? secO.ActiveRiskyUsers : (isTr ? 'P2 / Yetki Yok' : 'N/A')}</div></div>
+        </div>
+      `;
+    } else {
+      document.getElementById('usageSummaryCards').innerHTML = '';
+      document.getElementById('usageServicesBox').innerHTML = `<h3 style="margin-bottom:6px;">${isTr ? 'Kullanım & Benimsenme (Canlı Oturum Gerekir)' : 'Usage & Adoption (Requires Live Session)'}</h3><p style="font-size:13px;color:var(--muted);">${isTr ? 'Canlı kiracı oturumunda (Connect-TenantBrief + Invoke-TenantBriefAssessment) mevcut Reports.Read.All yetkisiyle M365 servis aktifliği, Copilot kullanımı, SharePoint depolama, MFA/Passwordless dağılımı ve Defender XDR açık olayları otomatik toplanır.' : 'In live tenant mode, M365 service adoption, Copilot real usage, SharePoint storage, tenant-wide MFA/Passwordless rates, and open Defender XDR incidents are collected automatically via existing Reader scopes.'}</p>`;
+      document.getElementById('usageCopilotBox').style.display = 'none';
+      document.getElementById('usagePlatformAuthBox').style.display = 'none';
+      document.getElementById('usageSecOpsBox').style.display = 'none';
+    }
+
+    // Copilot & Agent Readiness + Interactive ROI Calculator
+    const cr = DATA.CopilotReadiness;
+    if (cr) {
+      document.getElementById('copilotSummaryCards').innerHTML = `
+        <div class="card"><div class="lbl">${isTr ? 'Copilot Hazırlık Puanı' : 'Copilot Readiness Score'}</div><div class="val" style="color:${cr.Score >= 70 ? 'var(--ok)' : 'var(--warn)'}">${cr.Score}%</div></div>
+        <div class="card"><div class="lbl">${isTr ? 'Olgunluk Düzeyi' : 'Maturity Level'}</div><div class="val" style="font-size:20px;">${esc(cr.MaturityLevel || 'L1')}</div></div>
+        <div class="card"><div class="lbl">${isTr ? 'Uygun Temel Lisans' : 'Eligible Base Seats'}</div><div class="val">${cr.EligibleBaseSeats ?? 0}</div></div>
+        <div class="card"><div class="lbl">${isTr ? 'Aktif Copilot Lisansı' : 'Active Copilot Seats'}</div><div class="val">${cr.CopilotSeats ?? 0}</div></div>
+      `;
+      const warnList = (cr.Warnings || []).map(w => `<div style="padding:10px 12px;margin-bottom:8px;border-radius:8px;background:rgba(245,158,11,.10);border:1px solid rgba(245,158,11,.4);color:#fde68a;font-size:13px;">⚠ ${esc(w)}</div>`).join('');
+      document.getElementById('copilotWarningsBox').innerHTML = `
+        <h3 style="margin-bottom:8px;">${isTr ? 'Copilot Güvenlik Uyarıları ve Veri Sınırı Değerlendirmesi' : 'Copilot Security Warnings & Data Boundary Assessment'}</h3>
+        ${warnList || `<p style="font-size:13px;color:var(--ok);">✓ ${isTr ? 'Ölçülen Graph politikalarında kritik Copilot aşırı paylaşım uyarısı algılanmadı.' : 'No critical oversharing warnings detected across queried Graph policies.'}</p>`}
+      `;
+      const crRows = (cr.Checks || []).map(c => {
+        const pillCls = c.Status === 'Pass' ? 'Passed' : (c.Status === 'Fail' ? 'Failed' : 'Investigate');
+        return `<tr>
+          <td><span class="pill ${pillCls}">${esc(statusLabel(c.Status))}</span></td>
+          <td><strong>${esc(c.Title)}</strong><div style="font-size:11.5px;color:var(--muted);">${esc(c.Category)} · <code>${esc(c.Detail)}</code></div></td>
+          <td style="font-size:12.5px;"><div>${esc(c.Explanation)}</div>${c.Warning ? `<div style="margin-top:4px;color:#fcd34d;">⚠ ${esc(c.Warning)}</div>` : ''}</td>
+        </tr>`;
+      }).join('');
+      document.getElementById('copilotChecksBox').innerHTML = `
+        <h3 style="margin-bottom:10px;">${isTr ? 'Microsoft 365 Copilot & Agent 365 Hazırlık Kontrolleri' : 'Microsoft 365 Copilot & Agent 365 Readiness Checks'}</h3>
+        <table class="md-table"><thead><tr><th>${isTr ? 'Durum' : 'Status'}</th><th>${isTr ? 'Kontrol & Bulgu' : 'Check & Detail'}</th><th>${isTr ? 'Açıklama ve Uyarı' : 'Explanation & Warning'}</th></tr></thead><tbody>${crRows}</tbody></table>
+      `;
+    }
+    // FastTrack SharePoint Oversharing Risk Analysis (Analyze-SharePointRisk model)
+    const spr = DATA.SharePointRisk;
+    if (spr && spr.TotalSites > 0) {
+      const spRows = (spr.TopRiskySites || []).slice(0, 15).map(site => {
+        const badgeCol = site.RiskLevel === 'Critical' ? 'var(--fail)' : (site.RiskLevel === 'High' ? 'var(--warn)' : 'var(--accent)');
+        return `<tr>
+          <td><strong>${esc(site.SiteName)}</strong><div style="font-size:11px;color:var(--muted);">${esc(site.SiteUrl || '')}</div></td>
+          <td>${esc(site.Privacy)}</td>
+          <td>${esc(site.SensitivityLabel)}</td>
+          <td style="color:${site.EEEUCount > 0 ? 'var(--fail)' : 'var(--muted)'}">${site.EEEUCount}</td>
+          <td style="color:${site.AnyoneLinks > 0 ? 'var(--fail)' : 'var(--muted)'}">${site.AnyoneLinks}</td>
+          <td><span class="tag" style="color:${badgeCol};border-color:${badgeCol};">${esc(site.RiskLevel)} (${site.RiskScore})</span></td>
+          <td style="font-size:11.5px;color:var(--muted);">${esc(site.Reasons || '-')}</td>
+        </tr>`;
+      }).join('');
+      document.getElementById('sharePointRiskBox').innerHTML = `
+        <h3 style="margin-bottom:6px;">${isTr ? 'SharePoint Site Bazlı Aşırı Paylaşım Riski (Microsoft FastTrack Analyze-SharePointRisk)' : 'SharePoint Site-Level Oversharing Risk (Microsoft FastTrack Analyze-SharePointRisk)'}</h3>
+        <p style="font-size:12.5px;color:var(--muted);margin-bottom:12px;">${isTr ? 'SAM / Data Access Governance izin CSV çıktısı üzerinden EEEU, Anyone bağlantıları, Everyone izinleri, etiketsiz siteler ve yüksek benzersiz izinler (>50) FastTrack ağırlıklarıyla puanlanır.' : 'Scored via Microsoft FastTrack Analyze-SharePointRisk weights across EEEU grants, Anyone links, Everyone permissions, unlabeled sites, and unique permission sprawl (>50).'}</p>
+        <div class="cards" style="margin-bottom:12px;">
+          <div class="card"><div class="lbl">${isTr ? 'İncelenen Site' : 'Sites Analyzed'}</div><div class="val">${spr.TotalSites}</div></div>
+          <div class="card"><div class="lbl">${isTr ? 'Kritik / Yüksek Riskli' : 'Critical / High Risk'}</div><div class="val" style="color:var(--fail)">${(spr.CriticalSites || 0) + (spr.HighRiskSites || 0)}</div></div>
+          <div class="card"><div class="lbl">${isTr ? 'Yüksek EEEU / Özel+EEEU' : 'High EEEU / Private+EEEU'}</div><div class="val" style="color:var(--warn)">${spr.EEEUHighSites || 0} / ${spr.PrivateEEEUSites || 0}</div></div>
+          <div class="card"><div class="lbl">${isTr ? 'Anyone Bağlantısı Olan' : 'With Anyone Links'}</div><div class="val" style="color:var(--fail)">${spr.AnyoneLinkSites || 0}</div></div>
+          <div class="card"><div class="lbl">${isTr ? 'Etiketsiz Site' : 'Unlabeled Sites'}</div><div class="val" style="color:var(--skip)">${spr.UnlabeledSites || 0}</div></div>
+        </div>
+        ${spRows ? `<table class="md-table"><thead><tr><th>${isTr ? 'Site' : 'Site'}</th><th>${isTr ? 'Gizlilik' : 'Privacy'}</th><th>${isTr ? 'Etiket' : 'Label'}</th><th>EEEU</th><th>Anyone</th><th>${isTr ? 'Risk' : 'Risk'}</th><th>${isTr ? 'Gerekçe' : 'Drivers'}</th></tr></thead><tbody>${spRows}</tbody></table>` : ''}
+      `;
+    } else {
+      document.getElementById('sharePointRiskBox').innerHTML = `<h3 style="margin-bottom:6px;">${isTr ? 'SharePoint Site Bazlı Aşırı Paylaşım Riski (FastTrack Analyze-SharePointRisk)' : 'SharePoint Site-Level Oversharing Risk (FastTrack Analyze-SharePointRisk)'}</h3><p style="font-size:12.5px;color:var(--muted);">${isTr ? 'SharePoint Yönetim Merkezi (SAM Data Access Governance) izin CSV dosyasını <code>-InputSharePointRiskCsvPath</code> ile verdiğinizde EEEU, Anyone bağlantıları, etiketsiz siteler ve en riskli siteler otomatik puanlanıp <strong>Data + AI</strong> sütunlarına işlenir.' : 'Supply a SharePoint Admin Center (SAM DAG) permissions CSV via <code>-InputSharePointRiskCsvPath</code> to score EEEU, Anyone links, unlabeled sites, and populate <strong>Data + AI</strong> findings.'}</p>`;
+    }
+
+    // FastTrack Power Platform & Agent Builder Inventory (Inventory-PowerPlatformAgents model)
+    const ppa = DATA.PowerPlatformAgents;
+    if (ppa && ppa.TotalAgents > 0) {
+      const agRows = (ppa.Agents || []).slice(0, 15).map(a => `<tr>
+        <td><strong>${esc(a.AgentName)}</strong><div style="font-size:11px;color:var(--muted);">${esc(a.AgentId || '')}</div></td>
+        <td>${esc(a.CreatedIn)}</td>
+        <td>${esc(a.EnvironmentName)}</td>
+        <td>${esc(a.Owner)}</td>
+        <td>${a.IsMicrosoftManaged ? (isTr ? 'Microsoft Yönetimli' : 'Microsoft-managed') : (isTr ? 'Özel (Custom)' : 'Custom')}</td>
+        <td style="color:${a.IsStale ? 'var(--fail)' : 'var(--muted)'}">${esc(a.LastUsedAt || '-')}</td>
+      </tr>`).join('');
+      document.getElementById('ppAgentsBox').innerHTML = `
+        <h3 style="margin-bottom:6px;">${isTr ? 'Power Platform & Agent Builder Gölge AI Envanteri (Microsoft FastTrack)' : 'Power Platform & Agent Builder Shadow AI Inventory (Microsoft FastTrack)'}</h3>
+        <div class="cards" style="margin-bottom:12px;">
+          <div class="card"><div class="lbl">${isTr ? 'Toplam AI Ajanı' : 'Total AI Agents'}</div><div class="val">${ppa.TotalAgents}</div></div>
+          <div class="card"><div class="lbl">Copilot Studio / Agent Builder</div><div class="val" style="font-size:20px;">${ppa.CopilotStudioCount || 0} / ${ppa.AgentBuilderCount || 0}</div></div>
+          <div class="card"><div class="lbl">${isTr ? 'Varsayılan Ortamda Özel' : 'Custom in Default Env'}</div><div class="val" style="color:${(ppa.CustomDefaultEnvCount || 0) > 0 ? 'var(--fail)' : 'var(--ok)'}">${ppa.CustomDefaultEnvCount || 0}</div></div>
+          <div class="card"><div class="lbl">${isTr ? 'Sahipsiz / 90g Atıl' : 'Unowned / 90d Stale'}</div><div class="val" style="color:${((ppa.UnownedCount || 0) + (ppa.Stale90dCount || 0)) > 0 ? 'var(--warn)' : 'var(--ok)'}">${ppa.UnownedCount || 0} / ${ppa.Stale90dCount || 0}</div></div>
+        </div>
+        ${agRows ? `<table class="md-table"><thead><tr><th>${isTr ? 'Ajan' : 'Agent'}</th><th>${isTr ? 'Kaynak' : 'Created In'}</th><th>${isTr ? 'Ortam' : 'Environment'}</th><th>${isTr ? 'Sahip' : 'Owner'}</th><th>${isTr ? 'Yönetim' : 'Ownership'}</th><th>${isTr ? 'Son Kullanım' : 'Last Used'}</th></tr></thead><tbody>${agRows}</tbody></table>` : ''}
+      `;
+    } else {
+      document.getElementById('ppAgentsBox').innerHTML = `<h3 style="margin-bottom:6px;">${isTr ? 'Power Platform & Agent Builder Gölge AI Envanteri (Microsoft FastTrack)' : 'Power Platform & Agent Builder Shadow AI Inventory (Microsoft FastTrack)'}</h3><p style="font-size:12.5px;color:var(--muted);">${isTr ? 'Microsoft FastTrack <code>Inventory-PowerPlatformAgents.ps1</code> JSON veya CSV çıktısını <code>-InputPowerPlatformAgentsPath</code> ile verdiğinizde varsayılan ortamda biriken özel ajanlar, sahipsiz ve 90+ gün atıl ajanlar <strong>AI</strong> sütununa otomatik işlenir.' : 'Pass a Microsoft FastTrack <code>Inventory-PowerPlatformAgents.ps1</code> JSON/CSV export via <code>-InputPowerPlatformAgentsPath</code> to surface custom Default-environment sprawl, unowned, and 90+ day stale agents in the <strong>AI</strong> pillar.'}</p>`;
+    }
+
+    // Microsoft FastTrack Agents Cost Calculator (v2 Credit & Foundry Planning Model — Browser-Local)
+    const defUsers = Math.max(10, Math.min(500, cr?.EligibleBaseSeats || ti?.UserCount || 50));
+    const reclaimYr = Number(DATA.LicenseROI?.WasteAnalysis?.TotalRecoverableUsdYr ?? DATA.LicenseROI?.TotalIdleUsdYr ?? 0);
+    document.getElementById('copilotCalcBox').innerHTML = `
+      <h3 style="margin-bottom:6px;">${isTr ? 'Microsoft FastTrack Ajan Maliyet Planlayıcısı (Copilot Credits & Foundry — Çevrimdışı)' : 'Microsoft FastTrack Agents Cost Calculator (Copilot Credits & Foundry — Offline)'}</h3>
+      <p style="font-size:12.5px;color:var(--muted);margin-bottom:12px;">${isTr ? 'Resmi <strong>Microsoft FastTrack Agents Cost Calculator</strong> yaklaşımına dayalı planlama aracıdır (kullanıcı turu yerine <strong>faturalanabilir işlem / Copilot Credit</strong> hesabı yapar). Referans liste fiyatları: $30/koltuk/ay M365 Copilot, $200/paket (25.000 Copilot Credit) veya $0.01/kredi PAYG. Tüm hesaplama tarayıcı içinde çalışır.' : 'Planning model aligned with the official <strong>Microsoft FastTrack Agents Cost Calculator</strong> (counts <strong>billable operations / Copilot Credits</strong> per run). Reference list pricing: $30/seat/mo M365 Copilot, $200/pack (25,000 Copilot Credits), or $0.01/credit PAYG. Runs strictly locally in browser.'}</p>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(195px,1fr));gap:10px;margin-bottom:14px;">
+        <div><label style="font-size:12px;color:var(--muted);display:block;margin-bottom:4px;">${isTr ? 'Ajan & Faturalama Kapsamı' : 'Agent & Billing Scope'}</label><select id="ftScope" onchange="calcFastTrackCost()" style="width:100%;background:#0b1120;color:var(--text);border:1px solid var(--border);border-radius:6px;padding:7px;"><option value="standard">${isTr ? 'Copilot Studio – Standart (Kredi/İşlem)' : 'Copilot Studio – Standard Harness'}</option><option value="builder">${isTr ? 'Agent Builder – Copilot Chat (Graph=2 kr)' : 'Agent Builder – Copilot Chat Harness'}</option><option value="sharepoint">${isTr ? 'SharePoint Ajanı (Graph Mesaj)' : 'SharePoint Agent'}</option><option value="ghcp">${isTr ? 'Copilot Studio – GitHub Copilot Harness' : 'Copilot Studio – GitHub Copilot Harness'}</option><option value="foundry">${isTr ? 'Microsoft Foundry Ajanı (Azure USD)' : 'Microsoft Foundry Agent (Azure USD)'}</option></select></div>
+        <div><label style="font-size:12px;color:var(--muted);display:block;margin-bottom:4px;">${isTr ? 'FastTrack Hızlı Şablon' : 'FastTrack Quick Start Template'}</label><select id="ftPreset" onchange="applyFastTrackPreset()" style="width:100%;background:#0b1120;color:var(--text);border:1px solid var(--border);border-radius:6px;padding:7px;"><option value="custom">${isTr ? 'Kiracı Mevcut Kullanıcı' : 'Tenant Baseline'}</option><option value="faq">${isTr ? 'Kurumsal SSS Ajanı (Graph FAQ)' : 'Enterprise FAQ Agent'}</option><option value="hr">${isTr ? 'İK Politika Ajanı (HR Policy)' : 'HR Policy Agent'}</option><option value="it">${isTr ? 'BT Yardım Masası (Araç + Akış)' : 'IT Helpdesk (Tools + Flows)'}</option><option value="ess">${isTr ? 'Çalışan Self-Servis (ITSM/HRSD)' : 'Employee Self-Service (ITSM/HRSD)'}</option><option value="foundry">${isTr ? 'Foundry Asistanı (GPT-4o / File Search)' : 'Foundry General Assistant'}</option></select></div>
+        <div><label style="font-size:12px;color:var(--muted);display:block;margin-bottom:4px;">${isTr ? 'Aktif Kullanıcı / Koltuk' : 'Active Users'}</label><input id="ftUsers" type="number" min="1" value="${defUsers}" oninput="calcFastTrackCost()" style="width:100%;background:#0b1120;color:var(--text);border:1px solid var(--border);border-radius:6px;padding:7px;" /></div>
+        <div><label style="font-size:12px;color:var(--muted);display:block;margin-bottom:4px;">${isTr ? 'Günlük Konuşma / Kullanıcı' : 'Conversations / User / Day'}</label><input id="ftConvDay" type="number" min="1" max="100" value="3" oninput="calcFastTrackCost()" style="width:100%;background:#0b1120;color:var(--text);border:1px solid var(--border);border-radius:6px;padding:7px;" /></div>
+        <div><label style="font-size:12px;color:var(--muted);display:block;margin-bottom:4px;">${isTr ? 'Aylık Aktif Gün' : 'Active Days / Month'}</label><input id="ftDays" type="number" min="1" max="31" value="20" oninput="calcFastTrackCost()" style="width:100%;background:#0b1120;color:var(--text);border:1px solid var(--border);border-radius:6px;padding:7px;" /></div>
+        <div><label style="font-size:12px;color:var(--muted);display:block;margin-bottom:4px;">${isTr ? 'Ek Otonom Çalıştırma / Ay' : 'Autonomous Runs / Month'}</label><input id="ftAutoRuns" type="number" min="0" step="500" value="1000" oninput="calcFastTrackCost()" style="width:100%;background:#0b1120;color:var(--text);border:1px solid var(--border);border-radius:6px;padding:7px;" /></div>
+        <div><label style="font-size:12px;color:var(--muted);display:block;margin-bottom:4px;" id="ftUnitLbl">${isTr ? 'Çalıştırma Başına Kredi (Graph=2, Araç=5)' : 'Billable Credits / Run (Graph=2, Tool=5)'}</label><input id="ftCreditsPerRun" type="number" min="0.01" step="0.5" value="4" oninput="calcFastTrackCost()" style="width:100%;background:#0b1120;color:var(--text);border:1px solid var(--border);border-radius:6px;padding:7px;" /></div>
+        <div><label style="font-size:12px;color:var(--muted);display:block;margin-bottom:4px;">${isTr ? 'M365 Copilot Lisansı ($30/ay)' : 'M365 Copilot Seats ($30/mo)'}</label><input id="ftCopilotSeats" type="number" min="0" value="${cr?.CopilotSeats || 0}" oninput="calcFastTrackCost()" style="width:100%;background:#0b1120;color:var(--text);border:1px solid var(--border);border-radius:6px;padding:7px;" /></div>
+      </div>
+      <div id="copilotRoiOutput"></div>
+      <p style="font-size:11.5px;color:var(--muted);margin-top:10px;">⚠ ${isTr ? 'Planlama tahmini amaçlıdır; sözleşmesel fiyat teklifi veya fatura taahhüdü değildir. Kaynak metodoloji: Microsoft FastTrack Agents Cost Calculator (microsoft.github.io/FastTrack).' : 'Planning estimate only; not a quote or billing commitment. Methodology: Microsoft FastTrack Agents Cost Calculator (microsoft.github.io/FastTrack).'}</p>
+    `;
+    window.applyFastTrackPreset = function() {
+      const p = document.getElementById('ftPreset').value;
+      const presets = {
+        faq:     { scope:'sharepoint', users:150, conv:2, days:20, auto:0,    cpr:2 },
+        hr:      { scope:'builder',    users:100, conv:2, days:18, auto:200,  cpr:2 },
+        it:      { scope:'standard',   users:200, conv:4, days:22, auto:2500, cpr:9 },
+        ess:     { scope:'standard',   users:250, conv:3, days:20, auto:4000, cpr:12 },
+        foundry: { scope:'foundry',    users:50,  conv:5, days:20, auto:1500, cpr:0.04 }
+      };
+      if (presets[p]) {
+        document.getElementById('ftScope').value = presets[p].scope;
+        document.getElementById('ftUsers').value = presets[p].users;
+        document.getElementById('ftConvDay').value = presets[p].conv;
+        document.getElementById('ftDays').value = presets[p].days;
+        document.getElementById('ftAutoRuns').value = presets[p].auto;
+        document.getElementById('ftCreditsPerRun').value = presets[p].cpr;
+      }
+      calcFastTrackCost();
+    };
+    window.calcFastTrackCost = function() {
+      const scope = document.getElementById('ftScope').value;
+      const isFoundry = (scope === 'foundry');
+      document.getElementById('ftUnitLbl').textContent = isFoundry
+        ? (isTr ? 'Çalıştırma Başına Azure USD (Token+Araç)' : 'Est. Azure USD / Run (Tokens+Tools)')
+        : (isTr ? 'Çalıştırma Başına Kredi (Graph=2, Araç=5)' : 'Billable Credits / Run (Graph=2, Tool=5)');
+      const users = Math.max(1, Number(document.getElementById('ftUsers').value) || 1);
+      const convDay = Math.max(1, Number(document.getElementById('ftConvDay').value) || 1);
+      const days = Math.max(1, Number(document.getElementById('ftDays').value) || 20);
+      const autoRuns = Math.max(0, Number(document.getElementById('ftAutoRuns').value) || 0);
+      const cpr = Math.max(0.001, Number(document.getElementById('ftCreditsPerRun').value) || (isFoundry ? 0.04 : 4));
+      const copSeats = Math.max(0, Number(document.getElementById('ftCopilotSeats').value) || 0);
+
+      const monthlyRuns = (users * convDay * days) + autoRuns;
+      const copilotMoUsd = copSeats * 30;
+      let agentPaygMoUsd = 0, packCount = 0, packMoUsd = 0, billableCredits = 0;
+      if (isFoundry) {
+        agentPaygMoUsd = Math.round(monthlyRuns * cpr);
+        packMoUsd = agentPaygMoUsd;
+      } else {
+        billableCredits = Math.round(monthlyRuns * cpr);
+        agentPaygMoUsd = Math.round(billableCredits * 0.01);
+        packCount = Math.max(0, Math.ceil(billableCredits / 25000));
+        packMoUsd = packCount * 200;
+      }
+      const bestAgentMo = isFoundry ? agentPaygMoUsd : Math.min(agentPaygMoUsd, packMoUsd || agentPaygMoUsd);
+      const totalAnnualUsd = (copilotMoUsd + bestAgentMo) * 12;
+      const fundedPct = totalAnnualUsd > 0 ? Math.min(100, Math.round((reclaimYr / totalAnnualUsd) * 100)) : 0;
+
+      document.getElementById('copilotRoiOutput').innerHTML = `<div class="cards" style="margin-bottom:0;">
+        <div class="card"><div class="lbl">${isTr ? 'Aylık Toplam Çalıştırma' : 'Monthly Total Runs'}</div><div class="val">${monthlyRuns.toLocaleString()}</div></div>
+        <div class="card"><div class="lbl">${isFoundry ? (isTr ? 'Aylık Azure Foundry Tahmini' : 'Est. Azure Foundry / Mo') : (isTr ? 'Aylık Faturalanabilir Kredi' : 'Monthly Billable Credits')}</div><div class="val" style="color:var(--accent)">${isFoundry ? ('$' + agentPaygMoUsd.toLocaleString()) : billableCredits.toLocaleString()}</div></div>
+        <div class="card"><div class="lbl">${isFoundry ? (isTr ? 'Yıllık Foundry Ajan Maliyeti' : 'Annual Foundry Cost') : (isTr ? 'Aylık PAYG / Kredi Paketi' : 'Monthly PAYG / Credit Packs')}</div><div class="val" style="font-size:18px;">${isFoundry ? ('$' + (agentPaygMoUsd * 12).toLocaleString()) : ('$' + agentPaygMoUsd.toLocaleString() + ' · ' + packCount + 'x ($' + packMoUsd.toLocaleString() + ')')}</div></div>
+        <div class="card"><div class="lbl">${isTr ? 'Yıllık Toplam (Copilot + Ajan)' : 'Annual Total (Copilot + Agent)'}</div><div class="val">$${totalAnnualUsd.toLocaleString()}</div></div>
+        <div class="card"><div class="lbl">${isTr ? 'Atıl Lisanstan Finansman' : 'Self-Funded via Idle SKUs'}</div><div class="val" style="color:var(--ok)">${fundedPct}%</div></div>
+      </div>`;
+    };
+    calcFastTrackCost();
+
+    // Offline Deterministic Executive Remediation Digest (Zero external AI data sharing)
+    const costOrder = { Low: 0, Medium: 1, High: 2, Unknown: 3 };
+    const byCostThenId = (a, b) => ((costOrder[a.ImplementationCost] ?? 3) - (costOrder[b.ImplementationCost] ?? 3)) || String(a.Id || '').localeCompare(String(b.Id || ''));
+    const highFailed = F.filter(x => x.Status === 'Failed' && (x.Risk === 'Critical' || x.Risk === 'High')).slice().sort(byCostThenId);
+    const pillarBreak = {};
+    highFailed.forEach(x => { getDomains(x).forEach(p => { pillarBreak[p] = (pillarBreak[p] || 0) + 1; }); });
+    const breakText = Object.entries(pillarBreak).sort((a,b) => b[1]-a[1]).map(([k,v]) => `${k}: ${v}`).join(' · ');
+    const topActions = highFailed.slice(0, 12).map(x => `
+      <tr>
+        <td><code class="tag idtag">${esc(x.Id)}</code> <strong>${esc(x.Title)}</strong><div style="font-size:11.5px;color:var(--muted);margin-top:3px;">${esc(getDomains(x).join(', '))} · ${esc(getSources(x).join(', '))} · ${esc(x.Category)}</div></td>
+        <td>${esc(costLabel(x.ImplementationCost))}</td>
+        <td style="font-size:12px;">${esc(isTr ? (x.RemediationTr || '') : (x.Description || '').slice(0, 160))}</td>
+      </tr>
+    `).join('');
+    document.getElementById('execActionDigest').innerHTML = `
+      <h3 style="margin-bottom:6px;">${isTr ? 'Yönetici İyileştirme Özeti (Çevrimdışı Analiz — Sıfır Veri Paylaşımı)' : 'Executive Remediation Digest (Offline Analysis — Zero External Sharing)'}</h3>
+      <p style="font-size:12.5px;color:var(--muted);margin-bottom:12px;">${isTr ? 'Yüksek riskli açıkların güvenlik sütunu dağılımı:' : 'High-risk gap breakdown:'} <strong>${esc(breakText || '-')}</strong></p>
+      <table class="md-table">
+        <thead><tr><th>${isTr ? 'Öncelikli Kontrol' : 'Priority Control'}</th><th>${isTr ? 'Maliyet' : 'Cost'}</th><th>${isTr ? 'Önerilen İyileştirme Adımı' : 'Recommended Action'}</th></tr></thead>
+        <tbody>${topActions}</tbody>
+      </table>
+    `;
+
+    // Interactive 30-60-90 Day Roadmap
+    let activePhaseIdx = 0;
+    function renderRoadmap() {
+      const phases = DATA.Roadmap || [];
+      document.getElementById('roadmapCards').innerHTML = phases.map((r, idx) => `
+        <div class="card road-card ${idx === activePhaseIdx ? 'active' : ''}" onclick="selectPhase(${idx})">
+          <div class="lbl">${esc(r.Phase)}</div>
+          <div class="val" style="margin-bottom:8px;">${r.Count}</div>
+          <div style="font-size:13px;color:var(--muted);">${esc(r.Focus)}</div>
+        </div>
+      `).join('');
+      const items = (activePhaseIdx === 0
+        ? F.filter(x => x.Status === 'Failed' && (x.Risk === 'Critical' || x.Risk === 'High'))
+        : (activePhaseIdx === 1
+          ? F.filter(x => x.Status === 'Failed' && x.Risk === 'Medium')
+          : F.filter(x => (x.Status === 'Failed' && x.Risk === 'Low') || x.Status === 'Investigate'))).slice().sort(byCostThenId);
+      const pRows = items.map(x => `
+        <tr>
+          <td><code class="tag idtag">${esc(x.Id)}</code> <strong>${esc(x.Title)}</strong><div style="font-size:11.5px;color:var(--muted);margin-top:3px;">${esc(getDomains(x).join(', '))} · ${esc(getSources(x).join(', '))} · ${esc(x.Category)}</div></td>
+          <td><span class="pill ${esc(x.Status)}">${esc(statusLabel(x.Status))}</span></td>
+          <td>${esc(riskLabel(x.Risk))}</td>
+          <td style="font-size:12px;">${esc(isTr ? (x.RemediationTr || '') : (x.Description || '').slice(0, 140))}</td>
+        </tr>
+      `).join('');
+      document.getElementById('roadmapDetail').innerHTML = `
+        <h3 style="margin-bottom:10px;">${esc(phases[activePhaseIdx]?.Phase || '')} (${items.length})</h3>
+        <table class="md-table">
+          <thead><tr><th>${isTr ? 'Kontrol' : 'Control'}</th><th>${isTr ? 'Durum' : 'Status'}</th><th>Risk</th><th>${isTr ? 'İyileştirme Adımı' : 'Remediation'}</th></tr></thead>
+          <tbody>${pRows}</tbody>
+        </table>
+      `;
+    }
+    function selectPhase(i) { activePhaseIdx = i; renderRoadmap(); }
+    renderRoadmap();
+
+    function renderFilterChips() {
+      document.getElementById('sourceChips').innerHTML = `<span style="font-size:12px;color:var(--muted);">${isTr ? 'Kaynak / Standart:' : 'Source / Standard:'}</span>` +
+        `<button class="chip ${activeSourceFilter === 'ALL' ? 'active' : ''}" onclick="setSource('ALL')">${isTr ? 'Tümü' : 'All'} (${F.length})</button>` +
+        allSources.map(src => {
+          const cnt = F.filter(x => getSources(x).includes(src)).length;
+          return `<button class="chip ${activeSourceFilter === src ? 'active' : ''}" data-source="${esc(src)}" onclick="setSource(this.dataset.source)">${esc(src)} (${cnt})</button>`;
+        }).join('');
+
+      const statuses = ['ALL', 'Failed', 'Passed', 'Skipped', 'Investigate', 'Planned', 'Error'];
+      document.getElementById('statusChips').innerHTML = `<span style="font-size:12px;color:var(--muted);">${isTr ? 'Durum:' : 'Status:'}</span>` +
+        statuses.map(st => `<button class="chip ${activeStatusFilter === st ? 'active' : ''}" onclick="setStatus('${st}')">${st === 'ALL' ? (isTr ? 'Tümü' : 'All') : statusLabel(st)}</button>`).join('');
+
+      const risks = ['ALL', 'Critical', 'High', 'Medium', 'Low'];
+      document.getElementById('riskChips').innerHTML = `<span style="font-size:12px;color:var(--muted);">Risk:</span>` +
+        risks.map(rk => `<button class="chip ${activeRiskFilter === rk ? 'active' : ''}" onclick="setRisk('${rk}')">${rk === 'ALL' ? (isTr ? 'Tümü' : 'All') : riskLabel(rk)}</button>`).join('');
+    }
+    function setSource(src) { activeSourceFilter = src; renderFilterChips(); renderFindings(); }
+    function setStatus(s) { activeStatusFilter = s; renderFilterChips(); renderFindings(); }
+    function setRisk(r) { activeRiskFilter = r; renderFilterChips(); renderFindings(); }
+    function toggleAllDetails(open) { document.querySelectorAll('#findingsList details').forEach(d => d.open = open); }
+
+    function renderFindings() {
+      const q = document.getElementById('searchInput').value.toLowerCase();
+      const sfi = document.getElementById('sfiFilter').value;
+      const cat = document.getElementById('catFilter').value;
+      const cst = document.getElementById('costFilter').value;
+
+      currentFiltered = F.filter(f => {
+        const doms = getDomains(f);
+        const srcs = getSources(f);
+        if (activePillarFilter === 'QUICKWINS') {
+          if (!(f.Status === 'Failed' && f.ImplementationCost === 'Low')) return false;
+        } else if (activePillarFilter !== 'ALL' && !doms.includes(activePillarFilter)) {
+          return false;
+        }
+
+        if (activeSourceFilter !== 'ALL' && !srcs.includes(activeSourceFilter)) return false;
+        if (activeStatusFilter !== 'ALL' && f.Status !== activeStatusFilter) return false;
+        if (activeRiskFilter !== 'ALL' && f.Risk !== activeRiskFilter) return false;
+        if (sfi !== 'ALL' && f.SfiPillar !== sfi) return false;
+        if (cat !== 'ALL' && f.Category !== cat) return false;
+        if (cst !== 'ALL' && f.ImplementationCost !== cst) return false;
+
+        if (q) {
+          const hay = `${f.Id} ${(f.CorrelatedIds || []).join(' ')} ${f.Title} ${f.Category} ${f.SfiPillar} ${f.MinimumLicense} ${doms.join(' ')} ${srcs.join(' ')} ${f.FrameworkRef} ${f.AdminPortal}`.toLowerCase();
+          if (!hay.includes(q)) return false;
+        }
+        return true;
+      });
+
+      document.getElementById('showingCount').textContent = isTr
+        ? `Gösterilen: ${currentFiltered.length} / ${F.length} kontrol`
+        : `Showing ${currentFiltered.length} of ${F.length} checks`;
+
+      document.getElementById('findingsList').innerHTML = currentFiltered.map(f => {
+        const srcs = getSources(f);
+        const doms = getDomains(f);
+        const corrIds = Array.isArray(f.CorrelatedIds) && f.CorrelatedIds.length > 1 ? f.CorrelatedIds : [];
+        const srcBadges = srcs.map(src => `<span class="tag src">${esc(src)}</span>`).join('');
+        const trText = f.RemediationTr || f.Remediation || '';
+        const trBox = isTr && trText
+          ? `<div style="margin-bottom:10px;padding:8px 10px;background:rgba(56,189,248,.08);border-left:3px solid var(--accent);border-radius:4px;"><strong>Türkçe İyileştirme Adımları:</strong><div style="margin-top:4px;">${esc(trText)}</div></div>`
+          : '';
+        const impBlock = f.UserImpact ? `<div style="margin-bottom:8px;"><strong>${isTr ? 'Etki:' : 'Impact:'}</strong> <span style="color:#fcd34d;">${esc(f.UserImpact)}</span></div>` : '';
+        const resBlock = f.Result ? `<div style="margin-bottom:10px;"><strong>${isTr ? 'Tespit & Etkilenen Kaynaklar:' : 'Finding & Affected Resources:'}</strong>${renderMd(f.Result)}</div>` : '';
+        const skipBlock = f.SkippedReason ? `<div style="margin-bottom:10px;color:#d8b4fe;"><strong>${isTr ? 'Atlanma Nedeni:' : 'Skipped Reason:'}</strong> ${renderMd(f.SkippedReason)}</div>` : '';
+        const descBlock = f.Description ? `<div><strong>${isTr ? 'Açıklama ve Microsoft Önerisi:' : 'Description & Recommendation:'}</strong>${renderMd(f.Description)}</div>` : '';
+
+        return `
+          <div class="finding">
+            <div class="finding-top">
+              <div>
+                <div><code class="tag idtag">${esc(f.Id)}</code> <strong>${esc(f.Title)}</strong></div>
+                <div class="f-meta">
+                  ${srcBadges}
+                  ${corrIds.length ? `<span class="tag">${isTr ? 'Eşleşen ID:' : 'Correlated:'} ${esc(corrIds.join(', '))}</span>` : ''}
+                  <span class="tag">${esc(doms.join(', '))}</span>
+                  <span class="tag">${esc(f.Category)}</span>
+                  ${f.FrameworkRef ? `<span class="tag">${esc(f.FrameworkRef)}</span>` : ''}
+                  ${f.AdminPortal ? `<span class="tag portal">${esc(f.AdminPortal)}</span>` : ''}
+                  ${f.RequiredRole ? `<span class="tag">${isTr ? 'En Az Yetki:' : 'Least Privilege:'} ${esc(f.RequiredRole)}</span>` : ''}
+                  ${f.MinimumLicense ? `<span class="tag">${isTr ? 'Lisans:' : 'License:'} ${esc(f.MinimumLicense)}</span>` : ''}
+                  <span class="tag">${isTr ? 'Maliyet:' : 'Cost:'} ${esc(costLabel(f.ImplementationCost))}</span>
+                </div>
+              </div>
+              <div style="white-space:nowrap;">
+                <span class="pill ${esc(f.Status)}">${esc(statusLabel(f.Status))}</span>
+                <span class="pill" ${f.Risk === 'Critical' ? 'style="background:rgba(220,38,38,.25);color:#fca5a5;border:1px solid #ef4444;"' : ''}>${esc(riskLabel(f.Risk))}</span>
+              </div>
+            </div>
+            <details>
+              <summary>${isTr ? 'Detaylar, Etkilenen Kaynaklar ve İyileştirme Adımları' : 'Details, Affected Resources & Remediation'}</summary>
+              <div class="rem-box">${trBox}${impBlock}${resBlock}${skipBlock}${descBlock}</div>
+            </details>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function exportCsv() {
+      const rows = [['Id','CorrelatedIds','DomainPillar','Sources','Category','FrameworkRef','Status','Risk','Cost','License','RequiredRole','AdminPortal','Title']];
+      (currentFiltered.length ? currentFiltered : F).forEach(f => {
+        rows.push([
+          f.Id,
+          (f.CorrelatedIds || []).join('; '),
+          getDomains(f).join(', '),
+          getSources(f).join(', '),
+          f.Category,
+          f.FrameworkRef,
+          f.Status,
+          f.Risk,
+          f.ImplementationCost,
+          f.MinimumLicense,
+          f.RequiredRole,
+          f.AdminPortal,
+          f.Title
+        ].map(v => '"' + String(v || '').replace(/"/g,'""') + '"'));
+      });
+      const blob = new Blob([rows.map(r => r.join(',')).join('\n')], { type: 'text/csv;charset=utf-8;' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = `TenantBrief-${DATA.Language}.csv`;
+      a.click();
+    }
+
+    function renderSprint7Visuals() {
+      const pillarEl = document.getElementById('pillarSvgChart');
+      const pillarLbl = document.getElementById('pillarSvgLbl');
+      const heatEl = document.getElementById('riskEffortHeatmap');
+      const heatLbl = document.getElementById('heatmapLbl');
+      if (pillarLbl) pillarLbl.textContent = isTr ? 'Sütun Bazında Kontrol Dağılımı (Geçti / Başarısız / İncele / Atlandı)' : 'Controls by Pillar (Passed / Failed / Investigate / Skipped)';
+      if (heatLbl) heatLbl.textContent = isTr ? 'Risk × Efor Isı Haritası (Açık Bulgular)' : 'Risk × Effort Heatmap (Open Findings)';
+
+      if (pillarEl) {
+        const pillars = ['Identity', 'Devices', 'Network', 'Data', 'AI', 'SecOps'];
+        const barW = 260, rowH = 26, padL = 74, svgW = 390, svgH = pillars.length * rowH + 24;
+        const rows = pillars.map((p, idx) => {
+          const items = F.filter(x => getDomains(x).includes(p));
+          const tot = items.length || 1;
+          const ok = items.filter(x => x.Status === 'Passed').length;
+          const fl = items.filter(x => x.Status === 'Failed').length;
+          const inv = items.filter(x => x.Status === 'Investigate' || x.Status === 'Error').length;
+          const sk = items.filter(x => x.Status === 'Skipped').length;
+          const y = idx * rowH + 6;
+          const wOk = (ok / tot) * barW, wFl = (fl / tot) * barW, wInv = (inv / tot) * barW, wSk = (sk / tot) * barW;
+          return `<g>
+            <text x="0" y="${y + 13}" fill="#cbd5e1" font-size="11.5" font-weight="600">${esc(p)}</text>
+            <rect x="${padL}" y="${y + 2}" width="${wOk.toFixed(1)}" height="14" fill="#22c55e"><title>Passed: ${ok}</title></rect>
+            <rect x="${(padL + wOk).toFixed(1)}" y="${y + 2}" width="${wFl.toFixed(1)}" height="14" fill="#ef4444"><title>Failed: ${fl}</title></rect>
+            <rect x="${(padL + wOk + wFl).toFixed(1)}" y="${y + 2}" width="${wInv.toFixed(1)}" height="14" fill="#f59e0b"><title>Investigate/Error: ${inv}</title></rect>
+            <rect x="${(padL + wOk + wFl + wInv).toFixed(1)}" y="${y + 2}" width="${wSk.toFixed(1)}" height="14" fill="#a855f7"><title>Skipped: ${sk}</title></rect>
+            <text x="${padL + barW + 8}" y="${y + 13}" fill="#94a3b8" font-size="11">${ok}/${items.length}</text>
+          </g>`;
+        }).join('');
+        pillarEl.innerHTML = `<svg viewBox="0 0 ${svgW} ${svgH}" width="100%" role="img" aria-label="${esc(pillarLbl ? pillarLbl.textContent : 'Pillar chart')}">${rows}</svg>`;
+      }
+
+      if (heatEl) {
+        const risks = ['Critical', 'High', 'Medium', 'Low'];
+        const costs = ['Low', 'Medium', 'High', 'Unknown'];
+        const openF = F.filter(x => x.Status === 'Failed' || x.Status === 'Error' || x.Status === 'Investigate');
+        let maxCnt = 1;
+        const grid = {};
+        risks.forEach(r => costs.forEach(c => {
+          const cnt = openF.filter(x => (x.Risk || 'Medium') === r && (x.ImplementationCost || 'Unknown') === c).length;
+          grid[r + '|' + c] = cnt;
+          if (cnt > maxCnt) maxCnt = cnt;
+        }));
+        const cw = 68, ch = 28, padL = 70, padT = 22;
+        const svgW = padL + costs.length * cw + 8, svgH = padT + risks.length * ch + 10;
+        const colHdrs = costs.map((c, j) => `<text x="${padL + j * cw + cw / 2}" y="14" text-anchor="middle" fill="#94a3b8" font-size="11">${esc(costLabel(c))}</text>`).join('');
+        const cells = risks.map((r, i) => {
+          const y = padT + i * ch;
+          const rLbl = `<text x="0" y="${y + 18}" fill="#cbd5e1" font-size="11.5" font-weight="600">${esc(riskLabel(r))}</text>`;
+          const rowCells = costs.map((c, j) => {
+            const cnt = grid[r + '|' + c];
+            const alpha = cnt === 0 ? 0.08 : (0.22 + 0.72 * (cnt / maxCnt));
+            const baseRgb = (r === 'Critical' || r === 'High') ? '239,68,68' : (r === 'Medium' ? '245,158,11' : '56,189,248');
+            return `<g><rect x="${padL + j * cw + 2}" y="${y + 2}" width="${cw - 4}" height="${ch - 4}" rx="5" fill="rgba(${baseRgb},${alpha.toFixed(2)})" stroke="#1e293b"></rect><text x="${padL + j * cw + cw / 2}" y="${y + 18}" text-anchor="middle" fill="${cnt > 0 ? '#f8fafc' : '#64748b'}" font-size="12" font-weight="700">${cnt}</text></g>`;
+          }).join('');
+          return rLbl + rowCells;
+        }).join('');
+        heatEl.innerHTML = `<svg viewBox="0 0 ${svgW} ${svgH}" width="100%" role="img" aria-label="${esc(heatLbl ? heatLbl.textContent : 'Risk effort heatmap')}">${colHdrs}${cells}</svg>`;
+      }
+
+      if (DATA.Trend) {
+        const navTrend = document.getElementById('navTrend');
+        if (navTrend) {
+          navTrend.style.display = 'flex';
+          navTrend.textContent = isTr ? 'Önceki Rapora Göre' : 'Trend vs Previous';
+        }
+        const t = DATA.Trend;
+        const delta = Number(t.ScoreDelta || 0);
+        const deltaStr = (delta >= 0 ? '+' : '') + delta + '%';
+        const deltaCol = delta >= 0 ? 'var(--ok)' : 'var(--fail)';
+        const scEl = document.getElementById('trendSummaryCards');
+        if (scEl) {
+          scEl.innerHTML = `
+            <div class="card"><div class="lbl">${isTr ? 'Önceki Skor' : 'Previous Score'}</div><div class="val">${esc(t.PreviousScore)}%</div></div>
+            <div class="card"><div class="lbl">${isTr ? 'Güncel Skor' : 'Current Score'}</div><div class="val">${esc(t.CurrentScore)}%</div></div>
+            <div class="card"><div class="lbl">${isTr ? 'Skor Değişimi' : 'Score Delta'}</div><div class="val" style="color:${deltaCol};">${esc(deltaStr)}</div></div>
+            <div class="card"><div class="lbl">${isTr ? 'İyileşen / Geriye Giden' : 'Improved / Regressed'}</div><div class="val">${(t.Improved || []).length} / ${(t.Regressed || []).length}</div></div>
+          `;
+        }
+        const detEl = document.getElementById('trendDetailBox');
+        if (detEl) {
+          const mkRows = (arr, label) => (arr || []).map(x => `<tr><td><code>${esc(x.Id || x.CanonicalId || '')}</code></td><td>${esc(x.Title || '')}</td><td>${esc(x.From || x.PreviousStatus || '')} &rarr; <strong>${esc(x.To || x.CurrentStatus || '')}</strong></td><td>${esc(label)}</td></tr>`).join('');
+          const allRows = mkRows(t.Regressed, isTr ? 'Geriye Gitti' : 'Regressed') + mkRows(t.Improved, isTr ? 'İyileşti' : 'Improved');
+          detEl.innerHTML = `<div class="lbl" style="margin-bottom:10px;">${isTr ? 'Kontrol Bazlı Durum Değişiklikleri' : 'Control Status Changes'}</div>
+            <table class="md-table" aria-label="${isTr ? 'Trend Karşılaştırma Tablosu' : 'Trend Comparison Table'}">
+              <thead><tr><th scope="col">ID</th><th scope="col">${isTr ? 'Kontrol' : 'Control'}</th><th scope="col">${isTr ? 'Durum Değişimi' : 'Transition'}</th><th scope="col">${isTr ? 'Yön' : 'Direction'}</th></tr></thead>
+              <tbody>${allRows || `<tr><td colspan="4" style="color:var(--muted);">${isTr ? 'Durum değişikliği tespit edilmedi.' : 'No control status changes detected.'}</td></tr>`}</tbody>
+            </table>`;
+        }
+      }
+    }
+
+    renderSprint7Visuals();
+    renderFilterChips();
+  </script>
+</body>
+</html>

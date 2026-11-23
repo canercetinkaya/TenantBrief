@@ -1,0 +1,1134 @@
+{
+  "SchemaVersion": "2.0.0",
+  "Tenant": "fabrikam.onmicrosoft.com",
+  "Language": "en",
+  "Framework": "All",
+  "TenantInsights": {
+    "UserCount": 120,
+    "GuestCount": 14,
+    "GroupCount": 33,
+    "ApplicationCount": 21,
+    "DeviceCount": 140,
+    "ManagedDeviceCount": 96,
+    "CompliantDevices": 88,
+    "NonCompliantDevices": 8,
+    "TotalAgents": 3,
+    "PrivSingleFactor": 2,
+    "PrivPhishable": 5,
+    "PrivPhishResistant": 11,
+    "SecureScoreCurrent": null,
+    "SecureScoreMax": null,
+    "MfaCoverageDesc": "All users are required to register MFA."
+  },
+  "UsageAdoption": null,
+  "SharePointRisk": null,
+  "PowerPlatformAgents": null,
+  "Summary": {
+    "Total": 21,
+    "UniqueControls": 21,
+    "SourceControls": 23,
+    "Passed": 6,
+    "Failed": 9,
+    "Investigate": 2,
+    "Skipped": 3,
+    "Planned": 0,
+    "PlannedExcluded": 0,
+    "Error": 1,
+    "HighRiskFailed": 5,
+    "UnreviewedTranslations": 0
+  },
+  "Run": {
+    "Status": "completed",
+    "StartedAt": "<NORMALIZED>",
+    "CompletedAt": "<NORMALIZED>",
+    "Resumed": false,
+    "SourceReport": "<NORMALIZED>",
+    "Stages": [
+      {
+        "Stage": 1,
+        "Name": "ZeroTrustAssessment",
+        "Status": "skipped",
+        "StartedAt": "<NORMALIZED>",
+        "EndedAt": "<NORMALIZED_ISO>",
+        "Message": "Offline mode: -InputReportJson supplied, tenant was not contacted."
+      },
+      {
+        "Stage": 2,
+        "Name": "CISA ScubaGear",
+        "Status": "completed",
+        "StartedAt": "<NORMALIZED>",
+        "EndedAt": "<NORMALIZED_ISO>",
+        "Message": "Reused cached ScubaGear output (3 controls)."
+      },
+      {
+        "Stage": 3,
+        "Name": "Microsoft ORCA & Maester",
+        "Status": "completed",
+        "StartedAt": "<NORMALIZED>",
+        "EndedAt": "<NORMALIZED_ISO>",
+        "Message": "Reused cached ORCA output (2 controls)."
+      },
+      {
+        "Stage": 4,
+        "Name": "Correlation & scoring",
+        "Status": "completed",
+        "StartedAt": "<NORMALIZED>",
+        "EndedAt": "<NORMALIZED_ISO>",
+        "Message": "Findings: 21"
+      }
+    ]
+  },
+  "Diagnostics": [],
+  "Prerequisites": [
+    "<NORMALIZED_PREREQS>"
+  ],
+  "Frameworks": [
+    {
+      "Id": "ZeroTrust",
+      "Name": "Microsoft Zero Trust Assessment",
+      "SourceTag": "ZeroTrust",
+      "UpstreamUrl": "https://github.com/microsoft/zerotrustassessment",
+      "Score": 33.3,
+      "Passed": 3,
+      "Failed": 4,
+      "Investigate": 1,
+      "Skipped": 3,
+      "Errors": 1,
+      "Evaluated": 9,
+      "Total": 12
+    },
+    {
+      "Id": "CIS_M365",
+      "Name": "CIS Microsoft 365 Foundations v7.0.0",
+      "SourceTag": "CIS M365",
+      "UpstreamUrl": "https://github.com/maester365/maester",
+      "Score": 100.0,
+      "Passed": 1,
+      "Failed": 0,
+      "Investigate": 0,
+      "Skipped": 0,
+      "Errors": 0,
+      "Evaluated": 1,
+      "Total": 1
+    },
+    {
+      "Id": "CISA_SCuBA",
+      "Name": "CISA SCuBA M365 Security Baseline",
+      "SourceTag": "CISA SCuBA",
+      "UpstreamUrl": "https://github.com/cisagov/ScubaGear",
+      "Score": 20.0,
+      "Passed": 1,
+      "Failed": 3,
+      "Investigate": 1,
+      "Skipped": 0,
+      "Errors": 0,
+      "Evaluated": 5,
+      "Total": 5
+    },
+    {
+      "Id": "MDO_ORCA",
+      "Name": "Microsoft Defender for Office 365 (ORCA)",
+      "SourceTag": "MDO / ORCA",
+      "UpstreamUrl": "https://github.com/martin9700/ORCA",
+      "Score": 50.0,
+      "Passed": 2,
+      "Failed": 2,
+      "Investigate": 0,
+      "Skipped": 0,
+      "Errors": 0,
+      "Evaluated": 4,
+      "Total": 4
+    },
+    {
+      "Id": "Maester",
+      "Name": "Maester M365 & XSPM Baseline",
+      "SourceTag": "Maester",
+      "UpstreamUrl": "https://github.com/maester365/maester",
+      "Score": 0.0,
+      "Passed": 0,
+      "Failed": 1,
+      "Investigate": 0,
+      "Skipped": 0,
+      "Errors": 0,
+      "Evaluated": 1,
+      "Total": 1
+    }
+  ],
+  "LicenseROI": {
+    "Summary": "Out of 3 skipped controls, 2 are blocked by missing licenses, 1 by disconnected services or missing API scopes (blind spots), and 0 are not applicable because those features/platforms are unused in the tenant.",
+    "Gaps": [
+      {
+        "License": "Disconnected Service: SharePoint Online",
+        "Count": 1,
+        "Category": "Connection",
+        "Note": "SharePoint Online session was not connected during assessment.",
+        "Search": "SharePoint"
+      },
+      {
+        "License": "License: Microsoft Defender for Endpoint (P1/P2)",
+        "Count": 1,
+        "Category": "License",
+        "Note": "Defender for Endpoint plan is not licensed in this tenant.",
+        "Search": "WINDEFATP"
+      },
+      {
+        "License": "License: Microsoft Entra Internet / Private Access (SSE)",
+        "Count": 1,
+        "Category": "License",
+        "Note": "Global Secure Access (SSE) license is not assigned in this tenant.",
+        "Search": "Entra_Premium_"
+      }
+    ],
+    "Skus": [],
+    "TotalIdleUsdMo": 0,
+    "TotalIdleUsdYr": 0.0,
+    "WasteAnalysis": null
+  },
+  "CopilotReadiness": {
+    "Score": 66.7,
+    "MaturityLevel": "L3 - Defined",
+    "EligibleBaseSeats": 0,
+    "CopilotSeats": 0,
+    "FastTrackImported": false,
+    "Warnings": [
+      "NOTICE/WARNING: SharePoint Online module is not connected; RAC / Restricted Content Discovery could not be queried directly. Pass -InputFastTrackJsonPath or verify in SharePoint Admin Center."
+    ],
+    "Checks": [
+      {
+        "Id": "COP-LIC-01",
+        "Category": "License Eligibility",
+        "Status": "Warning",
+        "Title": "Copilot Base License Check (Requires Live Session)",
+        "Detail": "Offline report mode lacks subscribedSkus Graph payload.",
+        "Explanation": "Actual purchased vs. assigned Copilot & E3/E5 seats are pulled live after Connect-TenantBrief.",
+        "Warning": "Run a live tenant scan for actual SKU counts."
+      },
+      {
+        "Id": "COP-SPO-01",
+        "Category": "SharePoint Oversharing Shield",
+        "Status": "Warning",
+        "Title": "SharePoint RAC / Restricted Content Discovery",
+        "Detail": "SharePoint Online not connected (partial scope)",
+        "Explanation": "Sensitive SharePoint sites require Restricted Access Control (RAC) and permission audits prior to Copilot enablement.",
+        "Warning": "NOTICE/WARNING: SharePoint Online module is not connected; RAC / Restricted Content Discovery could not be queried directly. Pass -InputFastTrackJsonPath or verify in SharePoint Admin Center."
+      },
+      {
+        "Id": "COP-AGENT-01",
+        "Category": "Agent 365 & Guest Exposure",
+        "Status": "Pass",
+        "Title": "Tenant Guest Ratio & Active AI Agent Inventory",
+        "Detail": "Users: 120 | Guests: 14 (11.7%) | AI Agents: 3",
+        "Explanation": "High guest ratios and ungoverned AI Agents expand internal and external data access paths.",
+        "Warning": ""
+      }
+    ]
+  },
+  "Roadmap": [
+    {
+      "Phase": "Days 0–30 (Critical / Quick Wins)",
+      "Count": 5,
+      "Focus": "Anti-Phishing (1) · Authentication (1) · Entra / M365 Baseline (1)",
+      "FindingIds": [
+        "MT.1007",
+        "MT.1002",
+        "MT.1006",
+        "ORCA-108",
+        "SCUBA-MS.SECURITYSUITE.1.1v1"
+      ]
+    },
+    {
+      "Phase": "Days 31–60 (Medium Risk)",
+      "Count": 3,
+      "Focus": "Authentication (1) · Information Protection (1) · Safe Links (1)",
+      "FindingIds": [
+        "MT.1003",
+        "MT.4001",
+        "ORCA-102"
+      ]
+    },
+    {
+      "Phase": "Days 61–90 (Investigate & Low)",
+      "Count": 3,
+      "Focus": "AAD (1) · Compliance (1) · Logging (1)",
+      "FindingIds": [
+        "MT.6002",
+        "MT.2001",
+        "SCUBA-AAD-2"
+      ]
+    }
+  ],
+  "Findings": [
+    {
+      "Id": "MT.1007",
+      "CanonicalId": "TB-ID-MFA-ALL-USERS",
+      "CorrelatedIds": [
+        "MT.1007",
+        "SCUBA-MS.AAD.3.2v2",
+        "SCUBA-MS.AAD.3.2v1"
+      ],
+      "Pillar": "Identity",
+      "PrimaryPillar": "Identity",
+      "DomainPillar": "Identity",
+      "DomainPillars": [
+        "Identity"
+      ],
+      "EngineLabel": "Identity, CISA SCuBA",
+      "Source": "ZeroTrust, CISA SCuBA",
+      "Sources": [
+        "ZeroTrust",
+        "CISA SCuBA"
+      ],
+      "SourceStatuses": {
+        "ZeroTrust": "Passed",
+        "CISA SCuBA": "Failed"
+      },
+      "StatusConflict": true,
+      "Category": "Authentication",
+      "SfiPillar": "Identity",
+      "ImplementationCost": "Low",
+      "MinimumLicense": "ENTRA_PREMIUM_P1",
+      "RequiredRole": "Conditional Access Administrator / Security Administrator",
+      "AdminPortal": "Microsoft Entra Admin Center (entra.microsoft.com)",
+      "Status": "Failed",
+      "Risk": "High",
+      "PriorityScore": 89,
+      "Title": "Ensure MFA is enforced for all users",
+      "FrameworkRef": "Microsoft Zero Trust (Identity · MT.1007) + CISA SCuBA M365 Baseline (SCUBA-MS.AAD.3.2v2)",
+      "Result": "Conditional Access policy requires MFA for all users.",
+      "UserImpact": "High",
+      "Description": "MFA blocks credential stuffing and password spray attacks.",
+      "SkippedReason": "",
+      "ErrorRemedy": "",
+      "Remediation": "1. Open 'Ensure MFA is enforced for all users' in Microsoft Entra Admin Center (entra.microsoft.com). 2. Apply the change to a pilot group in Report-only mode and verify sign-in/audit logs. 3. Enforce incrementally after impact validation. [Least-Privilege Role: Conditional Access Administrator / Security Administrator]",
+      "RemediationTr": "1. Microsoft Entra Admin Center (entra.microsoft.com) üzerinden 'Ensure MFA is enforced for all users' kontrolünü açın. 2. Değişikliği önce Denetim (Report-only) kipinde pilot gruba uygulayıp oturum açma/olay günlüklerini doğrulayın. 3. Etki analizi sonrası kademeli olarak Zorunlu (Enforce) durumuna geçin. [En Az Ayrıcalıklı Rol: Conditional Access Administrator / Security Administrator]",
+      "TranslationReviewed": true
+    },
+    {
+      "Id": "MT.1002",
+      "CanonicalId": "TB-ID-APP-CREDENTIAL-POLICY",
+      "CorrelatedIds": [
+        "MT.1002"
+      ],
+      "Pillar": "Identity",
+      "PrimaryPillar": "Identity",
+      "DomainPillar": "Identity",
+      "DomainPillars": [
+        "Identity"
+      ],
+      "EngineLabel": "Identity",
+      "Source": "ZeroTrust",
+      "Sources": [
+        "ZeroTrust"
+      ],
+      "SourceStatuses": {
+        "ZeroTrust": "Failed"
+      },
+      "StatusConflict": false,
+      "Category": "Privileged Access",
+      "SfiPillar": "Identity",
+      "ImplementationCost": "Low",
+      "MinimumLicense": "",
+      "RequiredRole": "Conditional Access Administrator / Security Administrator",
+      "AdminPortal": "Microsoft Entra Admin Center (entra.microsoft.com)",
+      "Status": "Failed",
+      "Risk": "High",
+      "PriorityScore": 80,
+      "Title": "Ensure break-glass accounts are excluded and monitored",
+      "FrameworkRef": "Microsoft Zero Trust (Identity · MT.1002)",
+      "Result": "2 emergency access accounts are not monitored by alert rules.",
+      "UserImpact": "High",
+      "Description": "Unmonitored break-glass accounts are a common persistence path.",
+      "SkippedReason": "",
+      "ErrorRemedy": "",
+      "Remediation": "1. Open 'Ensure break-glass accounts are excluded and monitored' in Microsoft Entra Admin Center (entra.microsoft.com). 2. Apply the change to a pilot group in Report-only mode and verify sign-in/audit logs. 3. Enforce incrementally after impact validation. [Least-Privilege Role: Conditional Access Administrator / Security Administrator]",
+      "RemediationTr": "1. Microsoft Entra Admin Center (entra.microsoft.com) üzerinden 'Ensure break-glass accounts are excluded and monitored' kontrolünü açın. 2. Değişikliği önce Denetim (Report-only) kipinde pilot gruba uygulayıp oturum açma/olay günlüklerini doğrulayın. 3. Etki analizi sonrası kademeli olarak Zorunlu (Enforce) durumuna geçin. [En Az Ayrıcalıklı Rol: Conditional Access Administrator / Security Administrator]",
+      "TranslationReviewed": true
+    },
+    {
+      "Id": "MT.1003",
+      "CanonicalId": "",
+      "CorrelatedIds": [
+        "MT.1003"
+      ],
+      "Pillar": "Identity",
+      "PrimaryPillar": "Identity",
+      "DomainPillar": "Identity",
+      "DomainPillars": [
+        "Identity"
+      ],
+      "EngineLabel": "Identity",
+      "Source": "ZeroTrust",
+      "Sources": [
+        "ZeroTrust"
+      ],
+      "SourceStatuses": {
+        "ZeroTrust": "Failed"
+      },
+      "StatusConflict": false,
+      "Category": "Authentication",
+      "SfiPillar": "Identity",
+      "ImplementationCost": "Medium",
+      "MinimumLicense": "ENTRA_PREMIUM_P2",
+      "RequiredRole": "Conditional Access Administrator / Security Administrator",
+      "AdminPortal": "Microsoft Entra Admin Center (entra.microsoft.com)",
+      "Status": "Failed",
+      "Risk": "Medium",
+      "PriorityScore": 58,
+      "Title": "Ensure phishing-resistant authentication is used for administrators",
+      "FrameworkRef": "Microsoft Zero Trust (Identity · MT.1003)",
+      "Result": "5 privileged users still register phishable methods.",
+      "UserImpact": "Medium",
+      "Description": "FIDO2 and passkeys remove OTP interception risk.",
+      "SkippedReason": "",
+      "ErrorRemedy": "",
+      "Remediation": "1. Open 'Ensure phishing-resistant authentication is used for administrators' in Microsoft Entra Admin Center (entra.microsoft.com). 2. Apply the change to a pilot group in Report-only mode and verify sign-in/audit logs. 3. Enforce incrementally after impact validation. [Least-Privilege Role: Conditional Access Administrator / Security Administrator]",
+      "RemediationTr": "1. Microsoft Entra Admin Center (entra.microsoft.com) üzerinden 'Ensure phishing-resistant authentication is used for administrators' kontrolünü açın. 2. Değişikliği önce Denetim (Report-only) kipinde pilot gruba uygulayıp oturum açma/olay günlüklerini doğrulayın. 3. Etki analizi sonrası kademeli olarak Zorunlu (Enforce) durumuna geçin. [En Az Ayrıcalıklı Rol: Conditional Access Administrator / Security Administrator]",
+      "TranslationReviewed": true
+    },
+    {
+      "Id": "MT.2001",
+      "CanonicalId": "",
+      "CorrelatedIds": [
+        "MT.2001"
+      ],
+      "Pillar": "Devices",
+      "PrimaryPillar": "Devices",
+      "DomainPillar": "Devices",
+      "DomainPillars": [
+        "Devices"
+      ],
+      "EngineLabel": "Devices",
+      "Source": "ZeroTrust",
+      "Sources": [
+        "ZeroTrust"
+      ],
+      "SourceStatuses": {
+        "ZeroTrust": "Investigate"
+      },
+      "StatusConflict": false,
+      "Category": "Compliance",
+      "SfiPillar": "Devices",
+      "ImplementationCost": "Medium",
+      "MinimumLicense": "INTUNE_A",
+      "RequiredRole": "Intune Administrator",
+      "AdminPortal": "Microsoft Intune Admin Center (intune.microsoft.com)",
+      "Status": "Investigate",
+      "Risk": "Medium",
+      "PriorityScore": 43,
+      "Title": "Ensure device compliance policies cover all platforms",
+      "FrameworkRef": "Microsoft Zero Trust (Devices · MT.2001)",
+      "Result": "Linux compliance policy is not assigned to any group.",
+      "UserImpact": "Medium",
+      "Description": "Unassigned compliance policies leave endpoints unmanaged.",
+      "SkippedReason": "",
+      "ErrorRemedy": "",
+      "Remediation": "1. Open 'Ensure device compliance policies cover all platforms' in Microsoft Intune Admin Center (intune.microsoft.com). 2. Apply the change to a pilot group in Report-only mode and verify sign-in/audit logs. 3. Enforce incrementally after impact validation. [Least-Privilege Role: Intune Administrator]",
+      "RemediationTr": "1. Microsoft Intune Admin Center (intune.microsoft.com) üzerinden 'Ensure device compliance policies cover all platforms' kontrolünü açın. 2. Değişikliği önce Denetim (Report-only) kipinde pilot gruba uygulayıp oturum açma/olay günlüklerini doğrulayın. 3. Etki analizi sonrası kademeli olarak Zorunlu (Enforce) durumuna geçin. [En Az Ayrıcalıklı Rol: Intune Administrator]",
+      "TranslationReviewed": true
+    },
+    {
+      "Id": "MT.3001",
+      "CanonicalId": "",
+      "CorrelatedIds": [
+        "MT.3001"
+      ],
+      "Pillar": "Network",
+      "PrimaryPillar": "Network",
+      "DomainPillar": "Network",
+      "DomainPillars": [
+        "Network"
+      ],
+      "EngineLabel": "Network",
+      "Source": "ZeroTrust",
+      "Sources": [
+        "ZeroTrust"
+      ],
+      "SourceStatuses": {
+        "ZeroTrust": "Passed"
+      },
+      "StatusConflict": false,
+      "Category": "Protocol",
+      "SfiPillar": "Network",
+      "ImplementationCost": "Low",
+      "MinimumLicense": "",
+      "RequiredRole": "Global Secure Access Administrator / Network Contributor",
+      "AdminPortal": "Global Secure Access / Azure Portal (portal.azure.com)",
+      "Status": "Passed",
+      "Risk": "High",
+      "PriorityScore": 0,
+      "Title": "Ensure legacy authentication protocols are blocked",
+      "FrameworkRef": "Microsoft Zero Trust (Network · MT.3001)",
+      "Result": "Legacy auth blocked by Conditional Access.",
+      "UserImpact": "High",
+      "Description": "Legacy protocols bypass MFA.",
+      "SkippedReason": "",
+      "ErrorRemedy": "",
+      "Remediation": "",
+      "RemediationTr": "",
+      "TranslationReviewed": true
+    },
+    {
+      "Id": "MT.4001",
+      "CanonicalId": "",
+      "CorrelatedIds": [
+        "MT.4001"
+      ],
+      "Pillar": "Data",
+      "PrimaryPillar": "Data",
+      "DomainPillar": "Data",
+      "DomainPillars": [
+        "Data"
+      ],
+      "EngineLabel": "Data",
+      "Source": "ZeroTrust",
+      "Sources": [
+        "ZeroTrust"
+      ],
+      "SourceStatuses": {
+        "ZeroTrust": "Failed"
+      },
+      "StatusConflict": false,
+      "Category": "Information Protection",
+      "SfiPillar": "Data",
+      "ImplementationCost": "Medium",
+      "MinimumLicense": "INFORMATION_PROTECTION_COMPLIANCE",
+      "RequiredRole": "Compliance Administrator / Information Protection Admin",
+      "AdminPortal": "Microsoft Purview Portal (purview.microsoft.com)",
+      "Status": "Failed",
+      "Risk": "Medium",
+      "PriorityScore": 58,
+      "Title": "Ensure sensitivity labels are published to all users",
+      "FrameworkRef": "Microsoft Zero Trust (Data · MT.4001)",
+      "Result": "Label policy scoped to 60 of 120 users.",
+      "UserImpact": "Medium",
+      "Description": "Partial label rollout leaves data unclassified.",
+      "SkippedReason": "",
+      "ErrorRemedy": "",
+      "Remediation": "1. Open 'Ensure sensitivity labels are published to all users' in Microsoft Purview Portal (purview.microsoft.com). 2. Apply the change to a pilot group in Report-only mode and verify sign-in/audit logs. 3. Enforce incrementally after impact validation. [Least-Privilege Role: Compliance Administrator / Information Protection Admin]",
+      "RemediationTr": "1. Microsoft Purview Portal (purview.microsoft.com) üzerinden 'Ensure sensitivity labels are published to all users' kontrolünü açın. 2. Değişikliği önce Denetim (Report-only) kipinde pilot gruba uygulayıp oturum açma/olay günlüklerini doğrulayın. 3. Etki analizi sonrası kademeli olarak Zorunlu (Enforce) durumuna geçin. [En Az Ayrıcalıklı Rol: Compliance Administrator / Information Protection Admin]",
+      "TranslationReviewed": true
+    },
+    {
+      "Id": "MT.5001",
+      "CanonicalId": "",
+      "CorrelatedIds": [
+        "MT.5001"
+      ],
+      "Pillar": "Network",
+      "PrimaryPillar": "Network",
+      "DomainPillar": "Network",
+      "DomainPillars": [
+        "Network"
+      ],
+      "EngineLabel": "Infrastructure",
+      "Source": "ZeroTrust",
+      "Sources": [
+        "ZeroTrust"
+      ],
+      "SourceStatuses": {
+        "ZeroTrust": "Passed"
+      },
+      "StatusConflict": false,
+      "Category": "Network Security",
+      "SfiPillar": "Infrastructure",
+      "ImplementationCost": "Low",
+      "MinimumLicense": "",
+      "RequiredRole": "Global Secure Access Administrator / Network Contributor",
+      "AdminPortal": "Global Secure Access / Azure Portal (portal.azure.com)",
+      "Status": "Passed",
+      "Risk": "Medium",
+      "PriorityScore": 0,
+      "Title": "Ensure Azure resources enforce HTTPS only",
+      "FrameworkRef": "Microsoft Zero Trust (Network · MT.5001)",
+      "Result": "All storage accounts enforce secure transfer.",
+      "UserImpact": "Medium",
+      "Description": "Plain HTTP exposes traffic to interception.",
+      "SkippedReason": "",
+      "ErrorRemedy": "",
+      "Remediation": "",
+      "RemediationTr": "",
+      "TranslationReviewed": true
+    },
+    {
+      "Id": "MT.6001",
+      "CanonicalId": "",
+      "CorrelatedIds": [
+        "MT.6001"
+      ],
+      "Pillar": "SecOps",
+      "PrimaryPillar": "SecOps",
+      "DomainPillar": "SecOps",
+      "DomainPillars": [
+        "SecOps"
+      ],
+      "EngineLabel": "SecOps",
+      "Source": "ZeroTrust",
+      "Sources": [
+        "ZeroTrust"
+      ],
+      "SourceStatuses": {
+        "ZeroTrust": "Skipped"
+      },
+      "StatusConflict": false,
+      "Category": "Endpoint Detection",
+      "SfiPillar": "SecOps",
+      "ImplementationCost": "High",
+      "MinimumLicense": "WINDEFATP",
+      "RequiredRole": "Security Administrator / Sentinel Contributor",
+      "AdminPortal": "Microsoft Defender XDR / Sentinel (security.microsoft.com)",
+      "Status": "Skipped",
+      "Risk": "High",
+      "PriorityScore": 45,
+      "Title": "Ensure Microsoft Defender for Endpoint is onboarded",
+      "FrameworkRef": "Microsoft Zero Trust (SecOps · MT.6001)",
+      "Result": "",
+      "UserImpact": "High",
+      "Description": "Without EDR, endpoint intrusions stay invisible.",
+      "SkippedReason": "Required license WINDEFATP is not assigned to the tenant.",
+      "ErrorRemedy": "",
+      "Remediation": "",
+      "RemediationTr": "",
+      "TranslationReviewed": true
+    },
+    {
+      "Id": "MT.6002",
+      "CanonicalId": "",
+      "CorrelatedIds": [
+        "MT.6002"
+      ],
+      "Pillar": "SecOps",
+      "PrimaryPillar": "SecOps",
+      "DomainPillar": "SecOps",
+      "DomainPillars": [
+        "SecOps"
+      ],
+      "EngineLabel": "SecOps",
+      "Source": "ZeroTrust",
+      "Sources": [
+        "ZeroTrust"
+      ],
+      "SourceStatuses": {
+        "ZeroTrust": "Failed"
+      },
+      "StatusConflict": false,
+      "Category": "Logging",
+      "SfiPillar": "SecOps",
+      "ImplementationCost": "Low",
+      "MinimumLicense": "",
+      "RequiredRole": "Security Administrator / Sentinel Contributor",
+      "AdminPortal": "Microsoft Defender XDR / Sentinel (security.microsoft.com)",
+      "Status": "Failed",
+      "Risk": "Low",
+      "PriorityScore": 53,
+      "Title": "Ensure audit logs are retained for 180 days",
+      "FrameworkRef": "Microsoft Zero Trust (SecOps · MT.6002)",
+      "Result": "Audit retention set to 90 days.",
+      "UserImpact": "Low",
+      "Description": "Short retention limits post-incident forensics.",
+      "SkippedReason": "",
+      "ErrorRemedy": "",
+      "Remediation": "1. Open 'Ensure audit logs are retained for 180 days' in Microsoft Defender XDR / Sentinel (security.microsoft.com). 2. Apply the change to a pilot group in Report-only mode and verify sign-in/audit logs. 3. Enforce incrementally after impact validation. [Least-Privilege Role: Security Administrator / Sentinel Contributor]",
+      "RemediationTr": "1. Microsoft Defender XDR / Sentinel (security.microsoft.com) üzerinden 'Ensure audit logs are retained for 180 days' kontrolünü açın. 2. Değişikliği önce Denetim (Report-only) kipinde pilot gruba uygulayıp oturum açma/olay günlüklerini doğrulayın. 3. Etki analizi sonrası kademeli olarak Zorunlu (Enforce) durumuna geçin. [En Az Ayrıcalıklı Rol: Security Administrator / Sentinel Contributor]",
+      "TranslationReviewed": true
+    },
+    {
+      "Id": "MT.7001",
+      "CanonicalId": "",
+      "CorrelatedIds": [
+        "MT.7001"
+      ],
+      "Pillar": "AI",
+      "PrimaryPillar": "AI",
+      "DomainPillar": "AI",
+      "DomainPillars": [
+        "AI"
+      ],
+      "EngineLabel": "AI",
+      "Source": "ZeroTrust",
+      "Sources": [
+        "ZeroTrust"
+      ],
+      "SourceStatuses": {
+        "ZeroTrust": "Skipped"
+      },
+      "StatusConflict": false,
+      "Category": "Agent Governance",
+      "SfiPillar": "AI",
+      "ImplementationCost": "Medium",
+      "MinimumLicense": "Microsoft_365_Copilot",
+      "RequiredRole": "Compliance Administrator / Information Protection Admin",
+      "AdminPortal": "Microsoft Purview / Entra Agent ID (entra.microsoft.com)",
+      "Status": "Skipped",
+      "Risk": "Medium",
+      "PriorityScore": 33,
+      "Title": "Ensure Copilot agents are covered by DLP policies",
+      "FrameworkRef": "Microsoft Zero Trust (AI · MT.7001)",
+      "Result": "",
+      "UserImpact": "Medium",
+      "Description": "Ungoverned agents can exfiltrate sensitive prompts.",
+      "SkippedReason": "Entra_Premium_Internet_Access capability is not licensed.",
+      "ErrorRemedy": "",
+      "Remediation": "",
+      "RemediationTr": "",
+      "TranslationReviewed": true
+    },
+    {
+      "Id": "SCUBA-AAD-2",
+      "CanonicalId": "",
+      "CorrelatedIds": [
+        "SCUBA-AAD-2"
+      ],
+      "Pillar": "Identity",
+      "PrimaryPillar": "Identity",
+      "DomainPillar": "Identity",
+      "DomainPillars": [
+        "Identity"
+      ],
+      "EngineLabel": "CISA SCuBA",
+      "Source": "CISA SCuBA",
+      "Sources": [
+        "CISA SCuBA"
+      ],
+      "SourceStatuses": {
+        "CISA SCuBA": "Investigate"
+      },
+      "StatusConflict": false,
+      "Category": "AAD",
+      "SfiPillar": "CISA SCuBA",
+      "ImplementationCost": "Unknown",
+      "MinimumLicense": "",
+      "RequiredRole": "Conditional Access Administrator / Security Administrator",
+      "AdminPortal": "Microsoft Entra Admin Center (entra.microsoft.com)",
+      "Status": "Investigate",
+      "Risk": "Medium",
+      "PriorityScore": 33,
+      "Title": "Ensure admin consent workflow is enabled",
+      "FrameworkRef": "CISA SCuBA M365 Baseline (SCUBA-AAD-2)",
+      "Result": "Workflow enabled but no reviewers assigned.",
+      "UserImpact": "Medium",
+      "Description": "Without reviewers, consent requests stall or get bypassed.",
+      "SkippedReason": "",
+      "ErrorRemedy": "",
+      "Remediation": "1. Open 'Ensure admin consent workflow is enabled' in Microsoft Entra Admin Center (entra.microsoft.com). 2. Apply the change to a pilot group in Report-only mode and verify sign-in/audit logs. 3. Enforce incrementally after impact validation. [Least-Privilege Role: Conditional Access Administrator / Security Administrator]",
+      "RemediationTr": "1. Microsoft Entra Admin Center (entra.microsoft.com) üzerinden 'Ensure admin consent workflow is enabled' kontrolünü açın. 2. Değişikliği önce Denetim (Report-only) kipinde pilot gruba uygulayıp oturum açma/olay günlüklerini doğrulayın. 3. Etki analizi sonrası kademeli olarak Zorunlu (Enforce) durumuna geçin. [En Az Ayrıcalıklı Rol: Conditional Access Administrator / Security Administrator]",
+      "TranslationReviewed": true
+    },
+    {
+      "Id": "ORCA-101",
+      "CanonicalId": "",
+      "CorrelatedIds": [
+        "ORCA-101"
+      ],
+      "Pillar": "SecOps",
+      "PrimaryPillar": "SecOps",
+      "DomainPillar": "SecOps",
+      "DomainPillars": [
+        "SecOps"
+      ],
+      "EngineLabel": "Defender for Office 365 (ORCA)",
+      "Source": "MDO / ORCA",
+      "Sources": [
+        "MDO / ORCA"
+      ],
+      "SourceStatuses": {
+        "MDO / ORCA": "Passed"
+      },
+      "StatusConflict": false,
+      "Category": "Email Authentication",
+      "SfiPillar": "Defender for Office 365",
+      "ImplementationCost": "Unknown",
+      "MinimumLicense": "",
+      "RequiredRole": "Security Administrator / Exchange Administrator",
+      "AdminPortal": "Microsoft Defender & Exchange Admin Center (security.microsoft.com)",
+      "Status": "Passed",
+      "Risk": "Medium",
+      "PriorityScore": 0,
+      "Title": "Ensure DMARC records are published",
+      "FrameworkRef": "Microsoft Defender for Office 365 / ORCA (ORCA-101)",
+      "Result": "DMARC p=reject published for all accepted domains.",
+      "UserImpact": "Medium",
+      "Description": "DMARC prevents domain spoofing.",
+      "SkippedReason": "",
+      "ErrorRemedy": "",
+      "Remediation": "",
+      "RemediationTr": "",
+      "TranslationReviewed": true
+    },
+    {
+      "Id": "ORCA-102",
+      "CanonicalId": "",
+      "CorrelatedIds": [
+        "ORCA-102"
+      ],
+      "Pillar": "SecOps",
+      "PrimaryPillar": "SecOps",
+      "DomainPillar": "SecOps",
+      "DomainPillars": [
+        "SecOps"
+      ],
+      "EngineLabel": "Defender for Office 365 (ORCA)",
+      "Source": "MDO / ORCA",
+      "Sources": [
+        "MDO / ORCA"
+      ],
+      "SourceStatuses": {
+        "MDO / ORCA": "Failed"
+      },
+      "StatusConflict": false,
+      "Category": "Safe Links",
+      "SfiPillar": "Defender for Office 365",
+      "ImplementationCost": "Unknown",
+      "MinimumLicense": "",
+      "RequiredRole": "Security Administrator / Exchange Administrator",
+      "AdminPortal": "Microsoft Defender & Exchange Admin Center (security.microsoft.com)",
+      "Status": "Failed",
+      "Risk": "Medium",
+      "PriorityScore": 48,
+      "Title": "Ensure Safe Links policies cover Teams",
+      "FrameworkRef": "Microsoft Defender for Office 365 / ORCA (ORCA-102)",
+      "Result": "Teams protection disabled in the default policy.",
+      "UserImpact": "Medium",
+      "Description": "Malicious links in chat bypass scanning.",
+      "SkippedReason": "",
+      "ErrorRemedy": "",
+      "Remediation": "1. Open 'Ensure Safe Links policies cover Teams' in Microsoft Defender & Exchange Admin Center (security.microsoft.com). 2. Apply the change to a pilot group in Report-only mode and verify sign-in/audit logs. 3. Enforce incrementally after impact validation. [Least-Privilege Role: Security Administrator / Exchange Administrator]",
+      "RemediationTr": "1. Microsoft Defender & Exchange Admin Center (security.microsoft.com) üzerinden 'Ensure Safe Links policies cover Teams' kontrolünü açın. 2. Değişikliği önce Denetim (Report-only) kipinde pilot gruba uygulayıp oturum açma/olay günlüklerini doğrulayın. 3. Etki analizi sonrası kademeli olarak Zorunlu (Enforce) durumuna geçin. [En Az Ayrıcalıklı Rol: Security Administrator / Exchange Administrator]",
+      "TranslationReviewed": true
+    },
+    {
+      "Id": "MT.8001",
+      "CanonicalId": "",
+      "CorrelatedIds": [
+        "MT.8001"
+      ],
+      "Pillar": "Data",
+      "PrimaryPillar": "Data",
+      "DomainPillar": "Data",
+      "DomainPillars": [
+        "Data"
+      ],
+      "EngineLabel": "Data",
+      "Source": "ZeroTrust",
+      "Sources": [
+        "ZeroTrust"
+      ],
+      "SourceStatuses": {
+        "ZeroTrust": "Skipped"
+      },
+      "StatusConflict": false,
+      "Category": "Sharing",
+      "SfiPillar": "Data",
+      "ImplementationCost": "Low",
+      "MinimumLicense": "",
+      "RequiredRole": "Compliance Administrator / Information Protection Admin",
+      "AdminPortal": "Microsoft Purview Portal (purview.microsoft.com)",
+      "Status": "Skipped",
+      "Risk": "Medium",
+      "PriorityScore": 38,
+      "Title": "Ensure SharePoint Online sharing is restricted externally",
+      "FrameworkRef": "Microsoft Zero Trust (Data · MT.8001)",
+      "Result": "",
+      "UserImpact": "Medium",
+      "Description": "Open external sharing widens the data exfiltration surface.",
+      "SkippedReason": "SharePointOnline module connection unavailable.",
+      "ErrorRemedy": "",
+      "Remediation": "",
+      "RemediationTr": "",
+      "TranslationReviewed": true
+    },
+    {
+      "Id": "MT.9001",
+      "CanonicalId": "",
+      "CorrelatedIds": [
+        "MT.9001"
+      ],
+      "Pillar": "Identity",
+      "PrimaryPillar": "Identity",
+      "DomainPillar": "Identity",
+      "DomainPillars": [
+        "Identity"
+      ],
+      "EngineLabel": "Identity",
+      "Source": "ZeroTrust",
+      "Sources": [
+        "ZeroTrust"
+      ],
+      "SourceStatuses": {
+        "ZeroTrust": "Error"
+      },
+      "StatusConflict": false,
+      "Category": "Monitoring",
+      "SfiPillar": "Identity",
+      "ImplementationCost": "Low",
+      "MinimumLicense": "",
+      "RequiredRole": "Conditional Access Administrator / Security Administrator",
+      "AdminPortal": "Microsoft Entra Admin Center (entra.microsoft.com)",
+      "Status": "Error",
+      "Risk": "High",
+      "PriorityScore": 70,
+      "Title": "Ensure risk detections are reviewed weekly",
+      "FrameworkRef": "Microsoft Zero Trust (Identity · MT.9001)",
+      "Result": "Collector returned HTTP 500 while reading riskDetections.",
+      "UserImpact": "High",
+      "Description": "Unreviewed detections stall the incident response loop.",
+      "SkippedReason": "",
+      "ErrorRemedy": "Assessment engine returned an error; inspect run-manifest.json and raw engine logs.",
+      "Remediation": "",
+      "RemediationTr": "",
+      "TranslationReviewed": true
+    },
+    {
+      "Id": "SCUBA-MS.AAD.1.1v1",
+      "CanonicalId": "TB-ID-LEGACY-AUTH",
+      "CorrelatedIds": [
+        "SCUBA-MS.AAD.1.1v1"
+      ],
+      "Pillar": "Identity",
+      "PrimaryPillar": "Identity",
+      "DomainPillar": "Identity",
+      "DomainPillars": [
+        "Identity"
+      ],
+      "EngineLabel": "CISA SCuBA",
+      "Source": "CISA SCuBA",
+      "Sources": [
+        "CISA SCuBA"
+      ],
+      "SourceStatuses": {
+        "CISA SCuBA": "Passed"
+      },
+      "StatusConflict": false,
+      "Category": "AAD",
+      "SfiPillar": "CISA SCuBA",
+      "ImplementationCost": "Unknown",
+      "MinimumLicense": "",
+      "RequiredRole": "Conditional Access Administrator / Security Administrator",
+      "AdminPortal": "Microsoft Entra Admin Center (entra.microsoft.com)",
+      "Status": "Passed",
+      "Risk": "High",
+      "PriorityScore": 0,
+      "Title": "Legacy authentication shall be blocked.",
+      "FrameworkRef": "CISA SCuBA M365 Baseline (SCUBA-MS.AAD.1.1v1)",
+      "Result": "Legacy authentication is blocked by policy.",
+      "UserImpact": "High",
+      "Description": "Legacy authentication shall be blocked.",
+      "SkippedReason": "",
+      "ErrorRemedy": "",
+      "Remediation": "",
+      "RemediationTr": "",
+      "TranslationReviewed": true
+    },
+    {
+      "Id": "SCUBA-MS.SECURITYSUITE.1.1v1",
+      "CanonicalId": "TB-SECOPS-COMMON-ATTACHMENT-FILTER",
+      "CorrelatedIds": [
+        "SCUBA-MS.SECURITYSUITE.1.1v1"
+      ],
+      "Pillar": "SecOps",
+      "PrimaryPillar": "SecOps",
+      "DomainPillar": "SecOps",
+      "DomainPillars": [
+        "SecOps"
+      ],
+      "EngineLabel": "CISA SCuBA",
+      "Source": "CISA SCuBA",
+      "Sources": [
+        "CISA SCuBA"
+      ],
+      "SourceStatuses": {
+        "CISA SCuBA": "Failed"
+      },
+      "StatusConflict": false,
+      "Category": "SECURITYSUITE",
+      "SfiPillar": "CISA SCuBA",
+      "ImplementationCost": "Unknown",
+      "MinimumLicense": "",
+      "RequiredRole": "Security Administrator / Sentinel Contributor",
+      "AdminPortal": "Microsoft Defender XDR / Sentinel (security.microsoft.com)",
+      "Status": "Failed",
+      "Risk": "High",
+      "PriorityScore": 65,
+      "Title": "Safe Links protection shall be enabled for email and Teams.",
+      "FrameworkRef": "CISA SCuBA M365 Baseline (SCUBA-MS.SECURITYSUITE.1.1v1)",
+      "Result": "Safe Links policy is not configured.",
+      "UserImpact": "High",
+      "Description": "Safe Links protection shall be enabled for email and Teams.",
+      "SkippedReason": "",
+      "ErrorRemedy": "",
+      "Remediation": "1. Open 'Safe Links protection shall be enabled for email and Teams.' in Microsoft Defender XDR / Sentinel (security.microsoft.com). 2. Apply the change to a pilot group in Report-only mode and verify sign-in/audit logs. 3. Enforce incrementally after impact validation. [Least-Privilege Role: Security Administrator / Sentinel Contributor]",
+      "RemediationTr": "1. Microsoft Defender XDR / Sentinel (security.microsoft.com) üzerinden 'Safe Links protection shall be enabled for email and Teams.' kontrolünü açın. 2. Değişikliği önce Denetim (Report-only) kipinde pilot gruba uygulayıp oturum açma/olay günlüklerini doğrulayın. 3. Etki analizi sonrası kademeli olarak Zorunlu (Enforce) durumuna geçin. [En Az Ayrıcalıklı Rol: Security Administrator / Sentinel Contributor]",
+      "TranslationReviewed": true
+    },
+    {
+      "Id": "ORCA-108",
+      "CanonicalId": "TB-SECOPS-DKIM-ENABLED",
+      "CorrelatedIds": [
+        "ORCA-108"
+      ],
+      "Pillar": "SecOps",
+      "PrimaryPillar": "SecOps",
+      "DomainPillar": "SecOps",
+      "DomainPillars": [
+        "SecOps"
+      ],
+      "EngineLabel": "Defender for Office 365 (ORCA)",
+      "Source": "MDO / ORCA",
+      "Sources": [
+        "MDO / ORCA"
+      ],
+      "SourceStatuses": {
+        "MDO / ORCA": "Failed"
+      },
+      "StatusConflict": false,
+      "Category": "Anti-Phishing",
+      "SfiPillar": "Defender for Office 365",
+      "ImplementationCost": "Unknown",
+      "MinimumLicense": "",
+      "RequiredRole": "Security Administrator / Exchange Administrator",
+      "AdminPortal": "Microsoft Defender & Exchange Admin Center (security.microsoft.com)",
+      "Status": "Failed",
+      "Risk": "Critical",
+      "PriorityScore": 75,
+      "Title": "Anti-Phishing policy spoof intelligence enabled",
+      "FrameworkRef": "Microsoft Defender for Office 365 / ORCA (ORCA-108)",
+      "Result": "Enable spoof intelligence in default Anti-Phishing policy.",
+      "UserImpact": "Medium",
+      "Description": "Critical spoof protection check",
+      "SkippedReason": "",
+      "ErrorRemedy": "",
+      "Remediation": "1. Open 'Anti-Phishing policy spoof intelligence enabled' in Microsoft Defender & Exchange Admin Center (security.microsoft.com). 2. Apply the change to a pilot group in Report-only mode and verify sign-in/audit logs. 3. Enforce incrementally after impact validation. [Least-Privilege Role: Security Administrator / Exchange Administrator]",
+      "RemediationTr": "1. Microsoft Defender & Exchange Admin Center (security.microsoft.com) üzerinden 'Anti-Phishing policy spoof intelligence enabled' kontrolünü açın. 2. Değişikliği önce Denetim (Report-only) kipinde pilot gruba uygulayıp oturum açma/olay günlüklerini doğrulayın. 3. Etki analizi sonrası kademeli olarak Zorunlu (Enforce) durumuna geçin. [En Az Ayrıcalıklı Rol: Security Administrator / Exchange Administrator]",
+      "TranslationReviewed": true
+    },
+    {
+      "Id": "ORCA-120",
+      "CanonicalId": "",
+      "CorrelatedIds": [
+        "ORCA-120"
+      ],
+      "Pillar": "SecOps",
+      "PrimaryPillar": "SecOps",
+      "DomainPillar": "SecOps",
+      "DomainPillars": [
+        "SecOps"
+      ],
+      "EngineLabel": "Defender for Office 365 (ORCA)",
+      "Source": "MDO / ORCA",
+      "Sources": [
+        "MDO / ORCA"
+      ],
+      "SourceStatuses": {
+        "MDO / ORCA": "Passed"
+      },
+      "StatusConflict": false,
+      "Category": "Safe Attachments",
+      "SfiPillar": "Defender for Office 365",
+      "ImplementationCost": "Unknown",
+      "MinimumLicense": "",
+      "RequiredRole": "Security Administrator / Exchange Administrator",
+      "AdminPortal": "Microsoft Defender & Exchange Admin Center (security.microsoft.com)",
+      "Status": "Passed",
+      "Risk": "High",
+      "PriorityScore": 0,
+      "Title": "Safe Attachments policy enabled",
+      "FrameworkRef": "Microsoft Defender for Office 365 / ORCA (ORCA-120)",
+      "Result": "Safe Attachments is enabled.",
+      "UserImpact": "Medium",
+      "Description": "High attachment protection check",
+      "SkippedReason": "",
+      "ErrorRemedy": "",
+      "Remediation": "",
+      "RemediationTr": "",
+      "TranslationReviewed": true
+    },
+    {
+      "Id": "MT.1006",
+      "CanonicalId": "TB-ID-PHISH-RESISTANT-MFA-ADMINS",
+      "CorrelatedIds": [
+        "MT.1006"
+      ],
+      "Pillar": "Identity",
+      "PrimaryPillar": "Identity",
+      "DomainPillar": "Identity",
+      "DomainPillars": [
+        "Identity"
+      ],
+      "EngineLabel": "Maester (EIDSCA / CIS)",
+      "Source": "Maester",
+      "Sources": [
+        "Maester"
+      ],
+      "SourceStatuses": {
+        "Maester": "Failed"
+      },
+      "StatusConflict": false,
+      "Category": "Entra / M365 Baseline",
+      "SfiPillar": "Protect identities and secrets",
+      "ImplementationCost": "Low",
+      "MinimumLicense": "",
+      "RequiredRole": "Conditional Access Administrator / Security Administrator",
+      "AdminPortal": "Microsoft Entra Admin Center (entra.microsoft.com)",
+      "Status": "Failed",
+      "Risk": "High",
+      "PriorityScore": 80,
+      "Title": "Require MFA for all users",
+      "FrameworkRef": "Maester · Entra / M365 Baseline (MT.1006)",
+      "Result": "No active CA policy covers all users.",
+      "UserImpact": "High",
+      "Description": "Ensure Conditional Access requires MFA for all users.",
+      "SkippedReason": "",
+      "ErrorRemedy": "",
+      "Remediation": "1. Open 'Require MFA for all users' in Microsoft Entra Admin Center (entra.microsoft.com). 2. Apply the change to a pilot group in Report-only mode and verify sign-in/audit logs. 3. Enforce incrementally after impact validation. [Least-Privilege Role: Conditional Access Administrator / Security Administrator]",
+      "RemediationTr": "1. Microsoft Entra Admin Center (entra.microsoft.com) üzerinden 'Require MFA for all users' kontrolünü açın. 2. Değişikliği önce Denetim (Report-only) kipinde pilot gruba uygulayıp oturum açma/olay günlüklerini doğrulayın. 3. Etki analizi sonrası kademeli olarak Zorunlu (Enforce) durumuna geçin. [En Az Ayrıcalıklı Rol: Conditional Access Administrator / Security Administrator]",
+      "TranslationReviewed": true
+    },
+    {
+      "Id": "CIS.M365.1.1.1",
+      "CanonicalId": "TB-ID-CLOUD-ONLY-ADMINS",
+      "CorrelatedIds": [
+        "CIS.M365.1.1.1"
+      ],
+      "Pillar": "Identity",
+      "PrimaryPillar": "Identity",
+      "DomainPillar": "Identity",
+      "DomainPillars": [
+        "Identity"
+      ],
+      "EngineLabel": "Maester (EIDSCA / CIS)",
+      "Source": "CIS M365",
+      "Sources": [
+        "CIS M365"
+      ],
+      "SourceStatuses": {
+        "CIS M365": "Passed"
+      },
+      "StatusConflict": false,
+      "Category": "Entra / M365 Baseline",
+      "SfiPillar": "Protect identities and secrets",
+      "ImplementationCost": "Low",
+      "MinimumLicense": "",
+      "RequiredRole": "Conditional Access Administrator / Security Administrator",
+      "AdminPortal": "Microsoft Entra Admin Center (entra.microsoft.com)",
+      "Status": "Passed",
+      "Risk": "Medium",
+      "PriorityScore": 0,
+      "Title": "Ensure Administrative accounts are cloud-only",
+      "FrameworkRef": "CIS Microsoft 365 Foundations v7.0.0 (CIS.M365.1.1.1)",
+      "Result": "All Global Admins are cloud-only.",
+      "UserImpact": "Medium",
+      "Description": "Cloud-only admin accounts reduce hybrid blast radius.",
+      "SkippedReason": "",
+      "ErrorRemedy": "",
+      "Remediation": "",
+      "RemediationTr": "",
+      "TranslationReviewed": true
+    }
+  ],
+  "PlannedFindings": [],
+  "Labels": {
+    "TotalChecks": "Total Checks",
+    "HighRiskFailed": "High-Risk Failed",
+    "PassedLabel": "Passed",
+    "SkippedChecksLabel": "skipped checks"
+  }
+}

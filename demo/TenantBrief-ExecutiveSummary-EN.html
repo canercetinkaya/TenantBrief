@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; connect-src 'none'; img-src 'self' data:; style-src 'unsafe-inline'; script-src 'none'; font-src 'none'; base-uri 'none'; form-action 'none';" />
+<title>TenantBrief - Executive Summary — Security Posture & License ROI</title>
+<style>
+  body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; color: #0f172a; margin: 32px; }
+  h1 { font-size: 22px; margin-bottom: 4px; }
+  .sub { color: #475569; margin-bottom: 20px; font-size: 13px; }
+  .grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 20px; }
+  .card { border: 1px solid #cbd5e1; border-radius: 8px; padding: 12px; }
+  .val { font-size: 24px; font-weight: 700; }
+  table { width: 100%; border-collapse: collapse; margin-top: 12px; }
+  th, td { border: 1px solid #cbd5e1; padding: 8px 10px; text-align: left; font-size: 13px; }
+  th { background: #f1f5f9; }
+  code { background: #f1f5f9; padding: 1px 5px; border-radius: 4px; font-size: 11px; }
+  @page { size: A4 portrait; margin: 10mm; }
+  @media print {
+    body { margin: 0; font-size: 11px; }
+    h1 { font-size: 18px; }
+    h2 { font-size: 14px; margin-top: 14px !important; }
+    .grid { gap: 8px; margin-bottom: 10px; }
+    .card { padding: 8px; break-inside: avoid; page-break-inside: avoid; }
+    .val { font-size: 18px; }
+    table { margin-top: 8px; }
+    th, td { padding: 5px 7px; font-size: 10.5px; }
+    tr { break-inside: avoid; page-break-inside: avoid; }
+  }
+</style>
+</head>
+<body>
+  <h1>TenantBrief — Executive Summary — Security Posture & License ROI</h1>
+  <div class="sub">Generated: 2026-11-20 10:26 | Read-Only Assessment</div>
+  
+  <div style='border:1px solid #38bdf8;background:#f0f9ff;color:#0369a1;padding:8px 12px;border-radius:6px;font-size:12.5px;margin-bottom:14px;'>Test / Lab Tenant Notice: Only 1 user(s) detected; scores and license metrics may not represent production scale.</div>
+  <div class="grid">
+    <div class="card"><div>Total</div><div class="val">575</div></div>
+    <div class="card"><div>Passed</div><div class="val">121</div></div>
+    <div class="card"><div>Failed (High)</div><div class="val">232 (139)</div></div>
+    <div class="card"><div>Idle License (Annual USD)</div><div class="val">N/A</div></div>
+  </div>
+  <div class='grid' style='grid-template-columns:repeat(1,1fr);'><div class='card'><div>Copilot Readiness Maturity</div><div class='val' style='font-size:15px;'>L3 - Defined</div></div></div>
+  <table>
+    <thead><tr><th>Benchmark / Engine (Framework)</th><th>Passed / Total</th><th>Score</th></tr></thead>
+    <tbody><tr><td>Microsoft Zero Trust Assessment</td><td>55 / 215</td><td><strong>25.6%</strong></td></tr>
+<tr><td>CIS Microsoft 365 Foundations v7.0.0</td><td>11 / 28</td><td><strong>39.3%</strong></td></tr>
+<tr><td>CISA SCuBA M365 Security Baseline</td><td>7 / 34</td><td><strong>20.6%</strong></td></tr>
+<tr><td>Microsoft Defender for Office 365 (ORCA)</td><td>44 / 67</td><td><strong>65.7%</strong></td></tr>
+<tr><td>Entra ID Security Config Analyzer (EIDSCA)</td><td>12 / 34</td><td><strong>35.3%</strong></td></tr>
+<tr><td>Maester M365 &amp; XSPM Baseline</td><td>34 / 94</td><td><strong>36.2%</strong></td></tr></tbody>
+  </table>
+  <h2 style="font-size:17px;margin-top:24px;">Top 15 Priority Remediations — lowest effort first (Offline Analysis)</h2>
+  <table>
+    <thead><tr><th>Control</th><th>Cost</th><th>Recommended Action</th></tr></thead>
+    <tbody><tr><td><code>21786</code> <strong>User sign-in activity uses token protection</strong><br/><span style='color:#64748b;font-size:11px;'>Identity · Access control</span></td><td>Low</td><td>A threat actor can intercept or extract authentication tokens from memory, local storage on a legitimate device, or by inspecting network traffic. The attacker might replay those tokens to bypass authentication controls ...</td></tr>
+<tr><td><code>21788</code> <strong>Global Administrators don&#39;t have standing elevated access to all Azure subscriptions in the tenant</strong><br/><span style='color:#64748b;font-size:11px;'>Identity · Privileged access</span></td><td>Low</td><td>Global Administrators with persistent access to Azure subscriptions expand the attack surface for threat actors. If a Global Administrator account is compromised, attackers can immediately enumerate resources, modify con...</td></tr>
+<tr><td><code>21796</code> <strong>Block legacy authentication policies are configured</strong><br/><span style='color:#64748b;font-size:11px;'>Identity · Access control</span></td><td>Low</td><td>Legacy authentication protocols such as basic authentication for SMTP and IMAP don&#39;t support modern security features like multifactor authentication (MFA), which is crucial for protecting against unauthorized access. Th...</td></tr>
+<tr><td><code>21802</code> <strong>Microsoft Authenticator app shows sign-in context</strong><br/><span style='color:#64748b;font-size:11px;'>Identity · Access control</span></td><td>Low</td><td>Without sign-in context, threat actors can exploit authentication fatigue by flooding users with push notifications, increasing the chance that a user accidentally approves a malicious request. When users get generic pus...</td></tr>
+<tr><td><code>21808</code> <strong>Restrict device code flow</strong><br/><span style='color:#64748b;font-size:11px;'>Identity · Access control</span></td><td>Low</td><td>Device code flow is a cross-device authentication flow designed for input-constrained devices. It can be exploited in phishing attacks, where an attacker initiates the flow and tricks a user into completing it on their d...</td></tr>
+<tr><td><code>21809</code> <strong>Admin consent workflow is enabled</strong><br/><span style='color:#64748b;font-size:11px;'>Identity · Application management</span></td><td>Low</td><td>Enabling the admin consent workflow in a Microsoft Entra tenant ensures that users who need access to an application that requires admin consent can submit a request for review rather than being blocked outright. Without...</td></tr>
+<tr><td><code>21811</code> <strong>Password expiration is disabled</strong><br/><span style='color:#64748b;font-size:11px;'>Identity · Credential management</span></td><td>Low</td><td>When password expiration policies remain enabled, threat actors can exploit the predictable password rotation patterns that users typically follow when forced to change passwords regularly. Users frequently create weaker...</td></tr>
+<tr><td><code>21812</code> <strong>Maximum number of Global Administrators doesn&#39;t exceed eight users</strong><br/><span style='color:#64748b;font-size:11px;'>Identity · Privileged access</span></td><td>Low</td><td>An excessive number of Global Administrator accounts creates an expanded attack surface that threat actors can exploit through various initial access vectors. Each extra privileged account represents a potential entry po...</td></tr>
+<tr><td><code>21828</code> <strong>Authentication transfer is blocked</strong><br/><span style='color:#64748b;font-size:11px;'>Identity · Access control</span></td><td>Low</td><td>Blocking authentication transfer in Microsoft Entra ID is a critical security control. It helps protect against token theft and replay attacks by preventing the use of device tokens to silently authenticate on other devi...</td></tr>
+<tr><td><code>21837</code> <strong>Limit the maximum number of devices per user to 10</strong><br/><span style='color:#64748b;font-size:11px;'>Identity · Devices</span></td><td>Low</td><td>Controlling device proliferation is important. Set a reasonable limit on the number of devices each user can register in your Microsoft Entra ID tenant. Limiting device registration maintains security while allowing busi...</td></tr>
+<tr><td><code>21838</code> <strong>Security key authentication method enabled</strong><br/><span style='color:#64748b;font-size:11px;'>Identity · Credential management</span></td><td>Low</td><td>FIDO2 security keys provide hardware-backed, phishing-resistant authentication that protects against credential theft and unauthorized access. Security keys use cryptographic proof of identity bound to a specific device,...</td></tr>
+<tr><td><code>21840</code> <strong>Security key attestation is enforced</strong><br/><span style='color:#64748b;font-size:11px;'>Identity · Credential management</span></td><td>Low</td><td>When security key attestation isn&#39;t enforced, threat actors can exploit weak or compromised authentication hardware to establish persistent presence within organizational environments. Without attestation validation, mal...</td></tr>
+<tr><td><code>21842</code> <strong>Block administrators from using SSPR</strong><br/><span style='color:#64748b;font-size:11px;'>Identity · Credential management, Privileged access</span></td><td>Low</td><td>Self-Service Password Reset (SSPR) for administrators allows password changes to happen without strong secondary authentication factors or administrative oversight. Threat actors who compromise administrative credentials...</td></tr>
+<tr><td><code>21847</code> <strong>Password protection for on-premises is enabled</strong><br/><span style='color:#64748b;font-size:11px;'>Identity · Credential management</span></td><td>Low</td><td>When on-premises password protection isn’t enabled or enforced, threat actors can use low-and-slow password spray with common variants, such as season+year+symbol or local terms, to gain initial access to Active Director...</td></tr>
+<tr><td><code>21872</code> <strong>Require multifactor authentication for device join and device registration using user action</strong><br/><span style='color:#64748b;font-size:11px;'>Identity · Access control</span></td><td>Low</td><td>Threat actors can exploit the lack of multifactor authentication during new device registration. Once authenticated, they can register rogue devices, establish persistence, and circumvent security controls tied to truste...</td></tr></tbody>
+  </table>
+</body>
+</html>

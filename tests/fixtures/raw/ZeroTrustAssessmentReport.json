@@ -1,0 +1,288 @@
+{
+  "Domain": "fabrikam.onmicrosoft.com",
+  "TenantId": "00000000-0000-0000-0000-000000000000",
+  "ExecutedAt": "2026-01-15T09:00:00Z",
+  "TenantInfo": {
+    "TenantOverview": {
+      "UserCount": 120,
+      "GuestCount": 14,
+      "GroupCount": 33,
+      "ApplicationCount": 21,
+      "DeviceCount": 140,
+      "ManagedDeviceCount": 96
+    },
+    "OverviewCaMfaAllUsers": {
+      "description": "All users are required to register MFA."
+    },
+    "DeviceOverview": {
+      "DeviceCompliance": {
+        "compliantDeviceCount": 88,
+        "nonCompliantDeviceCount": 8
+      }
+    },
+    "AgentOverview": {
+      "TotalAgents": 3
+    },
+    "OverviewAuthMethodsPrivilegedUsers": {
+      "nodes": [
+        {
+          "source": "Users",
+          "target": "Single factor",
+          "value": 2
+        },
+        {
+          "source": "Users",
+          "target": "Phishable",
+          "value": 5
+        },
+        {
+          "source": "Users",
+          "target": "Phish resistant",
+          "value": 11
+        }
+      ]
+    }
+  },
+  "Tests": [
+    {
+      "TestId": "MT.1007",
+      "TestTitle": "Ensure MFA is enforced for all users",
+      "TestStatus": "Passed",
+      "TestRisk": "High",
+      "TestPillar": "Identity",
+      "TestCategory": "Authentication",
+      "TestSfiPillar": "Identity",
+      "TestImplementationCost": "Low",
+      "TestMinimumLicense": "ENTRA_PREMIUM_P1",
+      "SkippedReason": "",
+      "TestResult": "Conditional Access policy requires MFA for all users.",
+      "TestImpact": "High",
+      "TestDescription": "MFA blocks credential stuffing and password spray attacks."
+    },
+    {
+      "TestId": "MT.1002",
+      "TestTitle": "Ensure break-glass accounts are excluded and monitored",
+      "TestStatus": "Failed",
+      "TestRisk": "High",
+      "TestPillar": "Identity",
+      "TestCategory": "Privileged Access",
+      "TestSfiPillar": "Identity",
+      "TestImplementationCost": "Low",
+      "TestMinimumLicense": "",
+      "SkippedReason": "",
+      "TestResult": "2 emergency access accounts are not monitored by alert rules.",
+      "TestImpact": "High",
+      "TestDescription": "Unmonitored break-glass accounts are a common persistence path."
+    },
+    {
+      "TestId": "MT.1003",
+      "TestTitle": "Ensure phishing-resistant authentication is used for administrators",
+      "TestStatus": "Failed",
+      "TestRisk": "Medium",
+      "TestPillar": "Identity",
+      "TestCategory": "Authentication",
+      "TestSfiPillar": "Identity",
+      "TestImplementationCost": "Medium",
+      "TestMinimumLicense": "ENTRA_PREMIUM_P2",
+      "SkippedReason": "",
+      "TestResult": "5 privileged users still register phishable methods.",
+      "TestImpact": "Medium",
+      "TestDescription": "FIDO2 and passkeys remove OTP interception risk."
+    },
+    {
+      "TestId": "MT.2001",
+      "TestTitle": "Ensure device compliance policies cover all platforms",
+      "TestStatus": "Investigate",
+      "TestRisk": "Medium",
+      "TestPillar": "Devices",
+      "TestCategory": "Compliance",
+      "TestSfiPillar": "Devices",
+      "TestImplementationCost": "Medium",
+      "TestMinimumLicense": "INTUNE_A",
+      "SkippedReason": "",
+      "TestResult": "Linux compliance policy is not assigned to any group.",
+      "TestImpact": "Medium",
+      "TestDescription": "Unassigned compliance policies leave endpoints unmanaged."
+    },
+    {
+      "TestId": "MT.3001",
+      "TestTitle": "Ensure legacy authentication protocols are blocked",
+      "TestStatus": "Passed",
+      "TestRisk": "High",
+      "TestPillar": "Network",
+      "TestCategory": "Protocol",
+      "TestSfiPillar": "Network",
+      "TestImplementationCost": "Low",
+      "TestMinimumLicense": "",
+      "SkippedReason": "",
+      "TestResult": "Legacy auth blocked by Conditional Access.",
+      "TestImpact": "High",
+      "TestDescription": "Legacy protocols bypass MFA."
+    },
+    {
+      "TestId": "MT.4001",
+      "TestTitle": "Ensure sensitivity labels are published to all users",
+      "TestStatus": "Failed",
+      "TestRisk": "Medium",
+      "TestPillar": "Data",
+      "TestCategory": "Information Protection",
+      "TestSfiPillar": "Data",
+      "TestImplementationCost": "Medium",
+      "TestMinimumLicense": "INFORMATION_PROTECTION_COMPLIANCE",
+      "SkippedReason": "",
+      "TestResult": "Label policy scoped to 60 of 120 users.",
+      "TestImpact": "Medium",
+      "TestDescription": "Partial label rollout leaves data unclassified."
+    },
+    {
+      "TestId": "MT.5001",
+      "TestTitle": "Ensure Azure resources enforce HTTPS only",
+      "TestStatus": "Passed",
+      "TestRisk": "Medium",
+      "TestPillar": "Infrastructure",
+      "TestCategory": "Network Security",
+      "TestSfiPillar": "Infrastructure",
+      "TestImplementationCost": "Low",
+      "TestMinimumLicense": "",
+      "SkippedReason": "",
+      "TestResult": "All storage accounts enforce secure transfer.",
+      "TestImpact": "Medium",
+      "TestDescription": "Plain HTTP exposes traffic to interception."
+    },
+    {
+      "TestId": "MT.6001",
+      "TestTitle": "Ensure Microsoft Defender for Endpoint is onboarded",
+      "TestStatus": "Skipped",
+      "TestRisk": "High",
+      "TestPillar": "SecOps",
+      "TestCategory": "Endpoint Detection",
+      "TestSfiPillar": "SecOps",
+      "TestImplementationCost": "High",
+      "TestMinimumLicense": "WINDEFATP",
+      "SkippedReason": "Required license WINDEFATP is not assigned to the tenant.",
+      "TestResult": "",
+      "TestImpact": "High",
+      "TestDescription": "Without EDR, endpoint intrusions stay invisible."
+    },
+    {
+      "TestId": "MT.6002",
+      "TestTitle": "Ensure audit logs are retained for 180 days",
+      "TestStatus": "Failed",
+      "TestRisk": "Low",
+      "TestPillar": "SecOps",
+      "TestCategory": "Logging",
+      "TestSfiPillar": "SecOps",
+      "TestImplementationCost": "Low",
+      "TestMinimumLicense": "",
+      "SkippedReason": "",
+      "TestResult": "Audit retention set to 90 days.",
+      "TestImpact": "Low",
+      "TestDescription": "Short retention limits post-incident forensics."
+    },
+    {
+      "TestId": "MT.7001",
+      "TestTitle": "Ensure Copilot agents are covered by DLP policies",
+      "TestStatus": "Skipped",
+      "TestRisk": "Medium",
+      "TestPillar": "AI",
+      "TestCategory": "Agent Governance",
+      "TestSfiPillar": "AI",
+      "TestImplementationCost": "Medium",
+      "TestMinimumLicense": "Microsoft_365_Copilot",
+      "SkippedReason": "Entra_Premium_Internet_Access capability is not licensed.",
+      "TestResult": "",
+      "TestImpact": "Medium",
+      "TestDescription": "Ungoverned agents can exfiltrate sensitive prompts."
+    },
+    {
+      "TestId": "SCUBA-MS.AAD.3.2v2",
+      "TestTitle": "Ensure MFA is enforced for all users",
+      "TestStatus": "Failed",
+      "TestRisk": "High",
+      "TestPillar": "CISA SCuBA",
+      "TestCategory": "AAD",
+      "TestSfiPillar": "CISA SCuBA",
+      "TestImplementationCost": "",
+      "TestMinimumLicense": "",
+      "SkippedReason": "",
+      "TestResult": "Policy exists but excludes 3 guest accounts.",
+      "TestImpact": "High",
+      "TestDescription": "Guest exclusions weaken the baseline."
+    },
+    {
+      "TestId": "SCUBA-AAD-2",
+      "TestTitle": "Ensure admin consent workflow is enabled",
+      "TestStatus": "Investigate",
+      "TestRisk": "Medium",
+      "TestPillar": "CISA SCuBA",
+      "TestCategory": "AAD",
+      "TestSfiPillar": "CISA SCuBA",
+      "TestImplementationCost": "",
+      "TestMinimumLicense": "",
+      "SkippedReason": "",
+      "TestResult": "Workflow enabled but no reviewers assigned.",
+      "TestImpact": "Medium",
+      "TestDescription": "Without reviewers, consent requests stall or get bypassed."
+    },
+    {
+      "TestId": "ORCA-101",
+      "TestTitle": "Ensure DMARC records are published",
+      "TestStatus": "Passed",
+      "TestRisk": "Medium",
+      "TestPillar": "Defender for Office 365 (ORCA)",
+      "TestCategory": "Email Authentication",
+      "TestSfiPillar": "Defender for Office 365",
+      "TestImplementationCost": "",
+      "TestMinimumLicense": "",
+      "SkippedReason": "",
+      "TestResult": "DMARC p=reject published for all accepted domains.",
+      "TestImpact": "Medium",
+      "TestDescription": "DMARC prevents domain spoofing."
+    },
+    {
+      "TestId": "ORCA-102",
+      "TestTitle": "Ensure Safe Links policies cover Teams",
+      "TestStatus": "Failed",
+      "TestRisk": "Medium",
+      "TestPillar": "Defender for Office 365 (ORCA)",
+      "TestCategory": "Safe Links",
+      "TestSfiPillar": "Defender for Office 365",
+      "TestImplementationCost": "",
+      "TestMinimumLicense": "",
+      "SkippedReason": "",
+      "TestResult": "Teams protection disabled in the default policy.",
+      "TestImpact": "Medium",
+      "TestDescription": "Malicious links in chat bypass scanning."
+    },
+    {
+      "TestId": "MT.8001",
+      "TestTitle": "Ensure SharePoint Online sharing is restricted externally",
+      "TestStatus": "Skipped",
+      "TestRisk": "Medium",
+      "TestPillar": "Data",
+      "TestCategory": "Sharing",
+      "TestSfiPillar": "Data",
+      "TestImplementationCost": "Low",
+      "TestMinimumLicense": "",
+      "SkippedReason": "SharePointOnline module connection unavailable.",
+      "TestResult": "",
+      "TestImpact": "Medium",
+      "TestDescription": "Open external sharing widens the data exfiltration surface."
+    },
+    {
+      "TestId": "MT.9001",
+      "TestTitle": "Ensure risk detections are reviewed weekly",
+      "TestStatus": "Error",
+      "TestRisk": "High",
+      "TestPillar": "Identity",
+      "TestCategory": "Monitoring",
+      "TestSfiPillar": "Identity",
+      "TestImplementationCost": "Low",
+      "TestMinimumLicense": "",
+      "SkippedReason": "",
+      "TestResult": "Collector returned HTTP 500 while reading riskDetections.",
+      "TestImpact": "High",
+      "TestDescription": "Unreviewed detections stall the incident response loop."
+    }
+  ]
+}

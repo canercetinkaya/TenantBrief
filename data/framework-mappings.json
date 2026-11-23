@@ -1,0 +1,68 @@
+{
+  "frameworks": {
+    "ZeroTrust": {
+      "nameEn": "Microsoft Zero Trust Assessment",
+      "nameTr": "Microsoft Zero Trust Assessment",
+      "sourceTag": "ZeroTrust",
+      "upstreamUrl": "https://github.com/microsoft/zerotrustassessment",
+      "descriptionEn": "Official Microsoft Zero Trust Assessment checks across Identity, Devices, Network, Data, Infrastructure, SecOps, and AI.",
+      "descriptionTr": "Identity, Devices, Network, Data, Infrastructure, SecOps ve AI alanlarında Microsoft resmi ZeroTrustAssessment denetimleri."
+    },
+    "CIS_M365": {
+      "nameEn": "CIS Microsoft 365 Foundations v7.0.0",
+      "nameTr": "CIS Microsoft 365 Temelleri v7.0.0",
+      "sourceTag": "CIS M365",
+      "upstreamUrl": "https://github.com/maester365/maester",
+      "descriptionEn": "Verified CIS Microsoft 365 Foundations Benchmark v7.0.0 automated controls executed via Maester.",
+      "descriptionTr": "Maester üzerinden koşturulan doğrulanmış CIS Microsoft 365 Foundations Benchmark v7.0.0 kontrolleri."
+    },
+    "CISA_SCuBA": {
+      "nameEn": "CISA SCuBA M365 Security Baseline",
+      "nameTr": "CISA SCuBA M365 Güvenlik Taban Hattı",
+      "sourceTag": "CISA SCuBA",
+      "upstreamUrl": "https://github.com/cisagov/ScubaGear",
+      "descriptionEn": "CISA Secure Cloud Business Applications (SCuBA) Microsoft 365 security configuration baseline executed via ScubaGear.",
+      "descriptionTr": "ScubaGear motoruyla ölçülen ABD CISA SCuBA Microsoft 365 güvenlik yapılandırma taban hattı."
+    },
+    "MDO_ORCA": {
+      "nameEn": "Microsoft Defender for Office 365 (ORCA)",
+      "nameTr": "Microsoft Defender for Office 365 (ORCA)",
+      "sourceTag": "MDO / ORCA",
+      "upstreamUrl": "https://github.com/martin9700/ORCA",
+      "descriptionEn": "Office 365 Recommended Configuration Analyzer (ORCA) controls for anti-phishing, Safe Links, Safe Attachments, and DKIM/DMARC.",
+      "descriptionTr": "Kimlik avı koruması, Güvenli Bağlantılar, Güvenli Ekler ve DKIM/DMARC için Exchange Online / ORCA kontrolleri."
+    },
+    "EIDSCA": {
+      "nameEn": "Entra ID Security Config Analyzer (EIDSCA)",
+      "nameTr": "Entra ID Güvenlik Yapılandırma Analizi (EIDSCA)",
+      "sourceTag": "EIDSCA",
+      "upstreamUrl": "https://github.com/maester365/maester",
+      "descriptionEn": "Entra ID Security Config Analyzer checks evaluating authentication methods, app consent, and directory hardening.",
+      "descriptionTr": "Kimlik doğrulama yöntemleri, uygulama onayları ve dizin sıkılaştırma ayarlarını denetleyen EIDSCA kontrolleri."
+    },
+    "Maester": {
+      "nameEn": "Maester M365 & XSPM Baseline",
+      "nameTr": "Maester M365 & XSPM Kontrolleri",
+      "sourceTag": "Maester",
+      "upstreamUrl": "https://github.com/maester365/maester",
+      "descriptionEn": "Native Maester security tests across Entra ID, Intune, Defender XDR, Exposure Management, Purview, Exchange, Teams, and Copilot Studio.",
+      "descriptionTr": "Entra ID, Intune, Defender XDR, Exposure Management, Purview, Exchange, Teams ve Copilot Studio yerel Maester testleri."
+    },
+    "EntraFalcon": {
+      "nameEn": "EntraFalcon Privilege & Attack-Path Audit",
+      "nameTr": "EntraFalcon Yetki ve Saldırı Yolu Denetimi",
+      "sourceTag": "EntraFalcon",
+      "upstreamUrl": "https://github.com/CompassSecurity/EntraFalcon",
+      "descriptionEn": "Compass Security EntraFalcon attack-path, tiered administration, and privileged Entra role findings.",
+      "descriptionTr": "Compass Security EntraFalcon yetki yükseltme yolları, katmanlı yönetim ve ayrıcalıklı Entra rol bulguları."
+    },
+    "FastTrack": {
+      "nameEn": "Microsoft FastTrack Copilot & SharePoint Risk",
+      "nameTr": "Microsoft FastTrack Copilot & SharePoint Riski",
+      "sourceTag": "FastTrack",
+      "upstreamUrl": "https://microsoft.github.io/FastTrack/",
+      "descriptionEn": "Microsoft FastTrack read-only SharePoint oversharing risk (Analyze-SharePointRisk) and Power Platform / Copilot Studio agent inventory controls.",
+      "descriptionTr": "Microsoft FastTrack salt okunur SharePoint aşırı paylaşım riski (Analyze-SharePointRisk) ve Power Platform / Copilot Studio ajan envanteri kontrolleri."
+    }
+  }
+}
