@@ -125,8 +125,19 @@ Connect-TenantBrief -Profile Full -IncludeAzure
 Invoke-TenantBriefAssessment -OutputPath "$HOME\TenantBriefReport" -Language tr -Framework All -ScubaInteractiveLogin -ScubaProducts aad,securitysuite,exo,sharepoint,teams
 ```
 
-### 3. Unattended (Zero-Popup Certificate Auth)
-For scheduled runs using an Entra ID App Registration + X.509 certificate across Graph, ZeroTrustAssessment, Exchange Online, ScubaGear, and Maester, see **[docs/unattended-auth.md](docs/unattended-auth.md)**.
+### 3. Unattended (Zero-Popup, Full 100% Coverage via Certificate Auth)
+```powershell
+# One-time setup: creates local non-exportable X.509 cert + read-only Entra ID App Registration + Global Reader
+Initialize-TenantBriefApp
+
+# Every future run: 0 popups, full ZeroTrust + ScubaGear + ORCA + Maester + License ROI
+Connect-TenantBrief -UseAppAuth
+Invoke-TenantBriefAssessment -OutputPath "$HOME\TenantBriefReport" -Language tr -Framework All
+
+# Full rollback (deletes App Registration, local cert & profile)
+Initialize-TenantBriefApp -Remove
+```
+See **[docs/unattended-auth.md](docs/unattended-auth.md)** for the verified engine certificate matrix and least-privilege permissions.
 
 ---
 
