@@ -14,7 +14,43 @@ function Test-TenantBriefPrerequisites {
     #>
     [CmdletBinding()]
     [OutputType([PSCustomObject])]
-    param()
+    param(
+        [Parameter()]
+        [switch]$AuthPlan,
+
+        [Parameter()]
+        [Alias('Profile')]
+        [ValidateSet('Quick', 'Full')]
+        [string]$AuthProfile = 'Quick',
+
+        [Parameter()]
+        [switch]$IncludeAzure,
+
+        [Parameter()]
+        [switch]$SkipTeams,
+
+        [Parameter()]
+        [switch]$SkipSharePoint,
+
+        [Parameter()]
+        [switch]$ScubaInteractiveLogin,
+
+        [Parameter()]
+        [ValidateSet('aad', 'securitysuite', 'exo', 'sharepoint', 'teams', 'powerplatform', 'powerbi')]
+        [string[]]$ScubaProducts = @('aad', 'securitysuite', 'exo', 'sharepoint', 'teams', 'powerplatform', 'powerbi')
+    )
+
+    if ($AuthPlan) {
+        $plan = Get-TenantBriefAuthPlan `
+            -AuthProfile $AuthProfile `
+            -IncludeAzure:$IncludeAzure `
+            -SkipTeams:$SkipTeams `
+            -SkipSharePoint:$SkipSharePoint `
+            -ScubaInteractiveLogin:$ScubaInteractiveLogin `
+            -ScubaProducts $ScubaProducts
+        Write-TenantBriefAuthBriefing -Plan $plan
+        return $plan
+    }
 
     $results = New-Object System.Collections.Generic.List[object]
 

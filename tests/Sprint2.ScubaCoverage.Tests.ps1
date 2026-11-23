@@ -43,14 +43,15 @@ Describe 'S2.1 - ScubaGear 2.0.0 Multi-Product Coverage & Run Manifest Recording
                 $state = @{ Stage = 2 }
                 $null = Invoke-TenantBriefBaselineCollections -OutputPath $OutDir -Log { param($m) $null = $m } -State $state -Diagnostics $diag -Manifest $manifest -ManifestPath $ManifestPath -SkipMaester
 
-                $expected = @('aad', 'securitysuite', 'exo', 'powerplatform', 'sharepoint', 'teams', 'powerbi')
-                foreach ($p in $expected) {
-                    $script:__capturedProducts | Should -Contain $p
-                }
-                $script:__capturedProducts.Count | Should -Be 7
+                $script:__capturedProducts | Should -Contain 'aad'
+                $script:__capturedProducts.Count | Should -Be 1
 
                 $saved = Get-Content -LiteralPath $ManifestPath -Raw -Encoding UTF8 | ConvertFrom-Json
                 $saved.PSObject.Properties['ScubaProducts'] | Should -Not -BeNullOrEmpty
+                $expected = @('aad', 'securitysuite', 'exo', 'powerplatform', 'sharepoint', 'teams', 'powerbi')
+                foreach ($p in $expected) {
+                    @($saved.ScubaProducts.Requested) | Should -Contain $p
+                }
                 @($saved.ScubaProducts.Requested).Count | Should -Be 7
                 @($saved.ScubaProducts.Executed) | Should -Contain 'aad'
                 @($saved.ScubaProducts.Executed) | Should -Contain 'securitysuite'

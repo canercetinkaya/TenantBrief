@@ -53,7 +53,7 @@ Describe 'v2.0.1 - ScubaGear Partial Coverage Diagnostics, -ScubaInteractiveLogi
             }
 
             $res.LogInValues[0] | Should -BeFalse
-            $res.LogInValues[1] | Should -BeTrue
+            $res.LogInValues | Should -Contain $true
             @($res.Manifest1.ScubaProducts.Skipped).Count | Should -Be 6
             $scubaDiag = @($res.Diag1 | Where-Object { $_.Component -eq 'ScubaGear' -and $_.Severity -eq 'Warning' })
             $scubaDiag.Count | Should -BeGreaterOrEqual 1

@@ -20,8 +20,16 @@ function Connect-TenantBrief {
         [string]$Tenant,
 
         [Parameter()]
+        [Alias('Profile')]
+        [ValidateSet('Quick', 'Full')]
+        [string]$AuthProfile = 'Quick',
+
+        [Parameter()]
+        [switch]$IncludeAzure,
+
+        [Parameter()]
         [ValidateSet('Graph', 'Azure', 'ExchangeOnline', 'SecurityCompliance', 'SharePointOnline')]
-        [string[]]$Service = @('Graph', 'Azure', 'ExchangeOnline', 'SecurityCompliance', 'SharePointOnline'),
+        [string[]]$Service,
 
         [Parameter()]
         [switch]$UseDeviceCode,
@@ -35,6 +43,19 @@ function Connect-TenantBrief {
         [Parameter()]
         [switch]$AutoFixDependencies
     )
+
+    $planArgs = @{
+        AuthProfile    = $AuthProfile
+        IncludeAzure   = [bool]$IncludeAzure
+        SkipTeams      = [bool]$SkipTeams
+        SkipSharePoint = [bool]$SkipSharePoint
+    }
+    if ($PSBoundParameters.ContainsKey('Service') -and $Service -and $Service.Count -gt 0) {
+        $planArgs['Service'] = $Service
+    }
+    $authPlan = Get-TenantBriefAuthPlan @planArgs
+    $effectiveServices = @($authPlan.Services)
+    Write-TenantBriefAuthBriefing -Plan $authPlan
 
     Write-Host "[TenantBrief] Cleaning any previous tenant sessions..." -ForegroundColor DarkGray
     if (Get-Module -Name 'Microsoft.Graph.Authentication') {
@@ -203,16 +224,23 @@ function Connect-TenantBrief {
         }
     }
 
-    $params = @{ Service = $Service }
-    if ($Tenant) { $params['TenantId'] = $Tenant }
-    if ($UseDeviceCode) { $params['UseDeviceCode'] = $true }
+    $phaseAServices = @($effectiveServices | Where-Object { $_ -in @('Graph', 'Azure') })
+    $phaseBServices = @($effectiveServices | Where-Object { $_ -in @('ExchangeOnline', 'SecurityCompliance', 'SharePointOnline') })
+    if ($phaseAServices.Count -eq 0 -and $phaseBServices.Count -gt 0) {
+        $phaseAServices = $phaseBServices
+        $phaseBServices = @()
+    }
 
-    Write-Host "[TenantBrief] Connecting in Read-Only mode..." -ForegroundColor Green
+    $paramsA = @{ Service = $phaseAServices }
+    if ($Tenant) { $paramsA['TenantId'] = $Tenant }
+    if ($UseDeviceCode) { $paramsA['UseDeviceCode'] = $true }
+
+    Write-Host "[TenantBrief] Connecting in Read-Only mode (Profile: $AuthProfile)..." -ForegroundColor Green
     Set-StrictMode -Off
     try {
         Import-Module -Name 'Microsoft.Graph.Authentication' -RequiredVersion $graphReqVersion -Global -ErrorAction SilentlyContinue 2>$null 3>$null | Out-Null
         Import-Module ZeroTrustAssessment -Global -ErrorAction SilentlyContinue 2>$null 3>$null | Out-Null
-        Connect-ZtAssessment @params
+        Connect-ZtAssessment @paramsA
     } finally {
         Set-StrictMode -Version Latest
     }
@@ -221,10 +249,28 @@ function Connect-TenantBrief {
     if (-not $mgCtx) {
         throw "Authentication canceled or failed: Microsoft Graph session could not be established."
     }
-    Write-Host "[TenantBrief] Verified active Graph session for: $($mgCtx.Account)" -ForegroundColor Green
+    $loginHintUpn = [string]$mgCtx.Account
+    Write-Host "[TenantBrief] Verified active Graph session for: $loginHintUpn" -ForegroundColor Green
 
-    # Auto-connect Microsoft Teams so Stage 3b Maester Teams/CIS checks do not skip (12+ controls)
-    if (-not $SkipTeams -and (Get-Module -ListAvailable -Name 'MicrosoftTeams')) {
+    if ($phaseBServices.Count -gt 0) {
+        $paramsB = @{ Service = $phaseBServices }
+        if ($mgCtx.TenantId) { $paramsB['TenantId'] = $mgCtx.TenantId }
+        elseif ($Tenant) { $paramsB['TenantId'] = $Tenant }
+        if ($UseDeviceCode) { $paramsB['UseDeviceCode'] = $true }
+        if (-not [string]::IsNullOrWhiteSpace($loginHintUpn)) {
+            $paramsB['UserPrincipalName'] = $loginHintUpn
+        }
+        Write-Information -MessageData "[TenantBrief] Connecting secondary services ($($phaseBServices -join ', ')) with UPN login hint ($loginHintUpn)..." -InformationAction Continue
+        Set-StrictMode -Off
+        try {
+            Connect-ZtAssessment @paramsB
+        } finally {
+            Set-StrictMode -Version Latest
+        }
+    }
+
+    # Auto-connect Microsoft Teams only in Full profile (not Quick) and without -AccountId (d41e7ff WAM Error 3399548929)
+    if ($authPlan.IncludeTeams -and (Get-Module -ListAvailable -Name 'MicrosoftTeams')) {
         Write-Host "[TenantBrief] Connecting to Microsoft Teams (Read-Only for Teams/CIS checks)..." -ForegroundColor Cyan
         Set-StrictMode -Off
         try {
@@ -253,8 +299,8 @@ function Connect-TenantBrief {
         }
     }
 
-    # Verify SharePoint Online session; if not established by Connect-ZtAssessment, auto-connect via SPO Admin URL
-    if (-not $SkipSharePoint -and ($Service -contains 'SharePointOnline')) {
+    # Verify SharePoint Online session only when explicitly part of the AuthPlan (disclosed in pre-auth briefing)
+    if ($authPlan.IncludeSharePoint) {
         $spoConnected = $false
         try {
             if (Get-Command Get-SPOTenant -ErrorAction SilentlyContinue) {

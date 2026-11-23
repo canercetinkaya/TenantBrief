@@ -73,9 +73,11 @@ By default, **TenantBrief never installs, downloads, or deletes local PowerShell
 
 | Runtime Event | What Happens | Writes / Data Leaving Machine? |
 | --- | --- | --- |
-| **`Connect-TenantBrief`** | Opens interactive read-only sign-in for Microsoft Graph, Azure, EXO, SCC, Teams, and SPO. | **Zero tenant writes.** Zero telemetry. |
-| **`Invoke-TenantBriefAssessment` (default)** | Reuses the active Graph/EXO/SPO session (`-LogIn:$false` for ScubaGear -> AAD only; skipped products flagged in `Diagnostics` and `CISA_SCuBA` badge). Hosts a localhost progress UI on `127.0.0.1:8925–8945`. | **Zero tenant writes.** All HTML/JSON written locally. |
-| **`-ScubaInteractiveLogin`** | On Windows, launches an isolated `powershell.exe -NoProfile` subprocess under `InvariantCulture` to authenticate all 7 ScubaGear 2.0 products (bypasses upstream `Utility.psm1:406` `tr-TR` locale bug and `ConnectHelpers.psm1:264` PS7 MSAL bug; live-verified `6/7` products). | **Zero changes to user modules.** Subprocess log saved to `raw-scuba\scuba-subprocess.log`. |
+| **`Test-TenantBriefPrerequisites -AuthPlan`** | Dry-run authentication plan: prints the exact services and expected interactive prompt count for `-Profile Quick` or `-Profile Full` without opening any session. | **Zero network calls.** |
+| **`Connect-TenantBrief` (Default: `-Profile Quick`)** | Prints a pre-auth briefing, then connects read-only to **Graph + Exchange Online + Security & Compliance** (passing Graph UPN as login hint to EXO/IPPS; **Azure is excluded unless `-IncludeAzure`**, Teams & SPO are skipped in `Quick`). | **Zero tenant writes.** Zero telemetry. |
+| **`Connect-TenantBrief -Profile Full`** | Adds explicit **SharePoint Online** and **Microsoft Teams** sign-ins (disclosed upfront in the pre-auth briefing; Teams omits `-AccountId` to avoid WAM Error `3399548929` and falls back to Device Code if WAM blocks). Add `-IncludeAzure` for Azure ARM checks. | **Zero tenant writes.** Zero telemetry. |
+| **`Invoke-TenantBriefAssessment` (default)** | Reuses the active session (`ScubaGear aad` runs in the main session with `-LogIn:$false` under `InvariantCulture` -> **0 extra prompts**). Hosts a localhost progress UI on `127.0.0.1:8925–8945`. | **Zero tenant writes.** All HTML/JSON written locally. |
+| **`-ScubaInteractiveLogin` (+ `-ScubaProducts`)** | Runs `aad` in the main session (`0` extra prompts), then launches an isolated Windows PowerShell 5.1 subprocess (`InvariantCulture`) **only for remaining non-AAD products** (`securitysuite`, `exo`, `sharepoint`, `teams`, `powerplatform`, `powerbi`). | **Zero changes to user modules.** Subprocess log saved to `raw-scuba\sub-interactive\scuba-subprocess.log`. |
 | **Optional `-TranslatorKey`** | Translates only uncached TR strings via Azure AI Translator after stripping UPNs, GUIDs, and tenant domains. | **Disabled by default.** No text leaves the machine without an explicit key. |
 
 ---
@@ -99,20 +101,32 @@ By default, **TenantBrief never installs, downloads, or deletes local PowerShell
 
 ## Quick Start
 
+### 1. Quick Profile (Default — Minimal Sign-In Prompts)
 ```powershell
 git clone https://github.com/canercetinkaya/TenantBrief.git
 cd TenantBrief
 Import-Module .\TenantBrief.psd1 -Force
 
-# 1. Read-only preflight check (changes nothing)
+# Read-only preflight + dry-run auth plan (changes nothing)
 Test-TenantBriefPrerequisites
+Test-TenantBriefPrerequisites -AuthPlan
 
-# 2. Authenticate read-only (add -AutoFixDependencies only if you want missing modules installed)
+# Connect read-only (Graph + EXO + IPPS; add -IncludeAzure for Azure ARM checks)
 Connect-TenantBrief
 
-# 3. Run full assessment (add -ScubaInteractiveLogin for full 7-product ScubaGear coverage)
+# Run assessment (ZeroTrust + ScubaGear aad [0 extra prompts] + ORCA + Maester + License ROI)
 Invoke-TenantBriefAssessment -OutputPath "$HOME\TenantBriefReport" -Language tr -Framework All
 ```
+
+### 2. Full Profile (Includes Teams, SharePoint Online & Multi-Product ScubaGear)
+```powershell
+Test-TenantBriefPrerequisites -AuthPlan -Profile Full -ScubaInteractiveLogin -ScubaProducts aad,securitysuite,exo,sharepoint,teams
+Connect-TenantBrief -Profile Full -IncludeAzure
+Invoke-TenantBriefAssessment -OutputPath "$HOME\TenantBriefReport" -Language tr -Framework All -ScubaInteractiveLogin -ScubaProducts aad,securitysuite,exo,sharepoint,teams
+```
+
+### 3. Unattended (Zero-Popup Certificate Auth)
+For scheduled runs using an Entra ID App Registration + X.509 certificate across Graph, ZeroTrustAssessment, Exchange Online, ScubaGear, and Maester, see **[docs/unattended-auth.md](docs/unattended-auth.md)**.
 
 ---
 
