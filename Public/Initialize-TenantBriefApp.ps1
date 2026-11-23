@@ -35,6 +35,9 @@ function Initialize-TenantBriefApp {
         [string]$ProfilePath,
 
         [Parameter()]
+        [switch]$UpdatePermissions,
+
+        [Parameter()]
         [switch]$Remove
     )
 
@@ -95,20 +98,32 @@ function Initialize-TenantBriefApp {
     $onMsDomain = @($orgResp.value[0].verifiedDomains | Where-Object { $_.name -like '*.onmicrosoft.com' -and $_.name -notlike '*.mail.onmicrosoft.com' } | Select-Object -First 1)
     $orgDomain = if ($onMsDomain -and $onMsDomain.name) { [string]$onMsDomain.name } else { [string]$orgResp.value[0].verifiedDomains[0].name }
 
-    # 1. Create non-exportable local X.509 certificate
-    $notAfter = (Get-Date).AddMonths($CertValidityMonths)
-    $cert = New-SelfSignedCertificate `
-        -Subject "CN=$AppDisplayName-$orgDomain" `
-        -CertStoreLocation 'Cert:\CurrentUser\My' `
-        -KeyExportPolicy NonExportable `
-        -KeySpec Signature `
-        -KeyLength 2048 `
-        -HashAlgorithm SHA256 `
-        -NotAfter $notAfter `
-        -ErrorAction Stop
+    $existingProf = if ($UpdatePermissions) { Get-TenantBriefAppProfile -ProfilePath $resolvedProfilePath } else { $null }
+    if ($UpdatePermissions -and -not $existingProf) {
+        throw "No existing local app profile found at '$resolvedProfilePath'. Run Initialize-TenantBriefApp without -UpdatePermissions first."
+    }
 
-    $rawCertB64 = [Convert]::ToBase64String($cert.GetRawCertData())
-    $thumbprint = [string]$cert.Thumbprint
+    # 1. Create non-exportable local X.509 certificate (or reuse existing cert when -UpdatePermissions)
+    $notAfter = (Get-Date).AddMonths($CertValidityMonths)
+    $rawCertB64 = ''
+    $thumbprint = ''
+    if ($UpdatePermissions) {
+        $thumbprint = [string]$existingProf.CertificateThumbprint
+        if ($existingProf.CertExpiresAt) { $notAfter = [datetime]$existingProf.CertExpiresAt }
+    } else {
+        $cert = New-SelfSignedCertificate `
+            -Subject "CN=$AppDisplayName-$orgDomain" `
+            -CertStoreLocation 'Cert:\CurrentUser\My' `
+            -KeyExportPolicy NonExportable `
+            -KeySpec Signature `
+            -KeyLength 2048 `
+            -HashAlgorithm SHA256 `
+            -NotAfter $notAfter `
+            -ErrorAction Stop
+
+        $rawCertB64 = [Convert]::ToBase64String($cert.GetRawCertData())
+        $thumbprint = [string]$cert.Thumbprint
+    }
 
     # 2. Resolve Microsoft Graph & Exchange Online service principals and exact least-privilege read-only appRole IDs
     $graphSpResp = Invoke-MgGraphRequest -Method GET -Uri "https://graph.microsoft.com/v1.0/servicePrincipals?`$filter=appId eq '00000003-0000-0000-c000-000000000000'&`$select=id,appId,appRoles" -ErrorAction Stop
@@ -118,19 +133,42 @@ function Initialize-TenantBriefApp {
     $exoSp = if ($exoSpResp.value -and $exoSpResp.value.Count -gt 0) { $exoSpResp.value[0] } else { $null }
 
     $desiredGraphRoles = @(
+        'Application.Read.All',
+        'AttackSimulation.Read.All',
         'AuditLog.Read.All',
+        'CopilotPackages.Read.All',
+        'CrossTenantInformation.ReadBasic.All',
+        'CustomSecAttributeAssignment.Read.All',
+        'DeviceManagementApps.Read.All',
         'DeviceManagementConfiguration.Read.All',
         'DeviceManagementManagedDevices.Read.All',
+        'DeviceManagementRBAC.Read.All',
+        'DeviceManagementServiceConfig.Read.All',
         'Directory.Read.All',
+        'DirectoryRecommendations.Read.All',
+        'EntitlementManagement.Read.All',
+        'IdentityRiskEvent.Read.All',
+        'IdentityRiskyServicePrincipal.Read.All',
         'IdentityRiskyUser.Read.All',
+        'LifecycleWorkflows-Workflow.Read.All',
+        'NetworkAccess.Read.All',
         'Organization.Read.All',
         'Policy.Read.All',
         'Policy.Read.ConditionalAccess',
+        'Policy.Read.PermissionGrant',
+        'PrivilegedAccess.Read.AzureAD',
+        'PrivilegedAssignmentSchedule.Read.AzureADGroup',
+        'PrivilegedEligibilitySchedule.Read.AzureADGroup',
         'Reports.Read.All',
         'RoleManagement.Read.All',
+        'SecurityAlert.Read.All',
         'SecurityEvents.Read.All',
+        'SecurityIdentitiesHealth.Read.All',
+        'SecurityIdentitiesSensors.Read.All',
+        'SecurityIncident.Read.All',
         'SharePointTenantSettings.Read.All',
         'Sites.Read.All',
+        'ThreatHunting.Read.All',
         'UserAuthenticationMethod.Read.All'
     )
 
@@ -158,29 +196,38 @@ function Initialize-TenantBriefApp {
         })
     }
 
-    # 3. Create Entra ID Application with public key credential attached
-    $appBody = @{
-        displayName            = $AppDisplayName
-        signInAudience         = 'AzureADMyOrg'
-        requiredResourceAccess = $reqAccess.ToArray()
-        keyCredentials         = @(
-            @{
-                type        = 'AsymmetricX509Cert'
-                usage       = 'Verify'
-                displayName = "TenantBrief-$($thumbprint.Substring(0,8))"
-                key         = $rawCertB64
-            }
-        )
-    } | ConvertTo-Json -Depth 10
+    if ($UpdatePermissions) {
+        $appId       = [string]$existingProf.AppId
+        $appObjectId = [string]$existingProf.AppObjectId
+        $spId        = [string]$existingProf.ServicePrincipalId
+        $patchBody = @{ requiredResourceAccess = $reqAccess.ToArray() } | ConvertTo-Json -Depth 10
+        Invoke-MgGraphRequest -Method PATCH -Uri "https://graph.microsoft.com/v1.0/applications/$appObjectId" -Body $patchBody -ContentType 'application/json' -ErrorAction Stop | Out-Null
+        Write-Information -MessageData "[TenantBrief] Updated requiredResourceAccess on existing app ($appId) with $($graphRoleIds.Count) read-only Graph roles." -InformationAction Continue
+    } else {
+        # 3. Create Entra ID Application with public key credential attached
+        $appBody = @{
+            displayName            = $AppDisplayName
+            signInAudience         = 'AzureADMyOrg'
+            requiredResourceAccess = $reqAccess.ToArray()
+            keyCredentials         = @(
+                @{
+                    type        = 'AsymmetricX509Cert'
+                    usage       = 'Verify'
+                    displayName = "TenantBrief-$($thumbprint.Substring(0,8))"
+                    key         = $rawCertB64
+                }
+            )
+        } | ConvertTo-Json -Depth 10
 
-    $appObj = Invoke-MgGraphRequest -Method POST -Uri 'https://graph.microsoft.com/v1.0/applications' -Body $appBody -ContentType 'application/json' -ErrorAction Stop
-    $appId = [string]$appObj.appId
-    $appObjectId = [string]$appObj.id
+        $appObj = Invoke-MgGraphRequest -Method POST -Uri 'https://graph.microsoft.com/v1.0/applications' -Body $appBody -ContentType 'application/json' -ErrorAction Stop
+        $appId = [string]$appObj.appId
+        $appObjectId = [string]$appObj.id
 
-    # 4. Create Service Principal
-    $spBody = @{ appId = $appId } | ConvertTo-Json
-    $spObj = Invoke-MgGraphRequest -Method POST -Uri 'https://graph.microsoft.com/v1.0/servicePrincipals' -Body $spBody -ContentType 'application/json' -ErrorAction Stop
-    $spId = [string]$spObj.id
+        # 4. Create Service Principal
+        $spBody = @{ appId = $appId } | ConvertTo-Json
+        $spObj = Invoke-MgGraphRequest -Method POST -Uri 'https://graph.microsoft.com/v1.0/servicePrincipals' -Body $spBody -ContentType 'application/json' -ErrorAction Stop
+        $spId = [string]$spObj.id
+    }
 
     # 5. Grant admin consent via appRoleAssignments
     foreach ($rid in $graphRoleIds) {
