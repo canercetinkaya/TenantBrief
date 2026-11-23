@@ -10,7 +10,7 @@
 [![PowerShell](https://img.shields.io/badge/PowerShell-7.0%2B-38bdf8.svg)](https://learn.microsoft.com/powershell/)
 [![Pester](https://img.shields.io/badge/Pester-136%2F136%20PASS-16a34a.svg)](tests/)
 
-*`ZeroTrustAssessment`, `CISA ScubaGear 2.0`, `Microsoft ORCA`, `Maester` (`EIDSCA` / `CIS M365 v7.0.0` / `XSPM`) ve isteğe bağlı `EntraFalcon` çıktılarının tamamını tek yerel çalıştırmada **6 kanonik güvenlik sütununda**, **doğrulanmış standart skorlarıyla**, **32 SKU R1–R7 lisans israfı denetimiyle** ve **Copilot hazırlık analiziyle** birleştirir — kiracıda tek bir ayar bile değiştirmeden.*
+*`ZeroTrustAssessment`, `CISA ScubaGear 2.0`, `Microsoft ORCA`, `Maester` (`EIDSCA` / `CIS M365 v7.0.0` / `XSPM`) ve `EntraFalcon` (isteğe bağlı / optional) çıktılarının tamamını tek yerel çalıştırmada **6 kanonik güvenlik sütununda**, **doğrulanmış standart skorlarıyla**, **32 SKU R1–R7 lisans israfı denetimiyle** ve **Copilot hazırlık analiziyle** birleştirir — kiracıda tek bir ayar bile değiştirmeden.*
 
 <br/>
 
@@ -29,7 +29,7 @@
 | Kurumsal Problem | TenantBrief Yaklaşımı |
 | --- | --- |
 | **Parçalı araç çıktıları ve mükerrer triyaj** | Tüm bulguları araç sekmelerine bölmek yerine **6 kanonik güvenlik sütununda** (`Identity`, `Devices`, `Network`, `Data`, `AI`, `SecOps`) toplar; **42 kontrollü crosswalk** ile çoklu kaynak etiketleri (`Sources`) ekler. |
-| **Yapay uyumluluk yüzdeleri** | Şişirilmiş çerçeve ortalamaları üretmez; yalnızca gerçek test edilen standartların (`ZeroTrustAssessment`, `CIS M365 v7.0.0`, `CISA SCuBA`, `ORCA`, `EIDSCA`, `XSPM`, `EntraFalcon`) doğrulanmış skorlarını hesaplar. |
+| **Yapay uyumluluk yüzdeleri** | Şişirilmiş çerçeve ortalamaları üretmez; yalnızca gerçek test edilen standartların (`ZeroTrustAssessment`, `CIS M365 v7.0.0`, `CISA SCuBA`, `ORCA`, `EIDSCA`, `XSPM`, `EntraFalcon`) korelasyon öncesi doğrulanmış skorlarını hesaplar. |
 | **Atıl E3/E5/Copilot lisans maliyeti** | Canlı `/subscribedSkus` ve `/users` telemetrisiyle **32 SKU** üzerinde **R1–R7 lisans israfı**, 10 çakışma kuralı ve **L1–L4 Copilot hazırlık** analizi sunar. |
 | **Çoklu kimlik doğrulama yorgunluğu** | `Initialize-TenantBriefApp` + `Connect-TenantBrief -UseAppAuth` ile **0 (sıfır) pencere tam kapsam**, veya varsayılan `-Profile Quick` ile **0–3 pencere** hızlı başlangıç sağlar. |
 | **Veri gizliliği ve denetim güvenliği** | **%100 salt okunur**, sıfır telemetri, harici AI çağrısı yok, katı çevrimdışı CSP (`default-src 'none'`), HTML-escaped JSON, açık/koyu tema geçişli rapor ve `-Anonymize` maskeleme. |
