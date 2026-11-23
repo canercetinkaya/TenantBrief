@@ -45,6 +45,7 @@ Describe 'S3.4 - Turkish Translation Cache Coverage (SCuBA/CIS/EIDSCA/Maester/OR
                 }
                 Tests = @(
                     [PSCustomObject]@{ TestId = '21796'; TestTitle = 'Block legacy authentication policies are configured'; TestStatus = 'Passed'; TestRisk = 'High'; TestPillar = 'Identity'; TestCategory = 'CA'; TestSfiPillar = 'Identity'; TestImplementationCost = 'Low'; TestMinimumLicense = 'P1'; TestImpact = 'Low'; TestResult = 'OK'; TestDescription = 'Desc'; SkippedReason = '' }
+                    [PSCustomObject]@{ TestId = '24823'; TestTitle = 'Company Portal branding and support settings enhance user experience and trust'; TestStatus = 'Passed'; TestRisk = 'Low'; TestPillar = 'Devices'; TestCategory = 'Intune'; TestSfiPillar = 'Devices'; TestImplementationCost = 'Low'; TestMinimumLicense = 'Intune'; TestImpact = 'Low'; TestResult = 'OK'; TestDescription = 'Desc'; SkippedReason = '' }
                 )
             } | ConvertTo-Json -Depth 10 | Set-Content -Path $rawZt -Encoding UTF8
 

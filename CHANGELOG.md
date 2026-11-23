@@ -2,7 +2,17 @@
 
 All notable changes to **TenantBrief** are documented in this file.
 
-## [Unreleased]
+## [2.1.1] - 2026-11-23
+
+### Visual, UX & Editorial Polish
+- **Offline Light / Dark Theme Toggle (`assets/report-template.html`):** Added zero-dependency `#btnTheme` header toggle (`Ink Dark` ↔ `Ink Light`) wired via `addEventListener` with safe `localStorage` persistence and strict offline CSP preserved.
+- **SVG Token Harmonization & A4 Print Contrast:** Replaced hardcoded bright chart colors in `#donutChart`, `#pillarSvgChart`, and `#riskEffortHeatmap` with CSS variables (`var(--ok)`, `var(--fail)`, `var(--warn)`, `var(--skip)`, `var(--raised)`, `var(--text)`, `var(--muted)`, `var(--border)`) and enforced `#111827` print ink.
+- **Live Progress Dashboard (`assets/progress-template.html`):** Applied `Ink Dark` surface ramp, flat monochrome `TB` mark, `tabular-nums` timers, 4px grid, and `prefers-reduced-motion` support.
+- **Keyboard Shortcuts:** Pressing `/` opens Findings and focuses `#searchInput`; pressing `Esc` clears and blurs `#searchInput` (with `<kbd>/</kbd>` hint).
+- **Editorial Turkish Translations (`data/tr-translation-cache.json`):** Human-reviewed and corrected the 30 highest-priority `ZeroTrust` findings (`PriorityScore 80–95`, `Reviewed: true`, `Source: "human"`), fixing inverted security meanings, truncated descriptions, and corrupted Microsoft Learn URLs.
+- **Refreshed `demo/` Reports:** Regenerated all 4 static demo HTML reports (`TenantBriefReport-TR/EN.html` and `TenantBrief-ExecutiveSummary-TR/EN.html`) on the `v2.1.1` template.
+
+## [2.1.0] - 2026-11-23
 
 ### Highlights
 - **Read-Only Multi-Engine Orchestration:** Runs `ZeroTrustAssessment`, `CISA ScubaGear 2.0`, `Microsoft ORCA`, `Maester` (`EIDSCA` / `CIS M365 v7.0.0` / `XSPM`), and optional `EntraFalcon` / Microsoft FastTrack JSON exports without writing to tenant configuration.

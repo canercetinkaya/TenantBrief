@@ -7,11 +7,11 @@
     "Source": "machine"
   },
   "ZeroTrust|41033": {
-    "Title": "Microsoft Defender for Office 365'teki kimlik avı önleme politikaları, taklit ve sahtecilik koruması ile yapılandırılmıştır",
-    "Desc": "Müşterinin alan adına benzeyen bir alan adını kaydeden veya bir yöneticinin Gönderen adresini sahte yapan tehdit aktörü, standart gönderici kimlik doğrulama kontrollerini atlayan bir ödeme yönlendirme veya kimlik bilgisi toplama mesajı gönderebilir. Taklit koruması açık olmadan, alıcı tanıdık bir isim görür, mesajı açar, bağlantıyı takip eder ve ya kimlik bilgileri gönderir ya da havale onaylar. Microsoft Defender for Office 365 oltalama önleme politikası, adlandırılmış yüksek değerli kullanıcılar için kullanıcı taklit koruması, müşterinin kendi ve ortak alan adları için alan adı taklit koruması, her alıcının normal iletişim bilgilerini öğrenen posta kutusu zekası ve SPF, DKIM ve DMARC sonuçlarını uygulayan sahte zekayı sağlar. Taklit listeleri yönetim kurulu üyeleri, yöneticiler, finans ve kilit ortakları içermelidir. Bu kontrol, en az bir etkin oltalama önleme politikasının varsayılanların ötesinde taklit ve sahte kontrol ile yapılandırıldığını doğrular ki bu teknoloji",
+    "Title": "Microsoft Defender for Office 365 oltalama önleme politikaları taklit ve sahtecilik korumasıyla yapılandırılmalıdır",
+    "Desc": "Kuruluşun alan adına benzeyen bir alan adı kaydeden veya bir yöneticinin gönderen adresini taklit eden (spoofing) tehdit aktörleri, standart gönderici doğrulamalarını aşan ödeme yönlendirme veya kimlik bilgisi toplama iletileri gönderebilir. Taklit koruması olmadan alıcı tanıdık bir ad görerek bağlantıyı açabilir veya finansal işlem onaylayabilir.\r\n\r\nMicrosoft Defender for Office 365 oltalama önleme politikası; kritik yöneticiler için kullanıcı taklit koruması, kurum ve iş ortağı alan adları için alan adı taklit koruması, posta kutusu zekâsı (mailbox intelligence) ve SPF/DKIM/DMARC sonuçlarını uygulayan sahtecilik zekâsı (spoof intelligence) sunar. Bu kontrol, en az bir etkin politikanın varsayılanların ötesinde taklit ve sahtecilik korumasıyla yapılandırıldığını doğrular.\r\n\r\n**Düzeltme işlemi**\r\n\r\n- [Microsoft Defender for Office 365 oltalama önleme politikalarını yapılandırın](https://learn.microsoft.com/en-us/defender-office-365/anti-phishing-policies-mdo-configure)\r\n- [Önerilen oltalama önleme politikası ayarları](https://learn.microsoft.com/en-us/defender-office-365/recommended-settings-for-eop-and-office365#anti-phishing-policy-settings-in-microsoft-defender-for-office-365)\r\n- [Set-AntiPhishPolicy referansı](https://learn.microsoft.com/en-us/powershell/module/exchange/set-antiphishpolicy)",
     "Remediation": "",
-    "Reviewed": false,
-    "Source": "machine"
+    "Reviewed": true,
+    "Source": "human"
   },
   "ZeroTrust|21883": {
     "Title": "İş Yükü Kimlikleri risk tabanlı politikalarla yapılandırılır",
@@ -42,11 +42,11 @@
     "Source": "machine"
   },
   "ZeroTrust|24824": {
-    "Title": "Uyumsuz Cihazların Kurumsal Verilere Erişimi Kısıtlanır",
-    "Desc": "Microsoft Entra Koşullu Erişim politikaları cihaz uyumluluğunu zorunlu kılmazsa, kullanıcılar güvenlik standartlarını karşılamayan cihazlardan kurumsal kaynaklara bağlanabilir. Bu durum, hassas verileri kötü amaçlı yazılım, yetkisiz erişim ve düzenleyici uyumsuzluk gibi risklere maruz bırakır. Şifreleme uygulaması, cihaz sağlık kontrolleri ve erişim kısıtlamaları gibi kontroller olmadan, tehdit aktörleri uyumsuz cihazları kullanarak güvenlik önlemlerini aşabilir ve kalıcılığı koruyabilir. \r\n\r\n\r\nKoşullu Erişim politikalarında cihaz uyumluluğu zorunluluğu, yalnızca güvenilir ve güvenli cihazların kurumsal kaynaklara erişebilmesini sağlar. Bu, cihaz sağlığı ve uyumluluk durumuna dayalı erişim kararlarını uygulayarak Sıfır Güveni destekler. \r\n\r\n**Düzeltme işlemi** \r\n\r\nMicrosoft Entra'da Koşullu Erişim politikalarını, kurumsal kaynaklara erişim vermeden önce cihaz uyumluluğunu gerektirecek şekilde yapılandırın:   \r\n- [Cihaz uyumluluğuna dayalı Koşullu Erişim politikası oluşturun](https://learn.microsoft.com/entra/identity/conditional-access/policy",
+    "Title": "Uyumsuz cihazların kurumsal verilere erişimi kısıtlanmalıdır",
+    "Desc": "Microsoft Entra Koşullu Erişim politikaları cihaz uyumluluğunu zorunlu kılmadığında kullanıcılar güvenlik standartlarını karşılamayan cihazlardan kurumsal kaynaklara bağlanabilir. Şifreleme, cihaz sağlık denetimi ve erişim kısıtlaması bulunmayan cihazlar zararlı yazılım, yetkisiz erişim ve mevzuat uyumsuzluğu riskini artırır.\r\n\r\nCihaz uyumluluğunun Koşullu Erişim politikalarıyla zorunlu kılınması, yalnızca güvenilir ve uyumlu cihazların kurumsal verilere erişmesini sağlayarak Sıfır Güven duruşunu güçlendirir.\r\n\r\n**Düzeltme işlemi**\r\n\r\n- [Cihaz uyumluluğuna dayalı Koşullu Erişim politikası oluşturun](https://learn.microsoft.com/entra/identity/conditional-access/policy-all-users-device-compliance?wt.mc_id=zerotrustrecommendations_automation_content_cnl_csasci)\r\n- [Intune cihaz uyumluluğunu Koşullu Erişim ile entegre edin](https://learn.microsoft.com/intune/device-security/compliance/overview?wt.mc_id=zerotrustrecommendations_automation_content_cnl_csasci#integrate-with-conditional-access)",
     "Remediation": "",
-    "Reviewed": false,
-    "Source": "machine"
+    "Reviewed": true,
+    "Source": "human"
   },
   "ZeroTrust|41031": {
     "Title": "Microsoft Defender for Office 365'teki Güvenli Ekler politikaları patlatacak ve engelleyecek şekilde yapılandırılmıştır",
@@ -77,11 +77,11 @@
     "Source": "machine"
   },
   "ZeroTrust|41060": {
-    "Title": "Microsoft Defender Antivirus'ta bulut tabanlı koruma etkinleştirilmiştir",
-    "Desc": "Bulut erişimli koruma, Microsoft Defender Antivirus'u Microsoft bulut koruma hizmetlerine, diğer adıyla Microsoft Advanced Protection Service ile bağlar. Microsoft Learn, bu hizmetlerin Defender Antivirus ile birlikte çalışarak doğru, gerçek zamanlı ve akıllı koruma sağladığını ve bazen herhangi bir uç nokta enfekte olmadan önce yeni tehditlerin hızlı tespitini sağladığını belirtir. Bu önemlidir çünkü yeni kötü amaçlı yazılımlar, bir cihaz geleneksel güvenlik istihbaratı güncellemesi almadan önce ortaya çıkabilir. Bulut koruması etkinleştirildiğinde, Defender Antivirus, dağıtık kaynaklar ve makine öğrenimi kullanarak uç noktalara daha hızlı koruma sağlayan Microsoft bulut hizmetlerini sorgulayabilir. Learn bulut korumasının açık tutulmasını önerir ve Defender for Endpoint'in ilk bakışta engelleme ve belirli saldırı yüzeyi azaltma korumaları gibi bazı yeteneklerin buna bağlı olduğunu belirtir. Bulut koruması varsayılan olarak etkindir, ancak önceki organizasyon politikası bunu devre dışı bırakabilir, bu nedenle kiracı düzeyinde kanıtlar hâlâ",
+    "Title": "Microsoft Defender Antivirus bulut tabanlı koruma etkinleştirilmelidir",
+    "Desc": "Bulut tabanlı koruma (cloud-delivered protection), Microsoft Defender Antivirus istemcisini Microsoft’un bulut koruma servislerine bağlayarak geleneksel imza güncellemeleri yayınlanmadan önce dahi yeni tehditlerin gerçek zamanlı tespit edilmesini sağlar. İlk bakışta engelleme (block at first sight) ve belirli saldırı yüzeyi azaltma (ASR) yetenekleri doğrudan bu özelliğe bağımlıdır.\r\n\r\nVarsayılan olarak etkin olsa da önceki kurumsal politikalar tarafından kapatılmış olabileceğinden kiracı düzeyinde doğrulama (`scid_2016`, `scid_5094`, `scid_6094`) gereklidir.\r\n\r\n**Düzeltme işlemi**\r\n\r\n- [Microsoft Defender Antivirus bulut korumasını etkinleştirin](https://learn.microsoft.com/en-us/defender-endpoint/enable-cloud-protection-microsoft-defender-antivirus?wt.mc_id=zerotrustrecommendations_automation_content_cnl_csasci)\r\n- [Bulut koruma düzeyini yapılandırın](https://learn.microsoft.com/en-us/defender-endpoint/specify-cloud-protection-level-microsoft-defender-antivirus?wt.mc_id=zerotrustrecommendations_automation_content_cnl_csasci)\r\n- [İlk bakışta engelleme (Block at First Sight) ayarını yapılandırın](https://learn.microsoft.com/en-us/defender-endpoint/configure-block-at-first-sight-microsoft-defender-antivirus?wt.mc_id=zerotrustrecommendations_automation_content_cnl_csasci)",
     "Remediation": "",
-    "Reviewed": false,
-    "Source": "machine"
+    "Reviewed": true,
+    "Source": "human"
   },
   "ZeroTrust|25370": {
     "Title": "Kaynak IP geri yükleme etkinleştirildi",
@@ -168,11 +168,11 @@
     "Source": "machine"
   },
   "ZeroTrust|21813": {
-    "Title": "Yüksek Global Yönetici-ayrıcalıklı kullanıcı oranı",
-    "Desc": "Kuruluşlar, toplam ayrıcalıklı kullanıcı nüfusuna kıyasla orantısız derecede yüksek bir Küresel Yönetici oranı koruduğunda, tehdit aktörlerinin çeşitli saldırı vektörleri aracılığıyla istismar edebileceği önemli güvenlik risklerine maruz kalırlar. Aşırı Küresel Yönetici atamaları, kimlik bilgisi ele geçirilmesi, oltalama saldırıları veya içeriden tehditler yoluyla ilk erişimi kullanarak tüm Microsoft Entra ID kiracısına ve bağlı Microsoft 365 hizmetlerine sınırsız erişim elde edebilecek tehdit aktörleri için birden fazla yüksek değerli hedef oluşturur.  \r\n\r\n**Düzeltme işlemi** \r\n\r\n- [Global Yönetici rol atamalarının sayısını en aza indir](https://learn.microsoft.com/entra/identity/role-based-access-control/best-practices?wt.mc_id=zerotrustrecommendations_automation_content_cnl_csasci#5-limit-the-number-of-global-administrators-to-less-than-5)",
+    "Title": "Global Administrator rolünün toplam ayrıcalıklı kullanıcılara oranı yüksek olmamalıdır",
+    "Desc": "Toplam ayrıcalıklı kullanıcı sayısına kıyasla orantısız biçimde yüksek Global Administrator ataması bulunması, kuruluşu ciddi güvenlik risklerine maruz bırakır. Fazla sayıda Global Administrator hesabı; kimlik bilgisi sızıntısı, oltalama veya içeriden gelen tehditler yoluyla tüm Microsoft Entra ID kiracısı ve bağlı Microsoft 365 hizmetleri üzerinde sınırsız yetki ele geçirilmesi için yüksek değerli hedefler üretir.\r\n\r\n**Düzeltme işlemi**\r\n\r\n- [Global Administrator rol atamalarını en aza indirin ve en az ayrıcalıklı görev rollerine geçin](https://learn.microsoft.com/entra/identity/role-based-access-control/best-practices?wt.mc_id=zerotrustrecommendations_automation_content_cnl_csasci#5-limit-the-number-of-global-administrators-to-less-than-5)",
     "Remediation": "",
-    "Reviewed": false,
-    "Source": "machine"
+    "Reviewed": true,
+    "Source": "human"
   },
   "ZeroTrust|25403": {
     "Title": "Özel Erişim sensörleri, etki alanı denetleyicilerinde güçlü kimlik doğrulama politikaları uygulamaktadır",
@@ -378,11 +378,11 @@
     "Source": "machine"
   },
   "ZeroTrust|21776": {
-    "Title": "Kullanıcı onayı ayarları kısıtlıdır",
-    "Desc": "Kısıtlı kullanıcı onayı ayarları olmadan, tehdit aktörleri izinli uygulama onay yapılandırmalarını kullanarak hassas kurumsal verilere yetkisiz erişim sağlayabilir. Kullanıcı onayı kısıtlamasız olduğunda, saldırganlar şunları yapabilir: \r\n\r\n- Kullanıcıları kötü amaçlı uygulamaları onaylamaya kandırmak için sosyal mühendislik ve yasa dışı izin verme saldırıları kullanın. \r\n- E-posta, dosya, takvimler ve diğer kritik iş verilerine erişim gibi geniş izinler talep etmek için meşru hizmetlerin kılığına girmek. \r\n- Çevre güvenlik kontrollerini aşan meşru OAuth token'larını edinin, böylece erişim güvenlik izleme sistemleri için normal görünür. \r\n- Kurumsal kaynaklara kalıcı erişim sağlamak, Microsoft 365 hizmetleri arasında keşif yapmak, bağlı sistemler arasında yatay hareket etmek ve potansiyel olarak ayrıcalıkları yükseltmek. \r\n\r\nSınırsız kullanıcı onayı ayrıca, bir kuruluşun uygulama erişimi üzerinde merkezi yönetişimi uygulama yeteneğini sınırlar ve bu da hangi Micr olmayanların görünürlüğünü sürdürmeyi zorlaştırır",
+    "Title": "Kullanıcı uygulama onayı (user consent) ayarları kısıtlanmalıdır",
+    "Desc": "Kullanıcı uygulama onayı kısıtlanmadığında tehdit aktörleri yasa dışı onay verme (illicit consent grant) saldırılarıyla kullanıcıları zararlı OAuth uygulamalarına yetki vermeye ikna edebilir. Saldırganlar meşru hizmetleri taklit ederek e-posta, dosya ve takvim verilerine geniş izinler alabilir ve çevre güvenlik kontrollerini aşan geçerli OAuth belirteçleriyle kalıcı erişim elde edebilir.\r\n\r\nSınırsız kullanıcı onayı ayrıca Microsoft dışı hangi uygulamaların kurumsal verilere eriştiğine dair merkezi yönetişimi ve denetim görünürlüğünü zayıflatır.\r\n\r\n**Düzeltme işlemi**\r\n\r\n- [Kısıtlı kullanıcı onayı ayarlarını yapılandırın](https://learn.microsoft.com/entra/identity/enterprise-apps/configure-user-consent?wt.mc_id=zerotrustrecommendations_automation_content_cnl_csasci): Kullanıcı onayını devre dışı bırakın veya yalnızca doğrulanmış yayıncıların düşük riskli izinleriyle sınırlandırın.",
     "Remediation": "",
-    "Reviewed": false,
-    "Source": "machine"
+    "Reviewed": true,
+    "Source": "human"
   },
   "ZeroTrust|61009": {
     "Title": "Koşullu Erişim politikaları hem ajan kimliklerini hem de ajan kullanıcılarını kapsar",
@@ -441,18 +441,18 @@
     "Source": "machine"
   },
   "ZeroTrust|21891": {
-    "Title": "Yönetici rolleri için parola sıfırlama bildirimleri talep edin",
-    "Desc": "Microsoft Entra ID'de yönetici rolleri için parola sıfırlama bildirimlerinin yapılandırılması, başka bir yönetici şifresini sıfırladığında ayrıcalıklı yöneticileri bilgilendirerek güvenliği artırır. Bu görünürlük, kimlik bilgisi sızdırılması veya içeriden tehdit oluşturabilecek yetkisiz veya şüpheli faaliyetleri tespit etmeye yardımcı olur. Bu bildirimler olmadan, kötü niyetli aktörler yükseltilmiş ayrıcalıkları kullanarak kalıcılığı kurabilir, erişimi yükseltebilir veya hassas verileri çıkarabilir. Proaktif bildirimler hızlı eylemi destekler, ayrıcalıklı erişim bütünlüğünü korur ve genel güvenlik duruşunu güçlendirir.    \r\n\r\n**Düzeltme işlemi** \r\n\r\n- [Diğer yöneticiler şifrelerini sıfırladığında tüm yöneticileri bilgilendirir](https://learn.microsoft.com/entra/identity/authentication/concept-sspr-howitworks?wt.mc_id=zerotrustrecommendations_automation_content_cnl_csasci#notify-all-admins-when-other-admins-reset-their-passwords)",
+    "Title": "Yönetici rolleri için parola sıfırlama bildirimleri zorunlu kılınmalıdır",
+    "Desc": "Microsoft Entra ID üzerinde yönetici rolleri için parola sıfırlama bildirimlerinin etkinleştirilmesi, bir yönetici parolasını sıfırladığında diğer ayrıcalıklı yöneticilerin anında bilgilendirilmesini sağlar. Bu görünürlük, kimlik bilgilerinin ele geçirilmesi veya içeriden gelen tehditlerin erken aşamada tespit edilmesine yardımcı olur.\r\n\r\nBildirimler kapalı olduğunda kötü niyetli aktörler yetkisiz parola sıfırlama işlemleriyle kalıcılık kurabilir, ayrıcalık yükseltebilir veya hassas verilere erişebilir.\r\n\r\n**Düzeltme işlemi**\r\n\r\n- [Diğer yöneticiler parolalarını sıfırladığında tüm yöneticileri bilgilendirme ayarını etkinleştirin](https://learn.microsoft.com/entra/identity/authentication/concept-sspr-howitworks?wt.mc_id=zerotrustrecommendations_automation_content_cnl_csasci#notify-all-admins-when-other-admins-reset-their-passwords)",
     "Remediation": "",
-    "Reviewed": false,
-    "Source": "machine"
+    "Reviewed": true,
+    "Source": "human"
   },
   "ZeroTrust|35020": {
-    "Title": "Otomatik etiketleme uygulama modu etkin",
-    "Desc": "Otomatik etiketleme politikaları simülasyon modunda bırakıldığında, o veriyi etiketlemenin korumasını fark etmezsiniz. Sonuç olarak, kullanıcılar ve hizmetler tanımlanan hassas verileri korumak için ek koruyucu önlemler alamaz. Örneğin, kullanıcılar Office uygulamalarında bir dosyanın Yüksek Gizli olarak etiketlendiğini görmezler. Veri kaybı önleme kuralları, dış kullanıcılarla paylaşımı ve diğer riskli işlemleri önlemek için hassasiyet etiketleri kullanabilir. Etiketli veriler ayrıca Microsoft 365 Copilot kullanırken ek bir koruma katmanı sağlar. \r\n\r\nHassas bilgilerin otomatik olarak etiketlenmesini sağlamak için en az bir otomatik etiketleme politikasını açın. Simülasyon testinden sonra otomatik etiketleme politikalarını açmak koruyucu önlemleri devreye alır ve riski azaltmaya başlar. \r\n\r\n**Düzeltme işlemi** \r\n\r\n- [SharePoint, OneDrive ve Exchange için otomatik etiketleme politikaları nasıl yapılandırılır](https://learn.microsoft.com/purview/apply-sensitivity-label-automatically?wt.mc_id=zerotrustrecommendations_automa",
+    "Title": "Otomatik duyarlılık etiketleme (auto-labeling) zorunlu uygulama kipinde etkinleştirilmelidir",
+    "Desc": "Otomatik etiketleme politikaları yalnızca simülasyon kipinde bırakıldığında tespit edilen hassas veriler gerçek koruma altına alınmaz. Kullanıcılar Office uygulamalarında dosyanın gizlilik derecesini göremez; Veri Kaybı Önleme (DLP) kuralları ve Microsoft 365 Copilot erişim korumaları duyarlılık etiketlerinden yararlanamaz.\r\n\r\nSimülasyon doğrulaması tamamlandıktan sonra en az bir otomatik etiketleme politikasının zorunlu uygulama kipine alınması hassas veriler üzerindeki riski etkin biçimde azaltır.\r\n\r\n**Düzeltme işlemi**\r\n\r\n- [SharePoint, OneDrive ve Exchange için otomatik etiketleme politikalarını yapılandırın](https://learn.microsoft.com/purview/apply-sensitivity-label-automatically?wt.mc_id=zerotrustrecommendations_automation_content_cnl_csasci#how-to-configure-auto-labeling-policies-for-sharepoint-onedrive-and-exchange)",
     "Remediation": "",
-    "Reviewed": false,
-    "Source": "machine"
+    "Reviewed": true,
+    "Source": "human"
   },
   "ZeroTrust|41008": {
     "Title": "Kimlik varlıklarındaki yerel yönetici parolaları Microsoft LAPS ile korunur ve yönetilir",
@@ -735,11 +735,11 @@
     "Source": "machine"
   },
   "ZeroTrust|24540": {
-    "Title": "Windows Güvenlik Duvarı Politikası Oluşturulur ve Atanır",
-    "Desc": "Windows Güvenlik Duvarı politikaları yapılandırılıp atanmazsa, tehdit aktörleri korumasız uç noktaları kullanarak yetkisiz erişim elde edebilir, yatay hareket edebilir ve ortam içinde ayrıcalıkları yükseltebilir. Zorunlu güvenlik duvarı kuralları olmadan, saldırganlar ağ segmentasyonunu atlayabilir, veri sızdırabilir veya kötü amaçlı yazılım dağıtabilir; bu da yaygın ele geçirilme riskini artırır. \r\n\r\nWindows Güvenlik Duvarı politikalarının uygulanması, gelen ve giden trafik kontrollerinin tutarlı uygulanmasını sağlar, yetkisiz erişime maruziyeti azaltır ve ağ segmentasyonu ile cihaz düzeyinde koruma yoluyla Sıfır Güveni destekler. \r\n\r\n**Düzeltme işlemi** \r\n\r\nYetkisiz trafiği engellemek ve tüm yönetilen cihazlarda tutarlı ağ korumalarını uygulamak için Intune'da Windows için güvenlik duvarı politikalarını yapılandırın ve atayın: \r\n\r\n- [Windows cihazları için güvenlik duvarı politikalarını yapılandır](https://learn.microsoft.com/intune/device-configuration/endpoint-security/firewall?wt.mc_id=zerotrustrecommendations_automation_content_cnl_csasci). Intune, güvenlik duvarı ayarlarını yönetmek için iki tamamlayıcı profil kullanır: \r\n  - **Windows Güvenlik Duvarı** - Bu profili, ağ türüne göre genel güvenlik duvarı davranışını yapılandırmak için kullanın. \r\n  - **Windows Güvenlik Duvarı kuralları** - Bu profili, belirli gruplara veya iş yüklerine göre uyarlanmış uygulamalar, portlar veya IP'ler için trafik kurallarını tanımlamak üzere kullanın. Bu Intune profili ayrıca [yeniden kullanılabilir ayar grupları](https://learn.micro",
+    "Title": "Windows Güvenlik Duvarı politikası oluşturulmalı ve yönetilen cihazlara atanmalıdır",
+    "Desc": "Windows Güvenlik Duvarı politikaları yapılandırılıp atanmadığında tehdit aktörleri korumasız uç noktalar üzerinden yetkisiz erişim elde edebilir, ağ segmentasyonunu aşabilir, yatay hareket edebilir veya veri sızdırabilir.\r\n\r\nIntune üzerinden Windows Güvenlik Duvarı politikalarının zorunlu kılınması, gelen ve giden ağ trafiğinin tüm yönetilen cihazlarda tutarlı biçimde denetlenmesini sağlayarak Sıfır Güven mimarisini destekler.\r\n\r\n**Düzeltme işlemi**\r\n\r\n- [Windows cihazları için Intune güvenlik duvarı politikalarını yapılandırın](https://learn.microsoft.com/intune/device-configuration/endpoint-security/firewall?wt.mc_id=zerotrustrecommendations_automation_content_cnl_csasci)\r\n- [Intune politikalarını kullanıcı veya cihaz gruplarına atayın](https://learn.microsoft.com/intune/device-configuration/assign-device-profile?wt.mc_id=zerotrustrecommendations_automation_content_cnl_csasci#assign-a-policy-to-users-or-groups)\r\n- [Windows Güvenlik Duvarı profil ayarları referansı](https://learn.microsoft.com/intune/device-configuration/endpoint-security/ref-firewall-settings?wt.mc_id=zerotrustrecommendations_automation_content_cnl_csasci#windows-firewall-profile)",
     "Remediation": "",
-    "Reviewed": false,
-    "Source": "machine"
+    "Reviewed": true,
+    "Source": "human"
   },
   "ZeroTrust|25376": {
     "Title": "Microsoft 365 trafiği Global Secure Access üzerinden aktif olarak akıyor",
@@ -770,11 +770,11 @@
     "Source": "machine"
   },
   "ZeroTrust|21812": {
-    "Title": "Maksimum Global Yönetici sayısı sekiz kullanıcıyı geçmez",
-    "Desc": "Aşırı sayıda Global Yönetici hesabı, tehdit aktörlerinin çeşitli ilk erişim vektörleri aracılığıyla istismar edebileceği genişletilmiş bir saldırı yüzeyi oluşturur. Her ekstra ayrıcalıklı hesap, tehdit aktörleri için potansiyel bir giriş noktasıdır. Global Yönetici hesaplarının fazlalığı, en az ayrıcalık ilkesini zayıflatır. Microsoft, kuruluşların en fazla sekiz Küresel Yöneticiye sahip olmamasını önerir. \r\n\r\n**Düzeltme işlemi** \r\n\r\n- [Microsoft Entra rolleri için en iyi uygulamaları takip edin](https://learn.microsoft.com/entra/identity/role-based-access-control/best-practices?wt.mc_id=zerotrustrecommendations_automation_content_cnl_csasci)",
+    "Title": "Global Administrator sayısı sekiz kullanıcıyı aşmamalıdır",
+    "Desc": "Aşırı sayıda Global Administrator hesabı, tehdit aktörlerinin farklı ilk erişim vektörleriyle istismar edebileceği geniş bir saldırı yüzeyi oluşturur. Her ek ayrıcalıklı hesap potansiyel bir giriş noktasıdır ve en az ayrıcalık ilkesini zayıflatır. Microsoft, kuruluşların sekizden fazla Global Administrator hesabına sahip olmamasını önerir.\r\n\r\n**Düzeltme işlemi**\r\n\r\n- [Microsoft Entra rolleri için en iyi uygulamaları izleyin](https://learn.microsoft.com/entra/identity/role-based-access-control/best-practices?wt.mc_id=zerotrustrecommendations_automation_content_cnl_csasci)",
     "Remediation": "",
-    "Reviewed": false,
-    "Source": "machine"
+    "Reviewed": true,
+    "Source": "human"
   },
   "ZeroTrust|35006": {
     "Title": "SharePoint'te PDF etiketlemesi etkinleştirilmiştir",
@@ -805,11 +805,11 @@
     "Source": "machine"
   },
   "ZeroTrust|21783": {
-    "Title": "Ayrıcalıklı Microsoft Entra yerleşik rolleri, oltalama dirençli yöntemleri zorunlu kılmak için Koşullu Erişim politikalarıyla hedeflenir",
-    "Desc": "Oltalamaya karşı dirençli kimlik doğrulama yöntemleri olmadan, ayrıcalıklı kullanıcılar oltalama saldırılarına karşı daha savunmasızdır. Bu tür saldırılar, kullanıcıları yetkisiz erişim izni vermek için kimlik bilgilerini ifşa etmeye kandırır. Oltalamaya dirençli kimlik doğrulama yöntemleri kullanılırsa, saldırganlar kimlik bilgilerini ve tokenları engelleyebilir; örneğin ortadaki düşman saldırıları gibi, ayrıcalıklı hesabın güvenliğini zayıflatabilir. \r\n\r\nZayıf kimlik doğrulama yöntemleri nedeniyle ayrıcalıklı bir hesap veya oturum ele geçirildiğinde, saldırganlar uzun vadeli erişimi sürdürmek, başka arka kapılar oluşturmak veya kullanıcı izinlerini değiştirmek için hesabı manipüle edebilir. Saldırganlar ayrıcalıklı hesabı kullanarak erişimlerini daha da artırabilir ve daha hassas sistemler üzerinde kontrol sağlayabilirler. \r\n\r\n**Düzeltme işlemi** \r\n\r\n- [Oltalamaya dayanıklı şifresiz kimlik doğrulama dağıtımına başlayın](https://learn.microsoft.com/entra/identity/authentication/how-to-plan-prerequisites-phish",
+    "Title": "Ayrıcalıklı Microsoft Entra yerleşik rolleri için oltalamaya dayanıklı kimlik doğrulama zorunlu kılınmalıdır",
+    "Desc": "Oltalamaya dayanıklı (phishing-resistant) kimlik doğrulama yöntemleri kullanılmadığında ayrıcalıklı hesaplar oltalama ve ortadaki saldırgan (AiTM — adversary-in-the-middle) saldırılarına karşı savunmasız kalır. Saldırganlar klasik MFA akışlarında kimlik bilgilerini ve oturum belirteçlerini araya girerek ele geçirebilir.\r\n\r\nEle geçirilen bir ayrıcalıklı hesap veya oturum üzerinden saldırganlar kalıcı arka kapılar oluşturabilir, rol izinlerini değiştirebilir ve daha hassas sistemler üzerinde tam denetim kurabilir.\r\n\r\n**Düzeltme işlemi**\r\n\r\n- [Oltalamaya dayanıklı parolasız kimlik doğrulama dağıtımına başlayın](https://learn.microsoft.com/entra/identity/authentication/how-to-plan-prerequisites-phishing-resistant-passwordless-authentication?wt.mc_id=zerotrustrecommendations_automation_content_cnl_csasci)\r\n- [Ayrıcalıklı hesaplar için oltalamaya dayanıklı MFA zorunlu kılan Koşullu Erişim politikası dağıtın](https://learn.microsoft.com/entra/identity/conditional-access/policy-admin-phish-resistant-mfa?wt.mc_id=zerotrustrecommendations_automation_content_cnl_csasci)\r\n- [Kimlik doğrulama güçlerini (Authentication Strengths) inceleyin](https://learn.microsoft.com/entra/identity/authentication/concept-authentication-strengths?wt.mc_id=zerotrustrecommendations_automation_content_cnl_csasci#authentication-strengths)",
     "Remediation": "",
-    "Reviewed": false,
-    "Source": "machine"
+    "Reviewed": true,
+    "Source": "human"
   },
   "ZeroTrust|35009": {
     "Title": "Şifrelenmiş Belgeler İçin Ortak Yazarlık Etkin",
@@ -833,11 +833,11 @@
     "Source": "machine"
   },
   "ZeroTrust|21954": {
-    "Title": "Yönetici olmayan kullanıcıların kendi cihazları için BitLocker anahtarlarını kurtarmasını kısıtlayın",
-    "Desc": "Yönetici olmayan kullanıcılar kendi BitLocker anahtarlarına erişebildiğinde, kullanıcı kimlik bilgilerini ele geçiren tehdit aktörleri, ayrıcalık yükseltmesine gerek kalmadan şifreleme anahtarlarına doğrudan erişim sağlayabilir. Saldırganlar BitLocker anahtarlarını ele geçirdikten sonra, cihazda depolanan hassas verileri, önbelleğe alınmış kimlik bilgileri, yerel veritabanları ve gizli dosyaları çözebilirler. \r\n\r\nUygun kısıtlamalar olmadan, ele geçirilmiş tek bir kullanıcı hesabı o cihazdaki tüm şifrelenmiş verilere anında erişim sağlar, disk şifrelemenin birincil güvenlik avantajını ortadan kaldırır ve yatay hareket için bir yol açar.  \r\n\r\n**Düzeltme işlemi** \r\n\r\n- [Yönetici olmayan kullanıcıların kendi cihazları için BitLocker anahtarını kurtarmasını kısıtla](https://learn.microsoft.com/entra/identity/devices/manage-device-identities?wt.mc_id=zerotrustrecommendations_automation_content_cnl_csasci#configure-device-settings)",
+    "Title": "Yönetici olmayan kullanıcıların kendi cihazlarının BitLocker anahtarlarını kurtarması kısıtlanmalıdır",
+    "Desc": "Yönetici olmayan kullanıcılar kendi BitLocker kurtarma anahtarlarını görüntüleyebildiğinde, standart bir kullanıcı hesabını ele geçiren tehdit aktörleri yetki yükseltmeye gerek duymadan disk şifreleme anahtarlarına doğrudan erişebilir. BitLocker anahtarlarını elde eden saldırganlar cihazdaki önbelleğe alınmış kimlik bilgilerini, yerel veritabanlarını ve gizli dosyaları çözebilir.\r\n\r\nUygun kısıtlama yapılmadığında tek bir ele geçirilmiş kullanıcı hesabı, disk şifrelemenin temel koruma değerini ortadan kaldırır ve yatay hareket için zemin hazırlar.\r\n\r\n**Düzeltme işlemi**\r\n\r\n- [Yönetici olmayan kullanıcıların kendi cihazları için BitLocker kurtarma anahtarına erişimini kısıtlayın](https://learn.microsoft.com/entra/identity/devices/manage-device-identities?wt.mc_id=zerotrustrecommendations_automation_content_cnl_csasci#configure-device-settings)",
     "Remediation": "",
-    "Reviewed": false,
-    "Source": "machine"
+    "Reviewed": true,
+    "Source": "human"
   },
   "ZeroTrust|21822": {
     "Title": "Misafir erişimi onaylı kiracılarla sınırlıdır",
@@ -1008,11 +1008,11 @@
     "Source": "machine"
   },
   "ZeroTrust|21821": {
-    "Title": "Misafir erişimi kısıtlıdır",
-    "Desc": "... \r\n\r\n**Düzeltme işlemi**",
+    "Title": "Misafir kullanıcı erişimi kısıtlanmalıdır",
+    "Desc": "Microsoft Entra ID harici iş birliği ayarlarında misafir kullanıcıların dizin nesnelerini sorgulama ve diğer kullanıcı/grup bilgilerini listeleme yetkileri en az ayrıcalık ilkesine göre sınırlandırılmalıdır. Kısıtlanmamış misafir erişimi, kiracı içi keşif ve yatay hareket riskini artırır.\r\n\r\n**Düzeltme işlemi**\r\n\r\n- Microsoft Entra yönetim merkezinde **External Identities > External collaboration settings** altında misafir kullanıcı erişimini yalnızca kendi dizin nesnelerinin özellik ve üyelikleriyle sınırlayın.",
     "Remediation": "",
-    "Reviewed": false,
-    "Source": "machine"
+    "Reviewed": true,
+    "Source": "human"
   },
   "ZeroTrust|21777": {
     "Title": "Uygulama Örneği Özellik Kilidi tüm çoklu kiracı uygulamaları için yapılandırılmıştır",
@@ -1162,11 +1162,11 @@
     "Source": "machine"
   },
   "ZeroTrust|24560": {
-    "Title": "Windows Cloud LAPS politikası oluşturulur ve atanır",
-    "Desc": "Yerel Yönetici Parola Çözümü (LAPS) politikalarını uygulamadan, uç noktalara erişim sağlayan tehdit aktörleri, statik veya zayıf yerel yönetici parolalarını kullanarak ayrıcalıkları yükseltmek, yanlamasına hareket etmek ve kalıcılık sağlamak için kullanılabilir. Saldırı zinciri genellikle cihaz ele geçirilmesiyle başlar—oltalama, kötü amaçlı yazılım veya fiziksel erişim yoluyla—ardından yerel yönetici kimlik bilgilerini toplama girişimleriyle başlar. LAPS olmadan, saldırganlar ele geçirilmiş kimlik bilgilerini birden fazla cihazda yeniden kullanabilir, bu da ayrıcalık artışı ve alan genelinde ele geçirilme riskini artırır. \r\n\r\nTüm kurumsal Windows cihazlarında Windows LAPS'in uygulanması, benzersiz ve düzenli olarak döndürülen yerel yönetici parolalarını sağlar. Bu, kimlik bilgisi erişimi ve yatay hareket aşamalarında saldırı zincirini kesintiye uğratır ve yaygın ele geçirilme riskini önemli ölçüde azaltır. \r\n\r\n**Düzeltme işlemi** \r\n\r\nGüçlü ve benzersiz yerel yönetici parolalarını döndüren ve bunları güvenli şekilde yedekleyen Windows LAPS politikalarını uygulamak için Intune kullanın:   \r\n- [Windows LAP dağıt",
+    "Title": "Windows Cloud LAPS politikası oluşturulmalı ve yönetilen cihazlara atanmalıdır",
+    "Desc": "Local Administrator Password Solution (LAPS) politikaları uygulanmadığında uç noktalara erişim elde eden tehdit aktörleri sabit veya zayıf yerel yönetici parolalarını kullanarak birden fazla cihazda yetki yükseltebilir ve yatay hareket gerçekleştirebilir.\r\n\r\nTüm kurumsal Windows cihazlarında Windows LAPS zorunlu kılınarak her cihaz için benzersiz, düzenli döndürülen ve güvenli biçimde yedeklenen yerel yönetici parolaları kullanılmalıdır.\r\n\r\n**Düzeltme işlemi**\r\n\r\n- [Microsoft Intune ile Windows LAPS politikası dağıtın](https://learn.microsoft.com/intune/device-security/laps/deploy-policy?wt.mc_id=zerotrustrecommendations_automation_content_cnl_csasci#create-a-laps-policy)\r\n- [Windows LAPS politika ayarları referansı](https://learn.microsoft.com/windows-server/identity/laps/laps-management-policy-settings?wt.mc_id=zerotrustrecommendations_automation_content_cnl_csasci)",
     "Remediation": "",
-    "Reviewed": false,
-    "Source": "machine"
+    "Reviewed": true,
+    "Source": "human"
   },
   "ZeroTrust|27028": {
     "Title": "Bir web içerik filtreleme politikası, Copilot Studio ajan trafiğini temel profil üzerinden yönetir",
@@ -1281,11 +1281,11 @@
     "Source": "machine"
   },
   "ZeroTrust|21863": {
-    "Title": "Tüm yüksek riskli girişler önceliklendirilir",
-    "Desc": "Microsoft Entra ID Protection tarafından işaretlenen riskli oturum açmalar, yetkisiz erişim girişimlerinin yüksek olasılığını gösterir. Tehdit aktörleri bu oturum açmaları ilk erişim için kullanır. Bu oturum açmalar araştırılmazsa, saldırganlar meşru kullanıcı kisvesi altında tekrar tekrar kimlik doğrulama yaparak kalıcılık kurabilirler.  \r\n\r\nYanıt eksikliği, saldırganların keşif yapmasına, erişimlerini artırmaya çalışmasına ve normal kalıplara karışmasına olanak tanır. Önceliksiz oturum açmalar uyarılar üretmeye devam ettiğinde ve müdahale edilmediğinde, güvenlik açıkları genişler, bu da yanal hareket ve savunma kaçınmasını kolaylaştırır; çünkü düşmanlar aktif bir güvenlik yanıtının olmadığını fark eder. \r\n\r\n**Düzeltme işlemi** \r\n\r\n- [Riskli girişleri araştırın](https://learn.microsoft.com/entra/id-protection/howto-identity-protection-investigate-risk?wt.mc_id=zerotrustrecommendations_automation_content_cnl_csasci)\r\n- [Riskleri gider ve kullanıcıları engeli kaldır](https://learn.microsoft.com/entra/id-protection/howto-identity-protecti",
+    "Title": "Tüm yüksek riskli oturum açma olayları incelenmeli ve önceliklendirilmelidir",
+    "Desc": "Microsoft Entra ID Protection tarafından işaretlenen yüksek riskli oturum açmalar, yüksek olasılıklı yetkisiz erişim girişimlerine işaret eder. Bu olaylar incelenip kapatılmadığında tehdit aktörleri meşru kullanıcı kimliği altında kalıcılık kurabilir, ortamda keşif yapabilir ve normal kullanıcı davranışına karışarak tespit edilmeden yatay hareket edebilir.\r\n\r\n**Düzeltme işlemi**\r\n\r\n- [Riskli oturum açma olaylarını inceleyin](https://learn.microsoft.com/entra/id-protection/howto-identity-protection-investigate-risk?wt.mc_id=zerotrustrecommendations_automation_content_cnl_csasci)\r\n- [Riskleri giderin ve kullanıcı erişimini güvenli biçimde yeniden açın](https://learn.microsoft.com/entra/id-protection/howto-identity-protection-remediate-unblock?wt.mc_id=zerotrustrecommendations_automation_content_cnl_csasci)",
     "Remediation": "",
-    "Reviewed": false,
-    "Source": "machine"
+    "Reviewed": true,
+    "Source": "human"
   },
   "ZeroTrust|41053": {
     "Title": "Ağ koruması blok modunda etkinleştirilmiştir",
@@ -1302,11 +1302,11 @@
     "Source": "machine"
   },
   "ZeroTrust|21809": {
-    "Title": "Yönetici onayı iş akışı etkinleştirildi",
-    "Desc": "Microsoft Entra kiracısında yönetici onayı iş akışını etkinleştirmek, yönetici onayı gerektiren bir uygulamaya erişim ihtiyacı olan kullanıcıların doğrudan engellenmemek yerine inceleme talebinde bulunabilmelerini sağlar. İş akışı olmadan, kendi başına bir uygulamaya onay veremeyen kullanıcılar, izlenmesi ve güvenliği daha zor olan kişisel hesaplar veya onaysız alternatifler gibi gölge BT çözümlerine başvurabilir. İş akışı etkinleştirildiğinde, onay talepleri kaydedilmiş, denetlenebilir bir süreçten geçer; belirlenmiş inceleyiciler bilgilendirilir ve onay verilmeden önce her talebi değerlendirir. Bu, kullanıcıların erişim talep ettiği uygulamalara bakılabilirliği artırır ve yükseltilmiş izinlerin sessizce engellenmesi veya denetimsiz verilmemesi yerine incelenip açıkça onaylanmasını sağlar. \r\n\r\n**Düzeltme işlemi** \r\n\r\nYönetici onayı talepleri için, **Kullanıcılar onay veremedikleri uygulamalara yönetici onayı isteyebilir** ayarını **Evet** olarak ayarlayın. Diğer ayarları belirtin, s",
+    "Title": "Yönetici onayı iş akışı (admin consent workflow) etkinleştirilmelidir",
+    "Desc": "Microsoft Entra kiracısında yönetici onayı iş akışının etkinleştirilmesi, yönetici onayı gerektiren uygulamalara erişim ihtiyacı olan kullanıcıların doğrudan engellenmek yerine inceleme talebi göndermesini sağlar. Bu iş akışı olmadığında kullanıcılar kişisel hesaplar veya onaysız araçlar gibi gölge BT çözümlerine yönelebilir.\r\n\r\nİş akışı etkinleştirildiğinde tüm onay talepleri kayıt altına alınan, denetlenebilir bir süreçten geçer; atanmış inceleyiciler yüksek ayrıcalıklı izin taleplerini açıkça değerlendirip onaylar veya reddeder.\r\n\r\n**Düzeltme işlemi**\r\n\r\n- [Yönetici onayı iş akışını etkinleştirin](https://learn.microsoft.com/entra/identity/enterprise-apps/configure-admin-consent-workflow?wt.mc_id=zerotrustrecommendations_automation_content_cnl_csasci#enable-the-admin-consent-workflow): **Users can request admin consent to apps they are unable to consent to** ayarını **Yes** yapın ve inceleyicileri tanımlayın.\r\n- Alternatif olarak [Update adminConsentRequestPolicy](https://learn.microsoft.com/graph/api/adminconsentrequestpolicy-update?wt.mc_id=zerotrustrecommendations_automation_content_cnl_csasci) API’si üzerinden `isEnabled` değerini `true` olarak ayarlayın.",
     "Remediation": "",
-    "Reviewed": false,
-    "Source": "machine"
+    "Reviewed": true,
+    "Source": "human"
   },
   "ZeroTrust|21866": {
     "Title": "Tüm Microsoft Entra önerileri ele alınmıştır",
@@ -1358,18 +1358,18 @@
     "Source": "machine"
   },
   "ZeroTrust|21808": {
-    "Title": "Cihaz kodu akışını kısıtla",
-    "Desc": "Cihaz kodu akışı, girdi kısıtlı cihazlar için tasarlanmış çapraz cihaz doğrulama akışıdır. Oltalama saldırılarında kullanılabilir; burada saldırganın akışı başlatıp kullanıcıyı cihazında tamamlaması için kandırarak kullanıcının tokenlarını saldırgane gönderir. Güvenlik riskleri ve cihaz kodu akışının nadiren meşru kullanımı göz önüne alındığında, bu akışı varsayılan olarak engellemek için bir Koşullu Erişim politikası etkinleştirmelisiniz. \r\n\r\n**Düzeltme işlemi** \r\n\r\n- [Aygıt kodu akışını engellemek için Koşullu Erişim politikası dağıt](https://learn.microsoft.com/entra/identity/conditional-access/policy-block-authentication-flows?wt.mc_id=zerotrustrecommendations_automation_content_cnl_csasci#device-code-flow-policies).",
+    "Title": "Cihaz kodu akışı (device code flow) kısıtlanmalıdır",
+    "Desc": "Cihaz kodu akışı (device code flow), klavye veya giriş imkânı kısıtlı cihazlar için tasarlanmış çapraz cihaz kimlik doğrulama yöntemidir. Saldırganlar bu akışı oltalama kampanyalarında kötüye kullanarak bir akış başlatır ve kurbanı kodu kendi cihazında girmeye ikna ederek kullanıcının erişim belirteçlerini (token) ele geçirir.\r\n\r\nYüksek istismar riski ve sınırlı meşru kullanım alanı nedeniyle cihaz kodu akışı varsayılan olarak bir Koşullu Erişim (Conditional Access) politikasıyla engellenmelidir.\r\n\r\n**Düzeltme işlemi**\r\n\r\n- [Cihaz kodu akışını engelleyen Koşullu Erişim politikası dağıtın](https://learn.microsoft.com/entra/identity/conditional-access/policy-block-authentication-flows?wt.mc_id=zerotrustrecommendations_automation_content_cnl_csasci#device-code-flow-policies)",
     "Remediation": "",
-    "Reviewed": false,
-    "Source": "machine"
+    "Reviewed": true,
+    "Source": "human"
   },
   "ZeroTrust|21797": {
-    "Title": "Erişimi yüksek riskli kullanıcılarla sınırlayın",
-    "Desc": "Yüksek riskli kullanıcıların tehdit aktörleri tarafından ele geçirildiğini varsayın. Soruşturma ve giderme olmadan, tehdit aktörleri potansiyel olarak tehlikeye uğramış kullanıcının izinlerine dayanarak betikler çalıştırabilir, kötü amaçlı uygulamalar dağıtabilir veya API çağrılarını manipüle ederek kalıcılık sağlayabilir. Tehdit aktörleri daha sonra yanlış yapılandırmaları kullanabilir veya OAuth tokenlarını kötüye kullanarak belgeler, SaaS uygulamaları veya Azure kaynakları gibi iş yükleri arasında yatay hareket edebilir. Tehdit aktörleri hassas dosyalara, müşteri kayıtlarına veya özel koda erişebilir ve bunları harici depolara sızdırabilir ve meşru bulut hizmetleri aracılığıyla gizliliği sürdürebilir. Son olarak, tehdit aktörleri yapılandırmaları değiştirerek, verileri fidye için şifreleyerek veya çalınan bilgileri daha fazla saldırı için kullanarak operasyonları aksatabilir ve bu da finansal, itibar ve düzenleyici sonuçlara yol açabilir. \r\n\r\nParola kullanan kuruluşlar, riskli kullanıcıları otomatik olarak düzeltmek için şifre sıfırlamaya güvenebilir. \r\n\r\nŞifresiz kimlik bilgileri kullanan kuruluşlar",
+    "Title": "Yüksek riskli kullanıcıların erişimi kısıtlanmalıdır",
+    "Desc": "Yüksek riskli olarak işaretlenen kullanıcı hesaplarının tehdit aktörleri tarafından ele geçirilmiş olabileceği varsayılmalıdır. İnceleme ve müdahale yapılmadığında saldırganlar bu hesabın izinleriyle betikler çalıştırabilir, kötü amaçlı uygulamalar dağıtabilir, OAuth belirteçlerini kötüye kullanarak bulut iş yükleri arasında yatay hareket edebilir ve hassas verileri sızdırabilir.\r\n\r\nParola kullanan kuruluşlar yüksek riskli kullanıcılar için güvenli parola değişimini zorunlu kılabilir; parolasız kimlik doğrulama kullanan kuruluşlarda ise risk incelenip giderilene kadar erişim engellenmelidir.\r\n\r\n**Düzeltme işlemi**\r\n\r\n- [Yüksek kullanıcı riski için güvenli parola değişimi veya erişim engeli uygulayan Koşullu Erişim politikası dağıtın](https://learn.microsoft.com/entra/identity/conditional-access/policy-risk-based-user?wt.mc_id=zerotrustrecommendations_automation_content_cnl_csasci)\r\n- [Microsoft Entra ID Protection ile risk olaylarını inceleyin](https://learn.microsoft.com/entra/id-protection/howto-identity-protection-investigate-risk?wt.mc_id=zerotrustrecommendations_automation_content_cnl_csasci)",
     "Remediation": "",
-    "Reviewed": false,
-    "Source": "machine"
+    "Reviewed": true,
+    "Source": "human"
   },
   "ZeroTrust|21874": {
     "Title": "Dış iş birliğini kısıtlamak için alan adı listeleri yapılandırılmıştır",
@@ -1442,11 +1442,11 @@
     "Source": "machine"
   },
   "ZeroTrust|21815": {
-    "Title": "Tüm ayrıcalıklı rol atamaları tam zamanında etkinleştirilir ve kalıcı olarak aktif değildir",
-    "Desc": "Tehdit aktörleri, istedikleri veri ve kaynaklara erişimleri olduğu için ayrıcalıklı hesapları hedefler. Bu, Microsoft Entra kiracınıza daha fazla erişim, Microsoft SharePoint'teki veriler veya uzun vadeli kalıcılık kurma yeteneğini içerebilir. Tam zamanında (JIT) etkinleştirme modeli olmadan, yönetici ayrıcalıkları sürekli olarak açık kalır, bu da saldırganlara fark edilmeden çalışma için genişletilmiş bir zaman penceresi sunar. Tam zamanında erişim, onaylar, gerekçelendirme ve Koşullu Erişim politikası gibi ek kontrollerle zaman sınırlı ayrıcalık etkinleştirmesini zorunlu kılarak riski azaltır; yüksek riskli izinlerin yalnızca gerektiğinde ve sınırlı süre için verilmesini sağlar. Bu kısıtlama, saldırı yüzeyini en aza indirir, yatay hareketi engeller ve düşmanları, beklenmedik durumlarda özel olarak izlenip reddedilebilecek eylemleri tetiklemeye zorlar. Tam zamanında erişim olmadan, ele geçirilmiş yönetici hesapları süresiz kontrol sağlar; saldırganlar güvenlik kontrollerini devre dışı bırakabilir, günlükleri silebilir ve mai'yi silebilir.",
+    "Title": "Tüm ayrıcalıklı rol atamaları kalıcı değil, tam zamanında (JIT) etkinleştirilmelidir",
+    "Desc": "Tehdit aktörleri kiracı geneli kontrol ve hassas verilere erişim sağladığı için ayrıcalıklı hesapları doğrudan hedefler. Tam zamanında (Just-in-Time — JIT) etkinleştirme modeli olmadığında yönetici yetkileri sürekli açık kalır; ele geçirilen bir hesap saldırgana güvenlik kontrollerini devre dışı bırakma, günlükleri silme ve uzun süre fark edilmeden kalıcılık sağlama imkânı verir.\r\n\r\nMicrosoft Entra Privileged Identity Management (PIM) ile zaman sınırlı, onay ve gerekçe gerektiren JIT erişimi uygulanmalı; Microsoft Entra ID Governance erişim incelemeleriyle ayrıcalıklı atamalar düzenli olarak gözden geçirilmelidir.\r\n\r\n**Düzeltme işlemi**\r\n\r\n- [Privileged Identity Management (PIM) kullanımına başlayın](https://learn.microsoft.com/entra/id-governance/privileged-identity-management/pim-getting-started?wt.mc_id=zerotrustrecommendations_automation_content_cnl_csasci)\r\n- [PIM içinde Azure ve Microsoft Entra rolleri için erişim incelemesi oluşturun](https://learn.microsoft.com/entra/id-governance/privileged-identity-management/pim-create-roles-and-resource-roles-review?wt.mc_id=zerotrustrecommendations_automation_content_cnl_csasci)",
     "Remediation": "",
-    "Reviewed": false,
-    "Source": "machine"
+    "Reviewed": true,
+    "Source": "human"
   },
   "ZeroTrust|25392": {
     "Title": "Özel ağ bağlayıcıları en son sürümde çalışıyor",
@@ -1484,11 +1484,11 @@
     "Source": "machine"
   },
   "ZeroTrust|41029": {
-    "Title": "Antimalware politikaları önerilen ayarlara göre yapılandırılır",
-    "Desc": "Exchange Online Protection'daki anti-malware politikaları, çoklu motorlu kötü amaçlı yazılım taramasını, Ortak Ek Filtresini (motorun kararından bağımsız olarak çalıştırılabilir dosyaları ve riskli dosya türlerini uzantıya göre engeller), teslimattan sonra kötü amaçlı olarak yeniden sınıflandırılan mesajlar için sıfır saat otomatik temizleme (ZAP) ve alıcının algılanan mesajı kendi kendine yayınlayıp yayınlamayacağını belirleyen karantina politikasını uygular. \r\n\r\nTehdit aktörleri, başarılı bir oltalamadan hemen sonra e-posta öldürme zincirinin ikinci aşaması olarak kötü amaçlı yazılım sunar — genellikle makro destekli Office belgeleri, Web'i atlayan ISO/IMG/VHD konteyner dosyaları, HTML kaçakçılığı yükleri veya motor taramasından kaçan parola korumalı arşivler. Ortak Ek Filtresi, tarama kararından bağımsız olarak bu dosya türlerini engelleyen birincil teslimat öncesi kontrolüdür ve ZAP, teslimattan sonra kararı değişen mesajları geriye dönük olarak kaldıran tek teslimat sonrası kontroldür. \r\n\r\nOrtak Ek Filtresi devre dışı, ZAP devre dışı bırakılmış veya alıcının kendi kendine serbest bırakılmasına izin veren bir karantina politikası, öldürme zincirinin teslimat sonrası dalını engellemiş bırakır. \r\n\r\n**Düzeltme işlemi** \r\n\r\n- [EOP'da anti-malware politikalarını yapılandır](https://learn.microsoft.com/en-us/defender-office-365/anti-malware-policies-configure?wt.mc_id=zerotrustrecommendations_automation_content_cnl_csasci)\r\n- [EOP ve Microsof için önerilen ayarlar",
+    "Title": "Anti-malware politikaları önerilen güvenlik ayarlarıyla yapılandırılmalıdır",
+    "Desc": "Exchange Online Protection (EOP) anti-malware politikaları; çok motorlu zararlı yazılım taramasını, Ortak Ek Filtresini (Common Attachment Filter — çalıştırılabilir ve riskli uzantıları tarama kararından bağımsız olarak engeller), teslimat sonrası zararlı olarak yeniden sınıflandırılan iletiler için sıfır saat otomatik temizlemeyi (ZAP) ve alıcının karantinadaki iletiyi kendi başına serbest bırakıp bırakamayacağını belirleyen karantina politikasını uygular.\r\n\r\nTehdit aktörleri başarılı bir oltalama sonrasında genellikle makro içeren Office belgeleri, Mark-of-the-Web denetimini aşan ISO/IMG/VHD kapsayıcıları, HTML kaçakçılığı yükleri veya taramadan kaçan parolalı arşivler gönderir. Ortak Ek Filtresi devre dışı bırakılmış, ZAP kapalı veya son kullanıcı serbest bırakmasına izin veren bir karantina politikası, saldırı zincirinin teslimat sonrası aşamasını korumasız bırakır.\r\n\r\n**Düzeltme işlemi**\r\n\r\n- [EOP anti-malware politikalarını yapılandırın](https://learn.microsoft.com/en-us/defender-office-365/anti-malware-policies-configure?wt.mc_id=zerotrustrecommendations_automation_content_cnl_csasci)\r\n- [EOP ve Microsoft Defender for Office 365 için önerilen ayarlar](https://learn.microsoft.com/en-us/defender-office-365/recommended-settings-for-eop-and-office365?wt.mc_id=zerotrustrecommendations_automation_content_cnl_csasci#anti-malware-policy-settings)\r\n- [Set-MalwareFilterPolicy referansı](https://learn.microsoft.com/en-us/powershell/module/exchange/set-malwarefilterpolicy?wt.mc_id=zerotrustrecommendations_automation_content_cnl_csasci)",
     "Remediation": "",
-    "Reviewed": false,
-    "Source": "machine"
+    "Reviewed": true,
+    "Source": "human"
   },
   "ZeroTrust|41061": {
     "Title": "Tüm aktif Microsoft Defender XDR olayları tarak giderilir ve giderilir",
@@ -1554,11 +1554,11 @@
     "Source": "machine"
   },
   "ZeroTrust|21817": {
-    "Title": "Global Yönetici rolü etkinleştirmesi onay iş akışını tetikler",
-    "Desc": "Onay iş akışları olmadan, oltalama, kimlik bilgisi doldurma veya diğer kimlik doğrulama atlama teknikleriyle Global Yönetici kimlik bilgilerini ele geçiren tehdit aktörleri, başka bir doğrulama veya denetim olmadan kiracıdaki en ayrıcalıklı rolü hemen etkinleştirebilir. Ayrıcalıklı Kimlik Yönetimi (PIM), uygun rol aktivasyonlarının saniyeler içinde aktif hale gelmesini sağlar, böylece ele geçirilmiş kimlik bilgileri neredeyse anında ayrıcalık artışına olanak tanır. Etkinleştirildikten sonra, tehdit aktörleri Küresel Yönetici rolünü kullanarak kiracıya kalıcı erişim sağlamak için aşağıdaki saldırı yollarını kullanabilir: \r\n- Yeni ayrıcalıklı hesaplar oluşturun\r\n- Bu yeni hesapları hariç tutmak için Koşullu Erişim politikalarını değiştirin\r\n- Sertifika tabanlı kimlik doğrulama veya yüksek ayrıcalıklara sahip uygulama kayıtları gibi alternatif kimlik doğrulama yöntemleri oluşturun\r\n\r\nGlobal Yönetici rolü, Microsoft Entra ID'deki yönetim özelliklerine ve Microsoft Entra kimliklerini kullanan hizmetlere, Microso dahil, erişim sağlar",
+    "Title": "Global Administrator rol etkinleştirmesi onay iş akışını tetiklemelidir",
+    "Desc": "Onay iş akışı bulunmadığında, oltalama veya kimlik bilgisi doldurma yoluyla Global Administrator hesabını ele geçiren tehdit aktörleri herhangi bir ek denetim olmadan kiracıdaki en ayrıcalıklı rolü saniyeler içinde etkinleştirebilir. Privileged Identity Management (PIM) üzerinden anında etkinleştirilen bu yetkiyle saldırganlar yeni ayrıcalıklı hesaplar oluşturabilir, Koşullu Erişim politikalarında istisnalar açabilir veya yüksek yetkili uygulama kayıtlarıyla kalıcı arka kapılar bırakabilir.\r\n\r\nGlobal Administrator rolü Entra ID, Defender XDR, Purview, Exchange Online ve SharePoint Online üzerinde tam kontrol sağladığından etkinleştirme öncesinde bağımsız onay kapısı zorunlu kılınmalıdır.\r\n\r\n**Düzeltme işlemi**\r\n\r\n- [Global Administrator etkinleştirmesi için onay zorunluluğunu yapılandırın](https://learn.microsoft.com/entra/id-governance/privileged-identity-management/pim-how-to-change-default-settings?wt.mc_id=zerotrustrecommendations_automation_content_cnl_csasci)\r\n- [Ayrıcalıklı roller için PIM onay iş akışı oluşturun](https://learn.microsoft.com/entra/id-governance/privileged-identity-management/pim-approval-workflow?wt.mc_id=zerotrustrecommendations_automation_content_cnl_csasci)",
     "Remediation": "",
-    "Reviewed": false,
-    "Source": "machine"
+    "Reviewed": true,
+    "Source": "human"
   },
   "ZeroTrust|24827": {
     "Title": "Yönetilmeyen ve korunmayan Uygulamaların Kurumsal Verilere Erişimi kısıtlanmıştır",
@@ -1680,11 +1680,11 @@
     "Source": "machine"
   },
   "ZeroTrust|21811": {
-    "Title": "Parola süresi devre dışı bırakıldı",
-    "Desc": "Parola süresi dolma politikaları etkin kaldığında, tehdit aktörleri kullanıcıların düzenli olarak şifre değiştirmek zorunda kaldıklarında genellikle takip ettiği öngörülebilir şifre dönüşüm kalıplarını kullanabilirler. Kullanıcılar, mevcut şifrelerde sayıları artırmak veya ardışık karakterler eklemek gibi minimal değişiklikler yaparak daha zayıf şifreler oluşturur. Tehdit aktörleri, kimlik bilgisi doldurma saldırıları veya hedefli parola spreyi kampanyaları yoluyla bu tür değişiklikleri kolayca öngörüp kullanabilir. Bu öngörülebilir kalıplar, tehdit aktörlerinin kalıcılığı şu yollarla kurmasını sağlar: \r\n\r\n- Güvenlik bilgileri ele geçirildi\r\n- Zayıf döndürülmüş şifrelere sahip yönetici hesaplarını hedefleyerek yetkilendirme\r\n- Gelecekteki şifre değişikliklerini tahmin ederek uzun vadeli erişimi sürdürmek\r\n\r\nAraştırmalar, kullanıcıların süresi dolmak zorunda kaldıklarında daha zayıf ve öngörülebilir şifreler oluşturduklarını gösteriyor. Bu öngörülebilir şifreler, deneyimli saldırganlar için daha kolay kırılır çünkü genellikle mevcut şifrede basit değişiklikler yaparlar",
+    "Title": "Parola süre sonu politikası devre dışı bırakılmış olmalıdır",
+    "Desc": "Parola süre sonu politikaları etkin bırakıldığında kullanıcılar zorunlu değişikliklerde mevcut parolalarına sayı eklemek veya ardışık karakterler kullanmak gibi öngörülebilir kalıplara yönelir. Tehdit aktörleri bu tahmin edilebilir değişiklikleri kimlik bilgisi doldurma (credential stuffing) veya hedefli parola püskürtme (password spraying) saldırılarında istismar ederek ele geçirilmiş hesaplar üzerinden kalıcılık ve yetki yükseltme elde edebilir.\r\n\r\nAraştırmalar, düzenli parola değişimine zorlanan kullanıcıların daha zayıf parolalar seçtiğini ve parolaları güvensiz ortamlarda not ettiğini göstermektedir.\r\n\r\n**Düzeltme işlemi**\r\n\r\n- [Kuruluşunuz için parola süre sonu politikasını yapılandırın](https://learn.microsoft.com/microsoft-365/admin/manage/set-password-expiration-policy?wt.mc_id=zerotrustrecommendations_automation_content_cnl_csasci): Microsoft 365 yönetim merkezinde **Settings > Org Settings > Security & Privacy > Password expiration policy** yolundan **Set passwords to never expire** seçeneğini etkinleştirin.\r\n- [Microsoft Graph üzerinden parola süre sonunu devre dışı bırakın](https://learn.microsoft.com/graph/api/domain-update?view=graph-rest-1.0&preserve-view=true&wt.mc_id=zerotrustrecommendations_automation_content_cnl_csasci).\r\n- [Microsoft Graph PowerShell ile tekil kullanıcı parolalarını süresiz yapın](https://learn.microsoft.com/microsoft-365/admin/add-users/set-password-to-never-expire?wt.mc_id=zerotrustrecommendations_automation_content_cnl_csasci): `Update-MgUser -UserId <UserID> -PasswordPolicies DisablePasswordExpiration`",
     "Remediation": "",
-    "Reviewed": false,
-    "Source": "machine"
+    "Reviewed": true,
+    "Source": "human"
   },
   "ZeroTrust|50001": {
     "Title": "Microsoft Defender for Cloud Önerileri",
@@ -1764,11 +1764,11 @@
     "Source": "machine"
   },
   "ZeroTrust|21802": {
-    "Title": "Microsoft Authenticator uygulaması oturum açma bağlamını gösterir",
-    "Desc": "Oturum açma bağlamı olmadan, tehdit aktörleri kimlik doğrulama yorgunluğunu sömürerek kullanıcıları push bildirimleriyle doldurabilir ve kullanıcının yanlışlıkla kötü amaçlı bir isteği onaylama olasılığını artırabilir. Kullanıcılar uygulama adı veya coğrafi konum olmadan genel push bildirimleri aldığında, bilinçli onay kararları vermek için ihtiyaç duydukları bilgiye sahip olmazlar. Bu bağlam eksikliği, özellikle tehdit aktörleri taleplerini meşru kullanıcı etkinliği dönemlerinde zamanladığında, sosyal mühendislik saldırılarına karşı savunmasız hale getirir. Bu güvenlik açıklığı, tehdit aktörlerinin kimlik bilgisi toplama veya parola püskürtme saldırılarıyla ilk erişimi sağladığında ve ardından beklenmedik uygulamalardan veya konumlardan gelen çok faktörlü kimlik doğrulama (MFA) isteklerini onaylayarak kalıcılık sağlamaya çalıştıklarında özellikle tehlikelidir. Bağlamsal bilgi olmadan, kullanıcılar olağandışı oturum açılma girişimlerini tespit edemez; bu da tehdit aktörlerinin b'den sonra sistemler arasında yatay hareket ederek erişimi sürdürmesine ve ayrıcalıklarını yükseltmesine olanak tanır",
+    "Title": "Microsoft Authenticator uygulaması oturum açma bağlamını göstermelidir",
+    "Desc": "Oturum açma bağlamı olmadan tehdit aktörleri MFA yorgunluğu (authentication fatigue) saldırılarıyla kullanıcılara yoğun bildirim göndererek kötü amaçlı bir isteğin yanlışlıkla onaylanma olasılığını artırır. Uygulama adı ve coğrafi konum bilgisini içermeyen bildirimler, kullanıcıların bilinçli onay kararı vermesini engeller ve olağandışı oturum açma girişimlerinin fark edilmesini zorlaştırır.\r\n\r\nKimlik doğrulama yöntemleri politikasında uygulama adı ve coğrafi konum bilgisini etkinleştirmek hem sosyal mühendislik riskini azaltır hem de güvenlik ekiplerine şüpheli oturum açma kalıpları için değerli telemetri sağlar.\r\n\r\n**Düzeltme işlemi**\r\n\r\n- [Authenticator bildirimlerinde ek bağlamı (uygulama ve konum) etkinleştirin](https://learn.microsoft.com/entra/identity/authentication/how-to-mfa-additional-context?wt.mc_id=zerotrustrecommendations_automation_content_cnl_csasci)",
     "Remediation": "",
-    "Reviewed": false,
-    "Source": "machine"
+    "Reviewed": true,
+    "Source": "human"
   },
   "ZeroTrust|41208": {
     "Title": "Microsoft Sentinel'de yüksek değerli varlıklarla ilişkilendirmek için en az bir izleme listesi yapılandırılmıştır",
@@ -1820,11 +1820,11 @@
     "Source": "machine"
   },
   "ZeroTrust|21847": {
-    "Title": "Yerel parola koruması etkinleştirildi",
-    "Desc": "Yerel parola koruması etkinleştirilmediğinde veya uygulanmadığında, tehdit aktörleri sezon+yıl+sembol veya yerel terimler gibi yaygın varyantlarla düşük ve yavaş parola spreyi kullanarak Active Directory Alan Hizmetleri hesaplarına ilk erişim sağlayabilir. Etki Alanı Denetleyicileri (DC'ler), aşağıdaki ifadelerden herhangi biri doğruysa zayıf parolaları kabul edebilir: \r\n\r\n- Microsoft Entra Password Protection DC ajanı yüklü değil\r\n- Parola koruma kiracı ayarı devre dışı veya yalnızca denetim modundadır\r\n\r\nGeçerli yerel kimlik bilgileriyle saldırganlar, parolaları uç noktalar arasında yeniden kullanarak yanal hareket eder, yerel yönetici yeniden kullanımı veya hizmet hesapları aracılığıyla alan yöneticisine yükseltir ve arka kapılar ekleyerek devam eder; zayıf veya devre dışı bırakılmış uygulama ise daha az engelleme olayı ve öngörülebilir sinyal üretir. Microsoft'un tasarımı, Microsoft Entra ID'den politika aracılığı yapan bir proxy ve parola değişikliği/sıfırlama sırasında birleşik global ve kiracı özel yasaklı listelerini uygulayan bir DC ajanı gerektirir; tutarlı uygulama, bir alan içindeki tüm DC'lerde DC ajanının kapsamını ve denetim değerlendirmesinden sonra Zorunlu mod kullanılmasını gerektirir. \r\n\r\n**Düzeltme işlemi** \r\n\r\n- [Microsoft Entra şifre korumasını dağıtın](https://learn.microsoft.com/entra/identity/authentication/howto-password-ban-bad-on-premises-deploy?wt.mc_id=zerotrustrecommendations_automation_content_cnl_csasci)",
+    "Title": "Şirket içi (on-premises) Active Directory parola koruması etkinleştirilmelidir",
+    "Desc": "Şirket içi parola koruması etkinleştirilmediğinde veya zorunlu kipte (Enforced) çalışmadığında, tehdit aktörleri mevsim+yıl+sembol veya kuruma özgü terimlerle düşük hızlı parola püskürtme saldırıları düzenleyerek Active Directory hesaplarına ilk erişim elde edebilir. Etki alanı denetleyicileri (DC), Microsoft Entra Password Protection DC aracısı kurulu değilse veya politika yalnızca denetim kipindeyse zayıf parolaları kabul etmeye devam eder.\r\n\r\nTutarlı koruma için Entra ID’den politikayı aktaran bir proxy hizmeti ve etki alanındaki tüm DC’lerde kurulu DC aracısı ile denetim değerlendirmesi sonrasında **Enforced** kipine geçilmelidir.\r\n\r\n**Düzeltme işlemi**\r\n\r\n- [Microsoft Entra Password Protection şirket içi dağıtımını gerçekleştirin](https://learn.microsoft.com/entra/identity/authentication/howto-password-ban-bad-on-premises-deploy?wt.mc_id=zerotrustrecommendations_automation_content_cnl_csasci)",
     "Remediation": "",
-    "Reviewed": false,
-    "Source": "machine"
+    "Reviewed": true,
+    "Source": "human"
   },
   "ZeroTrust|41207": {
     "Title": "Aktif analiz kuralları Microsoft Sentinel'de tehditleri tespit etmek için yapılandırılmıştır",
@@ -1855,11 +1855,11 @@
     "Source": "machine"
   },
   "ZeroTrust|41032": {
-    "Title": "Microsoft Defender for Office 365'teki Güvenli Bağlantılar politikaları, kötü amaçlı URL'leri taramak ve engellemek üzere yapılandırılmıştır",
-    "Desc": "Safe Links, kullanıcıları sadece teslimat anında değil, tıklama anında kötü amaçlı URL'lere karşı koruyan Microsoft Defender for Office 365 kontrolüdür. Tehdit aktörleri, mesaj geldiğinde hala zararsız olan ve saatler veya günler sonra silah olarak kullanılan sayfalara bağlantılar içeren e-posta veya Teams mesajları göndererek tek seferlik URL taramasını rutin olarak engeller — kimlik bilgisi toplama formlarına, drive-by exploit kitlerine veya şifreleri ve oturum çerezlerini yakalayan sahte giriş sayfalarına işaret eder. Safe Links, her URL'yi sarar, böylece her tıklama, mesajın ne zaman teslim edildiğine veya kullanıcının nereye tıkladığına bakılmaksızın (e-posta, Teams sohbeti veya desteklenen Office masaüstü ve web uygulamaları) Microsoft'un URL itibar servisiyle gerçek zamanlı olarak kontrol edilir. Safe Links olmadan, bir kuruluş birincil iş birliği yüzeylerinde gecikmiş silah haline gelmeye kör olur ve tek başarılı kimlik bilgisi yakalama, tehdit aktörlerine yan oltalama, iş e-postası ele geçirme veya fidye yazılımı için bir zemin sağlayabilir.",
+    "Title": "Microsoft Defender for Office 365 Safe Links politikaları kötü amaçlı URL’leri taramalı ve engellemelidir",
+    "Desc": "Safe Links, kullanıcıları yalnızca ileti teslimat anında değil tıklama anında da (time-of-click) kötü amaçlı URL’lere karşı koruyan Microsoft Defender for Office 365 kontrolüdür. Tehdit aktörleri teslimat anında zararsız görünen bağlantıları saatler veya günler sonra kimlik bilgisi toplama ya da zararlı yazılım sayfalarına yönlendirerek tek seferlik taramaları aşar.\r\n\r\nSafe Links; e-posta, Microsoft Teams ve desteklenen Office uygulamalarındaki bağlantıları tıklama anında gerçek zamanlı URL itibar servisiyle denetler. İstenirse özgün URL görünümünü koruyan yeniden yazmasız (no-rewrite) kip de kullanılabilir.\r\n\r\n**Düzeltme işlemi**\r\n\r\n- [Microsoft Defender for Office 365 Safe Links genel bakış](https://learn.microsoft.com/en-us/defender-office-365/safe-links-about?wt.mc_id=zerotrustrecommendations_automation_content_cnl_csasci)\r\n- [Safe Links politikalarını yapılandırın](https://learn.microsoft.com/en-us/defender-office-365/safe-links-policies-configure?wt.mc_id=zerotrustrecommendations_automation_content_cnl_csasci)\r\n- [Set-SafeLinksPolicy referansı](https://learn.microsoft.com/en-us/powershell/module/exchange/set-safelinkspolicy?wt.mc_id=zerotrustrecommendations_automation_content_cnl_csasci)",
     "Remediation": "",
-    "Reviewed": false,
-    "Source": "machine"
+    "Reviewed": true,
+    "Source": "human"
   },
   "ZeroTrust|35041": {
     "Title": "Edge for Business üzerinden AI uygulamaları için tarayıcı veri kaybı önleme etkinleştirildi",
@@ -2023,11 +2023,11 @@
     "Source": "machine"
   },
   "ZeroTrust|21840": {
-    "Title": "Güvenlik anahtarı doğrulaması uygulanır",
-    "Desc": "Güvenlik anahtarı doğrulaması uygulanmadığında, tehdit aktörleri zayıf veya ele geçirilmiş kimlik doğrulama donanımını kullanarak kurumsal ortamlarda kalıcı varlık kurabilir. Doğrulama doğrulaması olmadan, kötü niyetli aktörler donanım destekli güvenlik kontrollerini atlayan yetkisiz veya sahte FIDO2 güvenlik anahtarları kaydedebilir ve böylece meşru güvenlik anahtarlarını taklit eden yapay kimlik doğrulama cihazları kullanarak kimlik bilgisi doldurma saldırıları gerçekleştirebilirler. Bu ilk erişim, tehdit aktörlerinin donanım kimlik doğrulama yöntemlerinin güvenilir doğasını kullanarak ayrıcalıklarını yükseltmesine ve ardından yüksek ayrıcalıklı hesaplarda daha fazla ele geçirilmiş güvenlik anahtarı kaydederek ortamda yatay hareket etmelerine olanak tanır. Doğrulama uygulamasının olmaması, tehdit aktörlerinin kalıcı donanım tabanlı kimlik doğrulama yöntemleriyle komuta ve kontrol kurmaları için bir yol açar; bu da nihayetinde veri sızdırmasına veya sistem ele geçirilmesine yol açarken meşru donanım korumalı kimlik doğrulama görünümü korunur",
+    "Title": "FIDO2 güvenlik anahtarı doğrulaması (attestation) zorunlu kılınmalıdır",
+    "Desc": "Güvenlik anahtarı doğrulaması (attestation) zorunlu kılınmadığında tehdit aktörleri onaylanmamış, zayıf veya sahte FIDO2 kimlik doğrulayıcıları kaydederek donanım tabanlı güvenlik kontrollerini aşabilir. Bu durum saldırganların yüksek ayrıcalıklı hesaplarda kalıcı erişim kurmasına ve meşru donanım kimlik doğrulaması görünümü altında ortamda yatay hareket etmesine yol açabilir.\r\n\r\n**Düzeltme işlemi**\r\n\r\n- [Kimlik doğrulama yöntemleri politikasında FIDO2 attestation zorunluluğunu etkinleştirin](https://learn.microsoft.com/entra/identity/authentication/how-to-enable-passkey-fido2?wt.mc_id=zerotrustrecommendations_automation_content_cnl_csasci#enable-passkey-fido2-authentication-method)\r\n- [Onaylı FIDO2 donanım anahtarlarını AAGUID listesiyle sınırlandırın](https://learn.microsoft.com/entra/identity/authentication/concept-fido2-hardware-vendor?wt.mc_id=zerotrustrecommendations_automation_content_cnl_csasci)",
     "Remediation": "",
-    "Reviewed": false,
-    "Source": "machine"
+    "Reviewed": true,
+    "Source": "human"
   },
   "ZeroTrust|41052": {
     "Title": "Uygulama kontrolü (WDAC / İş için Uygulama Kontrolü) Intune üzerinden uygulanır",
@@ -2254,11 +2254,11 @@
     "Source": "machine"
   },
   "ZeroTrust|25375": {
-    "Title": "Kiracı, Global Secure Access'i işletmek için gereken lisanslara sahiptir",
-    "Desc": "Global Secure Access, Microsoft Entra Internet Access ve Microsoft Entra Private Access gibi belirli Microsoft Entra lisanslarının çalışması için gereklidir; her ikisi de ön koşul olarak Microsoft Entra ID P1 gerektirir. Kiracıda geçerli lisanslar sağlanmadan, yöneticiler trafik yönlendirme profillerini, güvenlik politikalarını veya uzak ağ bağlantılarını yapılandıramaz. Kullanıcılara lisans atamazsanız, trafikleri Global Secure Access üzerinden yönlendirilmez ve güvenlik kontrolleri tarafından korunmaz kalır. \r\n\r\nBu koruma olmadan: \r\n\r\n- Tehdit aktörleri web içeriği filtreleme, tehdit koruması ve Koşullu Erişim politikalarını atlayabilir. \r\n- Süresi dolmuş veya askıya alınmış abonelikler, Global Secure Access hizmetini durdurabilir ve daha önce korunan trafik akışlarının izlenmediği güvenlik açıkları yaratabilir. \r\n\r\n**Düzeltme işlemi** \r\n- Global Secure Access lisanslama gereksinimlerini gözden geçirin ve uygun lisansları satın alın. Daha fazla bilgi için [Lisanslama genel bakışı](https://learn.microsoft",
+    "Title": "Kiracı, Global Secure Access işletimi için gerekli lisanslara sahip olmalıdır",
+    "Desc": "Global Secure Access (Microsoft Entra Internet Access ve Microsoft Entra Private Access) çalışabilmek için Microsoft Entra ID P1 ön koşuluyla birlikte ilgili lisansları gerektirir. Geçerli lisanslar sağlanmadığında ve kullanıcılara atanmadığında trafik yönlendirme profilleri ile ağ güvenlik kontrolleri uygulanamaz; kullanıcı trafiği web içerik filtreleme ve Koşullu Erişim koruması dışında kalır.\r\n\r\n**Düzeltme işlemi**\r\n\r\n- [Global Secure Access lisanslama gereksinimlerini inceleyin](https://learn.microsoft.com/entra/global-secure-access/overview-what-is-global-secure-access?wt.mc_id=zerotrustrecommendations_automation_content_cnl_csasci#licensing-overview)\r\n- [Microsoft 365 yönetim merkezinde kullanıcı veya grup bazlı lisans atayın](https://learn.microsoft.com/microsoft-365/admin/manage/manage-group-licenses?view=o365-worldwide&preserve-view=true&wt.mc_id=zerotrustrecommendations_automation_content_cnl_csasci)",
     "Remediation": "",
-    "Reviewed": false,
-    "Source": "machine"
+    "Reviewed": true,
+    "Source": "human"
   },
   "ZeroTrust|24840": {
     "Title": "Güvenli Wi-Fi profilleri, Android cihazları yetkisiz ağ erişiminden korur",
@@ -2310,11 +2310,11 @@
     "Source": "machine"
   },
   "ZeroTrust|21787": {
-    "Title": "Yeni kiracı oluşturma izinleri Kiracı Oluşturucu rolüyle sınırlıdır",
-    "Desc": "Bir tehdit aktörü veya iyi niyetli ancak bilgisiz bir çalışan, herhangi bir kısıtlama yoksa yeni bir Microsoft Entra kiracısı oluşturabilir. Varsayılan olarak, kiracı oluşturan kullanıcıya otomatik olarak Global Yönetici rolü atanır. Uygun kontroller olmadan, bu işlem kimlik çevresini parçalayarak kuruluşun yönetişimi ve görünürlüğü dışında bir kiracı oluşturur. Token verme, marka taklidi, onay oltalama veya kalıcı hazırlık altyapısı için kullanılabilecek gölge kimlik platformu aracılığıyla risk getirir. Kötü niyetli kiracı, işletmenin idari veya izleme düzlemlerine bağlı olmadığından, geleneksel savunmalar onun oluşturulmasına, etkinliğine ve olası kötüye kullanımına kördür. \r\n\r\n**Düzeltme işlemi** \r\n\r\n**Yönetici olmayan kullanıcıların kiracı oluşturmasını kısıtla** ayarını etkinleştirin. Kiracı oluşturma yeteneğine ihtiyacı olan kullanıcılar için Kiracı Oluşturucu rolünü atayın. Kiracı oluşturma olaylarını Microsoft Entra denetim günlüklerinde de inceleyebilirsiniz. \r\n\r\n- [Üye kullanıcıların varsayılan izinlerini kısıtla](https://learn.microsoft.com/entra/fundamentals/users-default-permissions?wt.mc_id=zerotrustrecommendations_automation_content_cnl_csasci#restrict-member-users-default-permissions)\r\n- [Kiracı Oluşturucu rolünü ata](https://learn.microsoft.com/entra/identity/role-based-access-control/permissions-reference?wt.mc_id=zerotrustrecommendations_autom",
+    "Title": "Yeni kiracı oluşturma yetkisi yalnızca Tenant Creator rolüyle sınırlandırılmalıdır",
+    "Desc": "Kısıtlama uygulanmadığında bir tehdit aktörü veya bilinçsiz bir çalışan yeni bir Microsoft Entra kiracısı oluşturabilir ve varsayılan olarak bu kiracıda Global Administrator yetkisi alır. Bu durum, kurumun yönetişim ve izleme sınırları dışında gölge bir kimlik altyapısı yaratarak belirteç üretimi, marka taklidi veya onay oltalama saldırıları için kullanılabilir.\r\n\r\n**Düzeltme işlemi**\r\n\r\n- **Restrict non-admin users from creating tenants** ayarını etkinleştirin ve yalnızca gerekli kullanıcılara **Tenant Creator** rolünü atayın.\r\n- [Üye kullanıcıların varsayılan izinlerini kısıtlayın](https://learn.microsoft.com/entra/fundamentals/users-default-permissions?wt.mc_id=zerotrustrecommendations_automation_content_cnl_csasci#restrict-member-users-default-permissions)\r\n- [Tenant Creator rolünü inceleyin](https://learn.microsoft.com/entra/identity/role-based-access-control/permissions-reference?wt.mc_id=zerotrustrecommendations_automation_content_cnl_csasci#tenant-creator)\r\n- [Kiracı oluşturma denetim günlüklerini (`Create Company`) izleyin](https://learn.microsoft.com/entra/identity/monitoring-health/reference-audit-activities?wt.mc_id=zerotrustrecommendations_automation_content_cnl_csasci#core-directory)",
     "Remediation": "",
-    "Reviewed": false,
-    "Source": "machine"
+    "Reviewed": true,
+    "Source": "human"
   },
   "ZeroTrust|26888": {
     "Title": "Tanılama kaydı Application Gateway WAF'ta etkinleştirilmiştir",
@@ -2387,11 +2387,11 @@
     "Source": "machine"
   },
   "ZeroTrust|21888": {
-    "Title": "Uygulama kayıtlarında asılı veya terk edilmiş alan adı yönlendirme URI'leri olmamalıdır",
-    "Desc": "Uygulama kayıtlarındaki bakımsız veya yetim yönlendirme URI'leri, artık aktif kaynaklara işaret etmeyen alan adlarına referans verdiklerinde önemli güvenlik açıkları oluşturur. Tehdit aktörleri, terk edilmiş alan adlarında kaynak sağlayarak yönlendirme uç noktalarının kontrolünü etkili bir şekilde ele geçirerek bu \"sallanan\" DNS girdilerini kullanabilir. Bu güvenlik açığı, saldırganların OAuth 2.0 akışları sırasında kimlik doğrulama belirteclerini ve kimlik bilgilerini ele geçirmesine olanak tanır; bu da yetkisiz erişime, oturum ele geçirmeye ve potansiyel daha geniş kurumsal tehlikelere yol açabilir. \r\n\r\n**Düzeltme işlemi** \r\n\r\n- [Yönlendirme URI (yanıt URL'si) taslağı ve kısıtlamaları](https://learn.microsoft.com/entra/identity-platform/reply-url?wt.mc_id=zerotrustrecommendations_automation_content_cnl_csasci)",
+    "Title": "Uygulama kayıtlarında terk edilmiş veya sahipsiz yönlendirme URI’leri bulunmamalıdır",
+    "Desc": "Artık aktif bir kaynağa işaret etmeyen terk edilmiş yönlendirme URI’leri (dangling redirect URIs) uygulama kayıtlarında ciddi bir güvenlik açığı oluşturur. Tehdit aktörleri sahipsiz kalmış bu alan adlarını yeniden devralarak yönlendirme uç noktasının kontrolünü ele geçirebilir ve OAuth 2.0 akışları sırasında kimlik doğrulama belirteçlerini yakalayabilir.\r\n\r\n**Düzeltme işlemi**\r\n\r\n- [Yönlendirme URI (reply URL) kısıtlamalarını ve temizleme adımlarını inceleyin](https://learn.microsoft.com/entra/identity-platform/reply-url?wt.mc_id=zerotrustrecommendations_automation_content_cnl_csasci)",
     "Remediation": "",
-    "Reviewed": false,
-    "Source": "machine"
+    "Reviewed": true,
+    "Source": "human"
   },
   "ZeroTrust|25416": {
     "Title": "Global Secure Access bulut güvenlik duvarı, şube ofis internet trafiğini korur",
@@ -2429,11 +2429,11 @@
     "Source": "machine"
   },
   "ZeroTrust|21796": {
-    "Title": "Eski kimlik doğrulama politikalarını engelle yapılandırıldı",
-    "Desc": "SMTP ve IMAP için temel kimlik doğrulama gibi eski kimlik doğrulama protokolleri, yetkisiz erişime karşı koruma için kritik olan çok faktörlü kimlik doğrulama (MFA) gibi modern güvenlik özelliklerini desteklemez. Bu koruma eksikliği, bu protokolleri kullanan hesapları parola tabanlı saldırılara karşı savunmasız kılar ve saldırganlara çalınan veya tahmin edilen kimlik bilgileriyle ilk erişim sağlama imkanı sunar. \r\n\r\nBir saldırgan yetkisiz kimlik bilgilerine başarıyla eriştiğinde, zayıf kimlik doğrulama yöntemini giriş noktası olarak kullanarak bağlantılı hizmetlere erişebilir. Eski kimlik doğrulama yoluyla erişim sağlayan saldırganlar, Microsoft Exchange'te posta yönlendirme kurallarını yapılandırmak veya diğer ayarları değiştirmek gibi değişiklikler yapabilir; böylece hassas iletişimlere erişimi sürdürebilirler. \r\n\r\nEski kimlik doğrulama ayrıca saldırganlara, güvenlik uyarılarını tetiklemeden veya zorunlu kılmadan ele geçirilmiş kimlik bilgilerini kullanarak sisteme yeniden girmeleri için tutarlı bir yöntem sağlar",
+    "Title": "Eski kimlik doğrulama protokollerini engelleyen Koşullu Erişim politikaları yapılandırılmalıdır",
+    "Desc": "SMTP, IMAP ve POP3 için temel kimlik doğrulama (Basic Auth) gibi eski kimlik doğrulama protokolleri çok faktörlü kimlik doğrulamayı (MFA) desteklemez. Bu koruma eksikliği, hesapları parola püskürtme ve kimlik bilgisi doldurma saldırılarına açık hâle getirir.\r\n\r\nEski protokoller üzerinden erişim elde eden saldırganlar Exchange üzerinde gizli posta yönlendirme kuralları oluşturabilir, güvenlik uyarılarını tetiklemeden sisteme yeniden giriş yapabilir ve meşru kullanıcı trafiğine karışarak yatay hareket gerçekleştirebilir.\r\n\r\n**Düzeltme işlemi**\r\n\r\n- [Eski kimlik doğrulamayı engelleyen Koşullu Erişim politikası dağıtın](https://learn.microsoft.com/entra/identity/conditional-access/policy-block-legacy-authentication?wt.mc_id=zerotrustrecommendations_automation_content_cnl_csasci)",
     "Remediation": "",
-    "Reviewed": false,
-    "Source": "machine"
+    "Reviewed": true,
+    "Source": "human"
   },
   "ZeroTrust|24802": {
     "Title": "Cihaz Temizleme Kuralı Oluşturuldu",
@@ -2485,11 +2485,11 @@
     "Source": "machine"
   },
   "ZeroTrust|21784": {
-    "Title": "Tüm kullanıcı oturum açma etkinlikleri oltalama dirençli kimlik doğrulama yöntemleri kullanır",
-    "Desc": "Geçiş anahtarları ve FIDO2 güvenlik anahtarları gibi oltalama dirençli kimlik doğrulama yöntemleri, kimlik bilgisi hırsızlığına ve gelişmiş oltalama saldırılarına karşı en güçlü korumayı sağlar. Geleneksel MFA yöntemleri, ortada saldırgan saldırılarına ve sosyal mühendisliğe karşı savunmasızdır. Koşullu Erişim politikalarıyla tüm kullanıcılar için oltalama dirençli yöntemlerin uygulanması, saldırganların kimlik doğrulama akışlarını engellemeye çalışsa bile yetkisiz erişimi önlemeye yardımcı olur. \r\n\r\n**Düzeltme işlemi** \r\n\r\n- [MFA gücüne sahip tüm kullanıcılar için Koşullu Erişimi yapılandır](https://learn.microsoft.com/entra/identity/conditional-access/policy-all-users-mfa-strength?wt.mc_id=zerotrustrecommendations_automation_content_cnl_csasci)\r\n- [Oltalamaya dayanıklı şifresiz kimlik doğrulama uygula](https://learn.microsoft.com/entra/identity/authentication/how-to-deploy-oltalamaya dayanıklı-passwordless-authentication?wt.mc_id=zerotrustrecommendations_automation_content_cnl_csasci)",
+    "Title": "Tüm kullanıcı oturum açma işlemleri oltalamaya dayanıklı kimlik doğrulama yöntemleri kullanmalıdır",
+    "Desc": "Geçiş anahtarları (passkeys) ve FIDO2 güvenlik anahtarları gibi oltalamaya dayanıklı kimlik doğrulama yöntemleri, kimlik bilgisi hırsızlığına ve gelişmiş oltalama saldırılarına karşı en güçlü korumayı sağlar. Geleneksel MFA yöntemleri ortadaki saldırgan (AiTM) ve sosyal mühendislik tekniklerine karşı hâlâ risk taşır.\r\n\r\nKoşullu Erişim politikaları aracılığıyla tüm kullanıcılar için oltalamaya dayanıklı yöntemlerin zorunlu kılınması, saldırganlar kimlik doğrulama akışına araya girmeye çalışsa dahi yetkisiz erişimi engeller.\r\n\r\n**Düzeltme işlemi**\r\n\r\n- [Tüm kullanıcılar için MFA kimlik doğrulama gücü içeren Koşullu Erişim politikasını yapılandırın](https://learn.microsoft.com/entra/identity/conditional-access/policy-all-users-mfa-strength?wt.mc_id=zerotrustrecommendations_automation_content_cnl_csasci)\r\n- [Oltalamaya dayanıklı parolasız kimlik doğrulama dağıtımını uygulayın](https://learn.microsoft.com/entra/identity/authentication/how-to-deploy-phishing-resistant-passwordless-authentication?wt.mc_id=zerotrustrecommendations_automation_content_cnl_csasci)",
     "Remediation": "",
-    "Reviewed": false,
-    "Source": "machine"
+    "Reviewed": true,
+    "Source": "human"
   },
   "ZeroTrust|41206": {
     "Title": "Her Microsoft Sentinel çalışma alanında görselleştirme ve operasyonel raporlama için en az bir çalışma kitabı dağıtılmıştır",
