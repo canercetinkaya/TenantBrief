@@ -78,6 +78,14 @@ function Connect-TenantBrief {
         }
 
         Write-Information -MessageData "[TenantBrief] Connecting in Zero-Popup App-Only mode ($resolvedOrg | AppId: $resolvedAppId)..." -InformationAction Continue
+        $docsDirApp = [Environment]::GetFolderPath('MyDocuments')
+        $winPsModApp = if ($docsDirApp) { Join-Path $docsDirApp 'WindowsPowerShell\Modules' } else { Join-Path $HOME 'Documents\WindowsPowerShell\Modules' }
+        if (Test-Path -LiteralPath $winPsModApp) {
+            $appPathEntries = @($env:PSModulePath -split [System.IO.Path]::PathSeparator | Where-Object { $_ })
+            if ($appPathEntries -notcontains $winPsModApp) {
+                $env:PSModulePath = (@($winPsModApp) + $appPathEntries) -join [System.IO.Path]::PathSeparator
+            }
+        }
         Set-StrictMode -Off
         try {
             Connect-MgGraph -ClientId $resolvedAppId -TenantId $resolvedTenant -CertificateThumbprint $resolvedThumb -NoWelcome -ErrorAction Stop | Out-Null
