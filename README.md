@@ -1,45 +1,116 @@
+<div align="center">
+
 # TenantBrief
 
-**Read-only, zero-telemetry Microsoft 365 & Azure CISO assessment brief (`TR / EN`).**
-Unifies `ZeroTrustAssessment`, `CISA ScubaGear 2.0`, `Microsoft ORCA`, `Maester` (`EIDSCA` / `CIS M365 v7.0.0` / `XSPM`), and optional `EntraFalcon` JSON into **6 canonical security pillars**, **verified per-benchmark scores**, **32-SKU License ROI / R1–R7 waste audits**, and **Copilot readiness** — locally, with zero external AI exposure.
+**Salt okunur, sıfır telemetrili Microsoft 365 & Azure CISO güvenlik duruşu ve lisans ROI raporu (`TR / EN`)**
 
-[![TenantBrief — 20s Launch & Usage Demo (Click to Watch HD Video)](assets/tenantbrief-demo-poster.jpg)](https://canercetinkaya.com/videos/tenantbrief-demo.mp4)
+[![CI](https://github.com/canercetinkaya/TenantBrief/actions/workflows/ci.yml/badge.svg)](https://github.com/canercetinkaya/TenantBrief/actions/workflows/ci.yml)
+[![Release](https://img.shields.io/github/v/release/canercetinkaya/TenantBrief?color=0ea5e9)](https://github.com/canercetinkaya/TenantBrief/releases)
+[![License: MIT](https://img.shields.io/badge/Lisans-MIT-22c55e.svg)](LICENSE)
+[![PowerShell](https://img.shields.io/badge/PowerShell-7.0%2B-38bdf8.svg)](https://learn.microsoft.com/powershell/)
+[![Pester](https://img.shields.io/badge/Pester-136%2F136%20PASS-16a34a.svg)](tests/)
 
-<p align="center">
-  <em>▶ Click the preview above to watch the 20-second 1080p demo with audio (anonymized demo tenant).</em>
-</p>
+*`ZeroTrustAssessment`, `CISA ScubaGear 2.0`, `Microsoft ORCA`, `Maester` (`EIDSCA` / `CIS M365 v7.0.0` / `XSPM`) ve isteğe bağlı `EntraFalcon` çıktılarının tamamını tek yerel çalıştırmada **6 kanonik güvenlik sütununda**, **doğrulanmış standart skorlarıyla**, **32 SKU R1–R7 lisans israfı denetimiyle** ve **Copilot hazırlık analiziyle** birleştirir — kiracıda tek bir ayar bile değiştirmeden.*
 
-> **Architecture & Deep-Dive Article:**
-> - **Turkish:** [TenantBrief: Salt Okunur M365 Lisans İsrafı, 6 Güvenlik Sütunu ve Doğrulanmış Standart Skorlama Mimarisi](https://canercetinkaya.com/tr/blog/tenantbrief-m365-lisans-roi-uyumluluk-analizi)
-> - **English:** [TenantBrief: Read-Only M365 License Waste, 6 Unified Pillars, and Verified Benchmark Scoring](https://canercetinkaya.com/en/blog/tenantbrief-m365-lisans-roi-uyumluluk-analizi)
-> - **Live Demo Reports:** [TR Interactive](demo/TenantBriefReport-TR.html) · [EN Interactive](demo/TenantBriefReport-EN.html) · [TR Executive PDF](demo/TenantBrief-ExecutiveSummary-TR.html) · [EN Executive PDF](demo/TenantBrief-ExecutiveSummary-EN.html)
+<br/>
+
+[![TenantBrief — 20 Saniyelik HD Demo Videosu (Tarayıcıda İzlemek İçin Tıklayın)](assets/tenantbrief-demo-poster.jpg)](https://canercetinkaya.com/tr/blog/tenantbrief-m365-lisans-roi-uyumluluk-analizi#demo-video)
+
+*▶ 20 saniyelik 1080p sesli demoyu indirmeden doğrudan tarayıcıda izlemek için yukarıdaki önizlemeye tıklayın (anonimleştirilmiş demo kiracısı).*
+
+[📖 Türkçe Mimari İnceleme](https://canercetinkaya.com/tr/blog/tenantbrief-m365-lisans-roi-uyumluluk-analizi) · [🌐 English Deep Dive](https://canercetinkaya.com/en/blog/tenantbrief-m365-lisans-roi-uyumluluk-analizi) · [📊 Canlı Demo (TR)](demo/TenantBriefReport-TR.html) · [📊 Live Demo (EN)](demo/TenantBriefReport-EN.html) · [📄 CISO PDF Özeti (TR)](demo/TenantBrief-ExecutiveSummary-TR.html)
+
+</div>
 
 ---
 
-## Architecture (5-Stage Pipeline)
+## Neden TenantBrief?
+
+| Kurumsal Problem | TenantBrief Yaklaşımı |
+| --- | --- |
+| **Parçalı araç çıktıları ve mükerrer triyaj** | Tüm bulguları araç sekmelerine bölmek yerine **6 kanonik güvenlik sütununda** (`Identity`, `Devices`, `Network`, `Data`, `AI`, `SecOps`) toplar; **42 kontrollü crosswalk** ile çoklu kaynak etiketleri (`Sources`) ekler. |
+| **Yapay uyumluluk yüzdeleri** | Şişirilmiş çerçeve ortalamaları üretmez; yalnızca gerçek test edilen standartların (`ZeroTrustAssessment`, `CIS M365 v7.0.0`, `CISA SCuBA`, `ORCA`, `EIDSCA`, `XSPM`, `EntraFalcon`) doğrulanmış skorlarını hesaplar. |
+| **Atıl E3/E5/Copilot lisans maliyeti** | Canlı `/subscribedSkus` ve `/users` telemetrisiyle **32 SKU** üzerinde **R1–R7 lisans israfı**, 10 çakışma kuralı ve **L1–L4 Copilot hazırlık** analizi sunar. |
+| **Çoklu kimlik doğrulama yorgunluğu** | `Initialize-TenantBriefApp` + `Connect-TenantBrief -UseAppAuth` ile **0 (sıfır) pencere tam kapsam**, veya varsayılan `-Profile Quick` ile **0–3 pencere** hızlı başlangıç sağlar. |
+| **Veri gizliliği ve denetim güvenliği** | **%100 salt okunur**, sıfır telemetri, harici AI çağrısı yok, katı çevrimdışı CSP (`default-src 'none'`), HTML-escaped JSON, açık/koyu tema geçişli rapor ve `-Anonymize` maskeleme. |
+
+---
+
+## Hızlı Başlangıç
+
+### 1. Sıfır Pencere, Tam %100 Otomasyon (Önerilen — Sertifika Tabanlı)
+
+Tek seferlik kurulum yerel dışa aktarılamaz X.509 sertifikası, salt okunur Entra ID uygulama kaydı (37 salt okunur Graph izni + `Exchange.ManageAsApp` + `Global Reader`) oluşturur. Sonraki her tarama **0 pencereyle** tamamlanır:
+
+```powershell
+git clone https://github.com/canercetinkaya/TenantBrief.git
+cd TenantBrief
+Import-Module .\TenantBrief.psd1 -Force
+
+# Tek seferlik kurulum (yalnızca 1 kez yönetici onayı ister)
+Initialize-TenantBriefApp
+
+# Sonrasında her seferinde 0 pencere, tam kapsam (ZeroTrust + ScubaGear + ORCA + Maester + Lisans ROI)
+Connect-TenantBrief -UseAppAuth
+Invoke-TenantBriefAssessment -OutputPath "$HOME\TenantBriefReport" -Language tr -Framework All
+
+# İstediğinizde tam geri dönüş (Entra uygulamasını, yerel sertifikayı ve profili siler)
+Initialize-TenantBriefApp -Remove
+```
+
+> Sertifika destek matrisi ve en az ayrıcalıklı izin listesi için: [docs/unattended-auth.md](docs/unattended-auth.md)
+
+### 2. Hızlı Etkileşimli Başlangıç (`Quick` Varsayılan — 0–3 Pencere)
+
+Kiracıda hiçbir uygulama kaydı açmadan (danışmanlık / tek seferlik değerlendirme) hızlıca rapor almak için:
+
+```powershell
+Import-Module .\TenantBrief.psd1 -Force
+
+# Salt okunur ortam kontrolü ve kuru çalıştırma giriş planı (hiçbir oturum açmaz)
+Test-TenantBriefPrerequisites
+Test-TenantBriefPrerequisites -AuthPlan
+
+# Yalnızca Graph + EXO + Security & Compliance bağlanır (UPN login hint ile; Azure için -IncludeAzure)
+Connect-TenantBrief
+
+# ZeroTrust + ScubaGear aad (0 ek pencere) + ORCA + Maester + Lisans ROI
+Invoke-TenantBriefAssessment -OutputPath "$HOME\TenantBriefReport" -Language tr -Framework All
+```
+
+### 3. Tam Etkileşimli Kapsam (Teams + SharePoint + Çoklu ScubaGear)
+
+```powershell
+Connect-TenantBrief -Profile Full -IncludeAzure
+Invoke-TenantBriefAssessment -OutputPath "$HOME\TenantBriefReport" -Language tr -Framework All -ScubaInteractiveLogin -ScubaProducts aad,securitysuite,exo,sharepoint,teams
+```
+
+---
+
+## 5 Aşamalı Mimari
 
 ```mermaid
 flowchart TB
-    Pre["Preflight: Test-TenantBriefPrerequisites (Read-Only) + Connect-TenantBrief (-AutoFixDependencies opt-in)"]
-    Dash["Live Local Dashboard (HttpListener :8925-8945)"]
+    Pre["Ön Kontrol: Test-TenantBriefPrerequisites (-AuthPlan) + Connect-TenantBrief (-UseAppAuth | Quick | Full)"]
+    Dash["Canlı Yerel İlerleme Paneli (HttpListener 127.0.0.1:8925-8945)"]
 
-    subgraph Engines["Stages 1-3b: Read-Only Collection"]
-        S1["Stage 1: ZeroTrustAssessment (Main Runspace MSAL Reuse)"]
-        S2["Stage 2: CISA ScubaGear 2.0 (Default: AAD reuse | -ScubaInteractiveLogin: 7 products via isolated WinPS 5.1 + InvariantCulture)"]
-        S3["Stage 3a: Microsoft ORCA (Defender for Office 365 & EXO)"]
-        S3B["Stage 3b: Maester (EIDSCA, CIS M365 v7.0.0, XSPM) + Optional EntraFalcon / FastTrack JSON"]
+    subgraph Engines["Aşama 1-3b: Salt Okunur Veri Toplama"]
+        S1["Aşama 1: ZeroTrustAssessment (Ana Runspace Oturum Paylaşımı)"]
+        S2["Aşama 2: CISA ScubaGear 2.0 (App-Only PS7 0 Pencere | Hibrit aad + WinPS 5.1 InvariantCulture)"]
+        S3["Aşama 3a: Microsoft ORCA (Defender for Office 365 & EXO)"]
+        S3B["Aşama 3b: Maester (EIDSCA, CIS M365 v7.0.0, XSPM) + İsteğe Bağlı EntraFalcon / FastTrack JSON"]
     end
 
-    subgraph Stage4["Stage 4: Normalization, Crosswalk & Scoring"]
-        Norm["42-Control Crosswalk Correlation + 6 Canonical Pillars + PriorityScore (0-100)"]
-        ROI["Live License ROI & R1-R7 Waste (32 SKUs) + Copilot Readiness & Usage/Adoption"]
-        Score["Pre-Correlation Verified Benchmark Scorecards (Zero Synthetic Averages)"]
+    subgraph Stage4["Aşama 4: Normalizasyon, Crosswalk ve Skorlama"]
+        Norm["42 Kontrollü Crosswalk + 6 Kanonik Sütun + PriorityScore (0-100)"]
+        ROI["Canlı Lisans ROI & R1-R7 İsraf (32 SKU) + Copilot Hazırlığı"]
+        Score["Doğrulanmış Standart / Motor Skorları (Yapay Ortalama Yok)"]
     end
 
-    subgraph Stage5["Stage 5: Offline Local Deliverables"]
-        HTML["TenantBriefReport-TR/EN.html (Strict Offline CSP)"]
+    subgraph Stage5["Aşama 5: Çevrimdışı Yerel Çıktılar"]
+        HTML["TenantBriefReport-TR/EN.html (Açık/Koyu Tema · '/' Arama · Katı CSP)"]
         JSON["TenantBriefReport-TR/EN.json (Schema v2.0.0 + run-manifest.json)"]
-        PDF["TenantBrief-ExecutiveSummary-TR/EN.html (Print-to-PDF Brief)"]
+        PDF["TenantBrief-ExecutiveSummary-TR/EN.html (A4 Print-to-PDF CISO Özeti)"]
     end
 
     Pre --> Dash
@@ -51,104 +122,45 @@ flowchart TB
 
 ---
 
-## Prerequisites & What We Install Automatically
+## Ön Koşullar ve Modül Güvenliği
 
-By default, **TenantBrief never installs, downloads, or deletes local PowerShell modules.** Run `Test-TenantBriefPrerequisites` for a read-only check; pass `-AutoFixDependencies` to `Connect-TenantBrief` only when you explicitly want automatic installation.
+TenantBrief **varsayılan olarak yerel PowerShell modüllerinizi asla kurmaz, güncellemez veya silmez.** Otomatik modül kurulumu yalnızca `-AutoFixDependencies` anahtarını açıkça verdiğinizde çalışır.
 
-| Component | Required For | Default (Read-Only) | With `-AutoFixDependencies` |
+| Bileşen | Kullanım Amacı | Varsayılan (Salt Okunur) | `-AutoFixDependencies` ile |
 | --- | --- | --- | --- |
-| **PowerShell `7.6+`** | Live tenant scans (`ZeroTrustAssessment v3.1.0`) | Manual install | Manual install |
-| **PowerShell `7.0+`** | Offline JSON analysis (`-InputReportJson`, `-Resume`) | Manual install | Manual install |
-| **Windows PowerShell `5.1`** | `-ScubaInteractiveLogin` 7-product bypass (Windows built-in) | Built-in on Windows | Built-in on Windows |
-| **`ZeroTrustAssessment`** | Stage 1 core posture & Graph/Azure/EXO session | Warns with install command | Auto-installs (`CurrentUser`) |
-| **`ScubaGear` + `OPA` + `powershell-yaml`** | Stage 2 CISA SCuBA baseline | Warns & skips Stage 2 | Auto-installs (`CurrentUser` + OPA) |
-| **`ORCA` & `Maester`** | Stage 3a/3b MDO, EIDSCA, CIS M365 v7.0.0, XSPM | Warns & skips stage | Auto-installs (`CurrentUser`) |
-| **`MicrosoftTeams` & `SharePoint Online`** | Teams / SPO checks (`-SkipTeams` / `-SkipSharePoint` opt-out) | Warns if missing | Auto-installs & pins compatible SPO |
-| **Graph / SPO Version Cleanup** | Prevents `Microsoft.Graph.Authentication` version clashes | Never touches local modules | Prunes conflicting local copies |
-| **M365 Read-Only Role** | Tenant read access | **`Global Reader`** (recommended) or `Security Reader` + `Reports Reader` | Same (never requests write scopes) |
+| **PowerShell `7.6+`** | Canlı kiracı taramaları (`ZeroTrustAssessment v3.1.0`) | Manuel kurulum | Manuel kurulum |
+| **PowerShell `7.0+`** | Çevrimdışı JSON analizi (`-InputReportJson`, `-Resume`) | Manuel kurulum | Manuel kurulum |
+| **Windows PowerShell `5.1`** | Etkileşimli `-ScubaInteractiveLogin` non-AAD izolasyonu | Windows'ta yerleşik | Windows'ta yerleşik |
+| **`ZeroTrustAssessment`** | Aşama 1 çekirdek güvenlik duruşu | Eksikse kurulum komutu verir | Otomatik kurar (`CurrentUser`) |
+| **`ScubaGear` + `OPA` + `powershell-yaml`** | Aşama 2 CISA SCuBA taban hattı | Eksikse uyarır ve atlar | Otomatik kurar (`CurrentUser` + OPA) |
+| **`ORCA` ve `Maester`** | Aşama 3a/3b MDO, EIDSCA, CIS M365 v7.0.0, XSPM | Eksikse uyarır ve atlar | Otomatik kurar (`CurrentUser`) |
+| **`MicrosoftTeams` ve `SPO`** | `-Profile Full` Teams / SharePoint kontrolleri | Eksikse uyarır | Otomatik kurar |
+| **M365 Rolü** | Salt okunur kiracı erişimi | **`Global Reader`** (önerilen) | Değişmez (yazma kapsamı istenmez) |
 
 ---
 
-## Runtime Requests & Authentication Behavior
+## Diğer Çalıştırma Modları ve Rapor Türleri
 
-| Runtime Event | What Happens | Writes / Data Leaving Machine? |
+| Mod | Komut Örneği | Üretilen Çıktı |
 | --- | --- | --- |
-| **`Test-TenantBriefPrerequisites -AuthPlan`** | Dry-run authentication plan: prints the exact services and expected interactive prompt count for `-Profile Quick` or `-Profile Full` without opening any session. | **Zero network calls.** |
-| **`Connect-TenantBrief` (Default: `-Profile Quick`)** | Prints a pre-auth briefing, then connects read-only to **Graph + Exchange Online + Security & Compliance** (passing Graph UPN as login hint to EXO/IPPS; **Azure is excluded unless `-IncludeAzure`**, Teams & SPO are skipped in `Quick`). | **Zero tenant writes.** Zero telemetry. |
-| **`Connect-TenantBrief -Profile Full`** | Adds explicit **SharePoint Online** and **Microsoft Teams** sign-ins (disclosed upfront in the pre-auth briefing; Teams omits `-AccountId` to avoid WAM Error `3399548929` and falls back to Device Code if WAM blocks). Add `-IncludeAzure` for Azure ARM checks. | **Zero tenant writes.** Zero telemetry. |
-| **`Invoke-TenantBriefAssessment` (default)** | Reuses the active session (`ScubaGear aad` runs in the main session with `-LogIn:$false` under `InvariantCulture` -> **0 extra prompts**). Hosts a localhost progress UI on `127.0.0.1:8925–8945`. | **Zero tenant writes.** All HTML/JSON written locally. |
-| **`-ScubaInteractiveLogin` (+ `-ScubaProducts`)** | Runs `aad` in the main session (`0` extra prompts), then launches an isolated Windows PowerShell 5.1 subprocess (`InvariantCulture`) **only for remaining non-AAD products** (`securitysuite`, `exo`, `sharepoint`, `teams`, `powerplatform`, `powerbi`). | **Zero changes to user modules.** Subprocess log saved to `raw-scuba\sub-interactive\scuba-subprocess.log`. |
-| **Optional `-TranslatorKey`** | Translates only uncached TR strings via Azure AI Translator after stripping UPNs, GUIDs, and tenant domains. | **Disabled by default.** No text leaves the machine without an explicit key. |
+| **Giriş Planı (Kuru Çalıştırma)** | `Test-TenantBriefPrerequisites -AuthPlan` | Oturum açmadan bağlanılacak servisleri ve beklenen pencere sayısını gösterir |
+| **Kaldığı Yerden Devam (`-Resume`)** | `Invoke-TenantBriefAssessment -Resume -OutputPath "$HOME\TenantBriefReport" -Language tr -NoBrowser` | Önceki Aşama 1–4 çıktılarını kullanarak saniyeler içinde raporu yeniden üretir |
+| **Çevrimdışı / Air-Gapped Birleştirme** | `Invoke-TenantBriefAssessment -InputReportJson .\zt.json -InputScubaJsonPath .\raw-scuba -InputOrcaJsonPath .\orca.json -InputMaesterJsonPath .\maester.json -InputEntraFalconJsonPath .\ef.json -OutputPath .\out -Language tr` | Canlı kiracı bağlantısı olmadan tam rapor üretir (FastTrack Copilot, SharePoint Risk CSV ve Power Platform Agents JSON/CSV destekli) |
+| **Paylaşılabilir Maskeli Rapor** | Herhangi bir komuta `-Anonymize` ekleyin | Kiracı adı, alan adı, GUID ve UPN bilgilerini HTML, JSON ve PDF özetinde maskeler |
+| **Yalnızca Yönetici PDF Özeti** | `Export-TenantBriefExecutiveSummary -InputJsonPath .\TenantBriefReport-TR.json -OutputHtmlPath .\ozet.html -Language tr` | Düşük efor / yüksek risk sırasına göre kompakt A4 Print-to-PDF CISO özeti |
+| **Tarihsel Trend / Sapma Analizi** | `Compare-TenantBriefReports -BaselineJsonPath .\onceki.json -CurrentJsonPath .\yeni.json` | İyileşen (`Improved`) ve gerileyen (`Regressed`) kontrol farklarını çıkarır (`v1.x -> v2.0.0` uyumlu; bkz. [docs/migration-v1-to-v2.md](docs/migration-v1-to-v2.md)) |
+| **Bağımsız ROI / Copilot / Kullanım** | `Get-TenantBriefLicenseRoi`, `Get-TenantBriefLicenseWaste`, `Get-TenantBriefCopilotReadiness`, `Get-TenantBriefUsageAdoption` | CSV/Excel veya özel otomasyonlar için yapılandırılmış PowerShell nesneleri |
 
 ---
 
-## Alternative Execution Modes & Report Types
+## Güvenlik, Gizlilik ve Bakım
 
-| Mode | Command Pattern | Generated Output / Report |
-| --- | --- | --- |
-| **Preflight Check** | `Test-TenantBriefPrerequisites` | Read-only console table of modules, OPA, and active sessions |
-| **Standard Live Scan** | `Connect-TenantBrief; Invoke-TenantBriefAssessment -OutputPath "$HOME\TenantBriefReport" -Language tr -Framework All` | Interactive HTML, Schema v2.0.0 JSON, Print-to-PDF Executive Brief, `run-manifest.json` |
-| **Full 7-Product SCuBA (Interactive)** | `Invoke-TenantBriefAssessment -OutputPath "$HOME\TenantBriefReport" -Language tr -Framework All -ScubaInteractiveLogin` | Same deliverables + full multi-product `CISA_SCuBA` coverage (`AAD`, `EXO`, `SharePoint`, `Teams`, `SecuritySuite`, `PowerPlatform`, `PowerBI`) |
-| **Non-Interactive SCuBA (Cert Auth)** | Run `Invoke-SCuBA -LogIn:$true -AppID '<AppId>' -CertificateThumbprint '<Thumb>' -Organization 'contoso.onmicrosoft.com' -OutPath '.\raw-scuba' -Quiet`, then pass `-InputScubaJsonPath '.\raw-scuba'` | Unattended full 7-product SCuBA merged into TenantBrief HTML/JSON |
-| **Resume Interrupted Run** | `Invoke-TenantBriefAssessment -Resume -OutputPath "$HOME\TenantBriefReport" -Language tr -NoBrowser` | Reuses cached Stage 1–4 artifacts to finish reports in seconds |
-| **Offline / Air-Gapped Merge** | `Invoke-TenantBriefAssessment -InputReportJson .\ZeroTrustAssessmentReport.json -InputScubaJsonPath .\raw-scuba -InputOrcaJsonPath .\orca.json -InputMaesterJsonPath .\maester.json -InputEntraFalconJsonPath .\ef.json -OutputPath .\out -Language en` | Full bilingual deliverables with zero live tenant connections (also supports FastTrack Copilot, SharePoint Risk CSV, Power Platform Agents JSON/CSV) |
-| **Shareable Anonymized Brief** | Add `-Anonymize` to any assessment command | Redacts tenant names, domains, GUIDs, and UPNs across HTML, JSON, and Executive Summary |
-| **Executive PDF Only** | `Export-TenantBriefExecutiveSummary -InputJsonPath .\TenantBriefReport-TR.json -OutputHtmlPath .\exec.html -Language tr` | Compact, offline Print-to-PDF CISO brief ordered by lowest-effort high-risk actions |
-| **Historical Drift / Trend** | `Compare-TenantBriefReports -BaselineJsonPath .\prev.json -CurrentJsonPath .\curr.json` | `Improved` / `Regressed` control delta (supports `v1.x -> v2.0.0` cross-version comparison; see [docs/migration-v1-to-v2.md](docs/migration-v1-to-v2.md)) |
-| **Standalone ROI / Copilot / Usage** | `Get-TenantBriefLicenseRoi`, `Get-TenantBriefLicenseWaste`, `Get-TenantBriefCopilotReadiness`, `Get-TenantBriefUsageAdoption` | Structured PowerShell objects for custom pipelines or CSV/Excel export |
-
----
-
-## Quick Start
-
-### 1. Quick Profile (Default — Minimal Sign-In Prompts)
-```powershell
-git clone https://github.com/canercetinkaya/TenantBrief.git
-cd TenantBrief
-Import-Module .\TenantBrief.psd1 -Force
-
-# Read-only preflight + dry-run auth plan (changes nothing)
-Test-TenantBriefPrerequisites
-Test-TenantBriefPrerequisites -AuthPlan
-
-# Connect read-only (Graph + EXO + IPPS; add -IncludeAzure for Azure ARM checks)
-Connect-TenantBrief
-
-# Run assessment (ZeroTrust + ScubaGear aad [0 extra prompts] + ORCA + Maester + License ROI)
-Invoke-TenantBriefAssessment -OutputPath "$HOME\TenantBriefReport" -Language tr -Framework All
-```
-
-### 2. Full Profile (Includes Teams, SharePoint Online & Multi-Product ScubaGear)
-```powershell
-Test-TenantBriefPrerequisites -AuthPlan -Profile Full -ScubaInteractiveLogin -ScubaProducts aad,securitysuite,exo,sharepoint,teams
-Connect-TenantBrief -Profile Full -IncludeAzure
-Invoke-TenantBriefAssessment -OutputPath "$HOME\TenantBriefReport" -Language tr -Framework All -ScubaInteractiveLogin -ScubaProducts aad,securitysuite,exo,sharepoint,teams
-```
-
-### 3. Unattended (Zero-Popup, Full 100% Coverage via Certificate Auth)
-```powershell
-# One-time setup: creates local non-exportable X.509 cert + read-only Entra ID App Registration + Global Reader
-Initialize-TenantBriefApp
-
-# Every future run: 0 popups, full ZeroTrust + ScubaGear + ORCA + Maester + License ROI
-Connect-TenantBrief -UseAppAuth
-Invoke-TenantBriefAssessment -OutputPath "$HOME\TenantBriefReport" -Language tr -Framework All
-
-# Full rollback (deletes App Registration, local cert & profile)
-Initialize-TenantBriefApp -Remove
-```
-See **[docs/unattended-auth.md](docs/unattended-auth.md)** for the verified engine certificate matrix and least-privilege permissions.
-
----
-
-## Security, Privacy & Upstream Maintenance (Bakım)
-
-- **Hardened Offline Deliverables:** Strict `Content-Security-Policy` (`default-src 'none'; connect-src 'none'`), HTML-escaped JSON payloads, headless Chromium XSS CI checks, and `-Anonymize` redaction. See [SECURITY.md](SECURITY.md).
-- **Upstream Open-Source Ecosystem:** Built on Microsoft `ZeroTrustAssessment`, CISA `ScubaGear`, Microsoft `ORCA`, `Maester` (`EIDSCA` / `CIS M365`), optional `EntraFalcon` JSON, and Microsoft FastTrack toolkits. Full attributions: [NOTICE.md](NOTICE.md).
-- **Monthly Read-Only Upstream Check:** Pinned versions live in `data/upstream-versions.json`. Register a user-level monthly sandbox check (`Save-Module` + detached `git worktree` in `%TEMP%`, zero module writes):
+- **Sertleştirilmiş Çevrimdışı Çıktılar:** Katı `Content-Security-Policy` (`default-src 'none'; connect-src 'none'`), HTML-escaped JSON yükleri, headless Chromium XSS CI kontrolleri ve `-Anonymize` maskeleme. Ayrıntılar: [SECURITY.md](SECURITY.md).
+- **Açık Kaynak Ekosistem Atıfları:** Microsoft `ZeroTrustAssessment`, CISA `ScubaGear`, Microsoft `ORCA`, `Maester` (`EIDSCA` / `CIS M365`), isteğe bağlı `EntraFalcon` ve Microsoft FastTrack araçları üzerine inşa edilmiştir. Tam atıflar: [NOTICE.md](NOTICE.md).
+- **Aylık Salt Okunur Yukarı Akış Sürüm Denetimi:** Sabitlenen sürümler `data/upstream-versions.json` içindedir (`Save-Module` + `%TEMP%` üzerinde izole `git worktree`, yerel modüllere dokunmaz):
   ```powershell
-  pwsh -NoProfile -File .\tools\Register-TenantBriefUpstreamCheck.ps1          # install (-Unregister to remove)
-  pwsh -NoProfile -File .\tools\Invoke-TenantBriefUpstreamCheck.ps1 -DryRun   # manual dry-run
+  pwsh -NoProfile -File .\tools\Register-TenantBriefUpstreamCheck.ps1          # aylık kontrolü kur (-Unregister kaldırır)
+  pwsh -NoProfile -File .\tools\Invoke-TenantBriefUpstreamCheck.ps1 -DryRun   # manuel kuru çalıştırma
   ```
-- **Tests & Quality Gates:** `Invoke-Pester ./tests` (**130/130 PASS**), `PSScriptAnalyzer 1.25.0` CI ceiling (`<= 82`, `0 Errors`), `PriorityScore` weights (`data/scoring.json`), `tools/Measure-TenantBriefQuality.ps1` (`Q01–Q15`), and JSON Schema v2.0.0 (`schemas/tenantbrief-report.schema.json`).
-- **License:** MIT ([LICENSE](LICENSE)) · Design pass: [unslop](https://github.com/heydamir/unslop) by Damir Sokolovsky (CC BY 4.0) · Full architecture & governance notes: [canercetinkaya.com](https://canercetinkaya.com/tr/blog/tenantbrief-m365-lisans-roi-uyumluluk-analizi)
+- **Kalite Kapıları:** `Invoke-Pester ./tests` (**136/136 PASS**), `PSScriptAnalyzer 1.25.0` CI sınırı (`<= 82`, `0 Error`), `PriorityScore` ağırlıkları (`data/scoring.json`), `tools/Measure-TenantBriefQuality.ps1` (`Q01–Q15`) ve JSON Schema v2.0.0 (`schemas/tenantbrief-report.schema.json`).
+- **Lisans ve Tasarım:** MIT ([LICENSE](LICENSE)) · Arayüz tasarım iyileştirmesi: [unslop](https://github.com/heydamir/unslop) — Damir Sokolovsky (CC BY 4.0) · Mimari notlar: [canercetinkaya.com](https://canercetinkaya.com/tr/blog/tenantbrief-m365-lisans-roi-uyumluluk-analizi)
