@@ -1,6 +1,6 @@
 ﻿@{
     RootModule        = 'TenantBrief.psm1'
-    ModuleVersion     = '2.0.2'
+    ModuleVersion     = '2.1.1'
     GUID              = 'b7e4c1a2-9d3f-4e8a-9b1c-5f2a8d4e6c10'
     Author            = 'Caner Çetinkaya'
     CompanyName       = 'canercetinkaya.com'
@@ -29,7 +29,7 @@
             Tags         = @('TenantBrief', 'ZeroTrust', 'Security', 'Microsoft365', 'Azure', 'EntraID', 'ScubaGear', 'Maester', 'EIDSCA', 'ORCA', 'CIS-M365', 'EntraFalcon', 'LicenseROI', 'Copilot')
             LicenseUri   = 'https://github.com/canercetinkaya/TenantBrief/blob/main/LICENSE'
             ProjectUri   = 'https://github.com/canercetinkaya/TenantBrief'
-            ReleaseNotes = 'v2.0.0 (Breaking Change): Removes deprecated Finding.Impact alias (use Finding.UserImpact), adds mandatory SchemaVersion "2.0.0" to TenantBriefReport-*.json and schemas/tenantbrief-report.schema.json, ships docs/migration-v1-to-v2.md, and preserves cross-version v1->v2 Compare-TenantBriefReports compatibility.'
+            ReleaseNotes = 'v2.1.1: Unslop visual/UX polish (Ink Dark/Light offline theme toggle, live progress screen, SVG CSS-variable harmonization, A4 print contrast, / and Esc search shortcuts), 30 highest-priority human-edited Turkish translations in data/tr-translation-cache.json, and refreshed v2.1.1 demo/ HTML reports.'
         }
     }
 }
