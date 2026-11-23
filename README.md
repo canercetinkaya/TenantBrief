@@ -3,6 +3,12 @@
 **Read-only, zero-telemetry Microsoft 365 & Azure CISO assessment brief (`TR / EN`).**
 Unifies `ZeroTrustAssessment`, `CISA ScubaGear 2.0`, `Microsoft ORCA`, `Maester` (`EIDSCA` / `CIS M365 v7.0.0` / `XSPM`), and optional `EntraFalcon` JSON into **6 canonical security pillars**, **verified per-benchmark scores**, **32-SKU License ROI / R1–R7 waste audits**, and **Copilot readiness** — locally, with zero external AI exposure.
 
+[![TenantBrief — 20s Launch & Usage Demo (Click to Watch HD Video)](assets/tenantbrief-demo-poster.jpg)](https://canercetinkaya.com/videos/tenantbrief-demo.mp4)
+
+<p align="center">
+  <em>▶ Click the preview above to watch the 20-second 1080p demo with audio (anonymized demo tenant).</em>
+</p>
+
 > **Architecture & Deep-Dive Article:**
 > - **Turkish:** [TenantBrief: Salt Okunur M365 Lisans İsrafı, 6 Güvenlik Sütunu ve Doğrulanmış Standart Skorlama Mimarisi](https://canercetinkaya.com/tr/blog/tenantbrief-m365-lisans-roi-uyumluluk-analizi)
 > - **English:** [TenantBrief: Read-Only M365 License Waste, 6 Unified Pillars, and Verified Benchmark Scoring](https://canercetinkaya.com/en/blog/tenantbrief-m365-lisans-roi-uyumluluk-analizi)
