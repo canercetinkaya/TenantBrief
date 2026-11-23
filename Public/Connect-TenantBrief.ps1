@@ -41,8 +41,83 @@ function Connect-TenantBrief {
         [switch]$SkipSharePoint,
 
         [Parameter()]
-        [switch]$AutoFixDependencies
+        [switch]$AutoFixDependencies,
+
+        [Parameter()]
+        [switch]$UseAppAuth,
+
+        [Parameter()]
+        [string]$AppId,
+
+        [Parameter()]
+        [string]$CertificateThumbprint,
+
+        [Parameter()]
+        [string]$Organization,
+
+        [Parameter()]
+        [string]$AppProfilePath
     )
+
+    $script:TenantBriefAppAuth = $null
+
+    if ($UseAppAuth -or (-not [string]::IsNullOrWhiteSpace($AppId) -and -not [string]::IsNullOrWhiteSpace($CertificateThumbprint))) {
+        $prof = if ($UseAppAuth) { Get-TenantBriefAppProfile -ProfilePath $AppProfilePath } else { $null }
+        if ($UseAppAuth -and -not $prof) {
+            throw "No local TenantBrief app profile found. Run Initialize-TenantBriefApp once to create your read-only App Registration and local certificate."
+        }
+        $resolvedAppId  = if (-not [string]::IsNullOrWhiteSpace($AppId)) { $AppId } else { [string]$prof.AppId }
+        $resolvedThumb  = if (-not [string]::IsNullOrWhiteSpace($CertificateThumbprint)) { $CertificateThumbprint } else { [string]$prof.CertificateThumbprint }
+        $resolvedTenant = if (-not [string]::IsNullOrWhiteSpace($Tenant)) { $Tenant } else { [string]$prof.TenantId }
+        $resolvedOrg    = if (-not [string]::IsNullOrWhiteSpace($Organization)) { $Organization } else { [string]$prof.Organization }
+
+        $certObj = Get-Item -Path "Cert:\CurrentUser\My\$resolvedThumb" -ErrorAction SilentlyContinue
+        if (-not $certObj) { $certObj = Get-Item -Path "Cert:\LocalMachine\My\$resolvedThumb" -ErrorAction SilentlyContinue }
+        if (-not $certObj) {
+            throw "Certificate with thumbprint '$resolvedThumb' was not found in CurrentUser\My or LocalMachine\My."
+        }
+
+        Write-Information -MessageData "[TenantBrief] Connecting in Zero-Popup App-Only mode ($resolvedOrg | AppId: $resolvedAppId)..." -InformationAction Continue
+        Set-StrictMode -Off
+        try {
+            Connect-MgGraph -ClientId $resolvedAppId -TenantId $resolvedTenant -CertificateThumbprint $resolvedThumb -NoWelcome -ErrorAction Stop | Out-Null
+            if (Get-Module -ListAvailable -Name 'ExchangeOnlineManagement') {
+                try {
+                    Import-Module ExchangeOnlineManagement -Global -ErrorAction Stop -WarningAction SilentlyContinue | Out-Null
+                    Connect-ExchangeOnline -AppId $resolvedAppId -CertificateThumbprint $resolvedThumb -Organization $resolvedOrg -ShowBanner:$false -ErrorAction Stop | Out-Null
+                } catch {
+                    Write-Warning "[TenantBrief] App-Only Exchange Online connection skipped: $($_.Exception.Message)"
+                }
+            }
+            if (Get-Module -ListAvailable -Name 'ZeroTrustAssessment') {
+                try {
+                    Import-Module ZeroTrustAssessment -Global -ErrorAction Stop -WarningAction SilentlyContinue | Out-Null
+                    Connect-ZtAssessment -TenantId $resolvedTenant -ClientId $resolvedAppId -Certificate $certObj -Service @('Graph', 'ExchangeOnline') -ErrorAction Stop | Out-Null
+                } catch {
+                    Write-Warning "[TenantBrief] App-Only ZeroTrustAssessment connection note: $($_.Exception.Message)"
+                }
+            }
+            if (-not $SkipTeams -and (Get-Module -ListAvailable -Name 'MicrosoftTeams')) {
+                try {
+                    Import-Module MicrosoftTeams -Global -ErrorAction Stop -WarningAction SilentlyContinue | Out-Null
+                    Connect-MicrosoftTeams -ApplicationId $resolvedAppId -TenantId $resolvedTenant -CertificateThumbprint $resolvedThumb -ErrorAction Stop | Out-Null
+                } catch {
+                    Write-Warning "[TenantBrief] App-Only Teams connection skipped: $($_.Exception.Message)"
+                }
+            }
+        } finally {
+            Set-StrictMode -Version Latest
+        }
+
+        $script:TenantBriefAppAuth = [PSCustomObject]@{
+            AppId                 = $resolvedAppId
+            CertificateThumbprint = $resolvedThumb
+            TenantId              = $resolvedTenant
+            Organization          = $resolvedOrg
+        }
+        Write-Information -MessageData "[TenantBrief] Zero-Popup App-Only session active (0 prompts). Stage 2 ScubaGear will reuse this certificate automatically." -InformationAction Continue
+        return
+    }
 
     $planArgs = @{
         AuthProfile    = $AuthProfile

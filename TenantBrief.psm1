@@ -9,6 +9,7 @@ $script:ScoringConfigCache = $null
 $script:I18nCache = @{}
 $script:GlossaryTrCache = $null
 $script:ReportTemplatePath = Join-Path $script:ModuleRoot 'assets/report-template.html'
+$script:TenantBriefAppAuth = $null
 
 foreach ($folder in @('Private/Render', 'Private/Scoring', 'Private/Correlation', 'Private/Import', 'Public')) {
     $dirPath = Join-Path $script:ModuleRoot $folder

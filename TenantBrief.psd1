@@ -9,6 +9,7 @@
     PowerShellVersion = '7.0'
     FunctionsToExport = @(
         'Connect-TenantBrief',
+        'Initialize-TenantBriefApp',
         'Invoke-TenantBriefAssessment',
         'Get-TenantBriefFrameworks',
         'Get-TenantBriefLicenseRoi',

@@ -80,7 +80,10 @@ function Invoke-TenantBriefBaselineCollections {
         [switch]$AutoFixDependencies,
 
         [Parameter(Mandatory = $false)]
-        [switch]$ScubaInteractiveLogin
+        [switch]$ScubaInteractiveLogin,
+
+        [Parameter(Mandatory = $false)]
+        [PSCustomObject]$AppAuth = $null
     )
 
     $markStage = {
@@ -151,68 +154,82 @@ function Invoke-TenantBriefBaselineCollections {
                 }
             }
             $requestedScuba = @($ScubaProducts | ForEach-Object { ([string]$_).Trim().ToLowerInvariant() } | Where-Object { $_ } | Select-Object -Unique)
-            if ($requestedScuba.Count -eq 0) { $requestedScuba = @('aad', 'securitysuite', 'exo', 'sharepoint', 'teams', 'powerplatform', 'powerbi') }
+            if ($requestedScuba.Count -eq 0) { $requestedScuba = @('aad', 'securitysuite', 'exo', 'powerplatform', 'sharepoint', 'teams', 'powerbi') }
 
-            $mainSessionProds = @($requestedScuba | Where-Object { $_ -eq 'aad' })
-            $remainingProds   = @($requestedScuba | Where-Object { $_ -ne 'aad' })
-            $scubaItems       = @()
+            $scubaItems = @()
+            $hasAppAuth = ($null -ne $AppAuth -and $AppAuth.PSObject.Properties['AppId'] -and -not [string]::IsNullOrWhiteSpace([string]$AppAuth.AppId) -and $AppAuth.PSObject.Properties['CertificateThumbprint'] -and -not [string]::IsNullOrWhiteSpace([string]$AppAuth.CertificateThumbprint) -and $AppAuth.PSObject.Properties['Organization'] -and -not [string]::IsNullOrWhiteSpace([string]$AppAuth.Organization))
 
-            # Empirically verified on ScubaGear 2.0.0: 'aad' succeeds in main session with -LogIn:$false (0 extra prompts).
-            # Run 'aad' in main session first under InvariantCulture; isolate only remaining non-AAD products in PS 5.1 subprocess.
-            $aadDoneInMain = $false
-            if ($mainSessionProds.Count -gt 0 -and (Get-Command Invoke-SCuBA -ErrorAction SilentlyContinue)) {
-                $scubaMainOut = Join-Path $scubaOut 'main-aad'
-                New-Item -ItemType Directory -Path $scubaMainOut -Force | Out-Null
-                & $Log "[Stage 2/5] Running CISA ScubaGear in main session (InvariantCulture): $($mainSessionProds -join ', ') — LogIn=False (0 extra prompts)..."
+            if ($hasAppAuth) {
+                & $Log "[Stage 2/5] Running CISA ScubaGear in Zero-Popup App-Only mode (InvariantCulture): $($requestedScuba -join ', ')..."
                 $prevCulture = [System.Threading.Thread]::CurrentThread.CurrentCulture
                 try {
                     [System.Threading.Thread]::CurrentThread.CurrentCulture = [System.Globalization.CultureInfo]::InvariantCulture
-                    $null = Invoke-SCuBA -ProductNames $mainSessionProds -LogIn:$false -DisconnectOnExit:$false -OPAPath $opaDir -OutPath $scubaMainOut -Quiet 6>$null 3>$null
-                } catch {
-                    Write-Verbose ("Main-session ScubaGear aad attempt failed: " + $_.Exception.Message)
+                    $null = Invoke-SCuBA -ProductNames $requestedScuba -LogIn:$true -AppID ([string]$AppAuth.AppId) -CertificateThumbprint ([string]$AppAuth.CertificateThumbprint) -Organization ([string]$AppAuth.Organization) -DisconnectOnExit:$false -OPAPath $opaDir -OutPath $scubaOut -Quiet 6>$null 3>$null
                 } finally {
                     [System.Threading.Thread]::CurrentThread.CurrentCulture = $prevCulture
                 }
-                $mainItems = @(Import-TenantBriefScubaResults -Path $scubaMainOut)
-                if ($mainItems.Count -gt 0) {
-                    $scubaItems += $mainItems
-                    $aadDoneInMain = $true
-                }
-            }
+                $scubaItems = @(Import-TenantBriefScubaResults -Path $scubaOut)
+            } else {
+                $mainSessionProds = @($requestedScuba | Where-Object { $_ -eq 'aad' })
+                $remainingProds   = @($requestedScuba | Where-Object { $_ -ne 'aad' })
 
-            $subTargetProds = if ($aadDoneInMain) { $remainingProds } else { $requestedScuba }
+                # Empirically verified on ScubaGear 2.0.0: 'aad' succeeds in main session with -LogIn:$false (0 extra prompts).
+                # Run 'aad' in main session first under InvariantCulture; isolate only remaining non-AAD products in PS 5.1 subprocess.
+                $aadDoneInMain = $false
+                if ($mainSessionProds.Count -gt 0 -and (Get-Command Invoke-SCuBA -ErrorAction SilentlyContinue)) {
+                    $scubaMainOut = Join-Path $scubaOut 'main-aad'
+                    New-Item -ItemType Directory -Path $scubaMainOut -Force | Out-Null
+                    & $Log "[Stage 2/5] Running CISA ScubaGear in main session (InvariantCulture): $($mainSessionProds -join ', ') — LogIn=False (0 extra prompts)..."
+                    $prevCulture = [System.Threading.Thread]::CurrentThread.CurrentCulture
+                    try {
+                        [System.Threading.Thread]::CurrentThread.CurrentCulture = [System.Globalization.CultureInfo]::InvariantCulture
+                        $null = Invoke-SCuBA -ProductNames $mainSessionProds -LogIn:$false -DisconnectOnExit:$false -OPAPath $opaDir -OutPath $scubaMainOut -Quiet 6>$null 3>$null
+                    } catch {
+                        Write-Verbose ("Main-session ScubaGear aad attempt failed: " + $_.Exception.Message)
+                    } finally {
+                        [System.Threading.Thread]::CurrentThread.CurrentCulture = $prevCulture
+                    }
+                    $mainItems = @(Import-TenantBriefScubaResults -Path $scubaMainOut)
+                    if ($mainItems.Count -gt 0) {
+                        $scubaItems += $mainItems
+                        $aadDoneInMain = $true
+                    }
+                }
 
-            if ($useWinPsSubprocess -and $subTargetProds.Count -gt 0) {
-                $scubaSubOut = Join-Path $scubaOut 'sub-interactive'
-                New-Item -ItemType Directory -Path $scubaSubOut -Force | Out-Null
-                & $Log "[Stage 2/5] Running remaining CISA ScubaGear products in isolated Windows PowerShell 5.1 (InvariantCulture) ($($subTargetProds -join ', ') — LogIn=True)..."
-                $extraModPaths = [System.Collections.Generic.List[string]]::new()
-                $modParent = Split-Path -Path ([string]$scubaMod.ModuleBase) -Parent
-                if ($modParent) {
-                    $modGrandParent = Split-Path -Path $modParent -Parent
-                    if ($modGrandParent) { $extraModPaths.Add($modGrandParent) }
-                    $extraModPaths.Add($modParent)
-                }
-                $scubaExit = Invoke-TenantBriefScubaSubprocess -WinPowerShellPath $winPsCmd.Source -ProductNames $subTargetProds -OpaPath $opaDir -OutPath $scubaSubOut -ExtraModulePaths $extraModPaths.ToArray()
-                if ($null -ne $scubaExit -and $scubaExit -ne 0 -and $null -ne $Diagnostics) {
-                    Add-TenantBriefDiagnostic -Diagnostics $Diagnostics -Stage 2 -Component 'ScubaGear' -Message "ScubaGear Windows PowerShell 5.1 subprocess exited with code $scubaExit." -Severity 'Warning' -Remedy 'Check raw-scuba\sub-interactive\DebugLogs\ScubaGear-DebugLog-ErrorReport.md for authentication or provider details.'
-                }
-                $subItems = @(Import-TenantBriefScubaResults -Path $scubaSubOut)
-                if ($subItems.Count -gt 0) {
-                    $scubaItems += $subItems
-                }
-            } elseif (-not $useWinPsSubprocess -and $subTargetProds.Count -gt 0 -and ($ScubaInteractiveLogin -or -not $aadDoneInMain)) {
-                & $Log "[Stage 2/5] Running CISA ScubaGear checks ($($subTargetProds -join ', ') — LogIn=$([bool]$ScubaInteractiveLogin))..."
-                $prevCulture = [System.Threading.Thread]::CurrentThread.CurrentCulture
-                try {
-                    [System.Threading.Thread]::CurrentThread.CurrentCulture = [System.Globalization.CultureInfo]::InvariantCulture
-                    $null = Invoke-SCuBA -ProductNames $subTargetProds -LogIn:([bool]$ScubaInteractiveLogin) -DisconnectOnExit:$false -OPAPath $opaDir -OutPath $scubaOut -Quiet 6>$null 3>$null
-                } finally {
-                    [System.Threading.Thread]::CurrentThread.CurrentCulture = $prevCulture
-                }
-                $extraItems = @(Import-TenantBriefScubaResults -Path $scubaOut)
-                if ($extraItems.Count -gt 0) {
-                    $scubaItems += $extraItems
+                $subTargetProds = if ($aadDoneInMain) { $remainingProds } else { $requestedScuba }
+
+                if ($useWinPsSubprocess -and $subTargetProds.Count -gt 0) {
+                    $scubaSubOut = Join-Path $scubaOut 'sub-interactive'
+                    New-Item -ItemType Directory -Path $scubaSubOut -Force | Out-Null
+                    & $Log "[Stage 2/5] Running remaining CISA ScubaGear products in isolated Windows PowerShell 5.1 (InvariantCulture) ($($subTargetProds -join ', ') — LogIn=True)..."
+                    $extraModPaths = [System.Collections.Generic.List[string]]::new()
+                    $modParent = Split-Path -Path ([string]$scubaMod.ModuleBase) -Parent
+                    if ($modParent) {
+                        $modGrandParent = Split-Path -Path $modParent -Parent
+                        if ($modGrandParent) { $extraModPaths.Add($modGrandParent) }
+                        $extraModPaths.Add($modParent)
+                    }
+                    $scubaExit = Invoke-TenantBriefScubaSubprocess -WinPowerShellPath $winPsCmd.Source -ProductNames $subTargetProds -OpaPath $opaDir -OutPath $scubaSubOut -ExtraModulePaths $extraModPaths.ToArray()
+                    if ($null -ne $scubaExit -and $scubaExit -ne 0 -and $null -ne $Diagnostics) {
+                        Add-TenantBriefDiagnostic -Diagnostics $Diagnostics -Stage 2 -Component 'ScubaGear' -Message "ScubaGear Windows PowerShell 5.1 subprocess exited with code $scubaExit." -Severity 'Warning' -Remedy 'Check raw-scuba\sub-interactive\DebugLogs\ScubaGear-DebugLog-ErrorReport.md for authentication or provider details.'
+                    }
+                    $subItems = @(Import-TenantBriefScubaResults -Path $scubaSubOut)
+                    if ($subItems.Count -gt 0) {
+                        $scubaItems += $subItems
+                    }
+                } elseif (-not $useWinPsSubprocess -and $subTargetProds.Count -gt 0 -and ($ScubaInteractiveLogin -or -not $aadDoneInMain)) {
+                    & $Log "[Stage 2/5] Running CISA ScubaGear checks ($($subTargetProds -join ', ') — LogIn=$([bool]$ScubaInteractiveLogin))..."
+                    $prevCulture = [System.Threading.Thread]::CurrentThread.CurrentCulture
+                    try {
+                        [System.Threading.Thread]::CurrentThread.CurrentCulture = [System.Globalization.CultureInfo]::InvariantCulture
+                        $null = Invoke-SCuBA -ProductNames $subTargetProds -LogIn:([bool]$ScubaInteractiveLogin) -DisconnectOnExit:$false -OPAPath $opaDir -OutPath $scubaOut -Quiet 6>$null 3>$null
+                    } finally {
+                        [System.Threading.Thread]::CurrentThread.CurrentCulture = $prevCulture
+                    }
+                    $extraItems = @(Import-TenantBriefScubaResults -Path $scubaOut)
+                    if ($extraItems.Count -gt 0) {
+                        $scubaItems += $extraItems
+                    }
                 }
             }
             $executedScuba = @($scubaItems | ForEach-Object { ([string]$_.TestCategory).Trim().ToLowerInvariant() } | Where-Object { $_ } | Select-Object -Unique)

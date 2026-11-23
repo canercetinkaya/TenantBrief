@@ -250,7 +250,7 @@
     $collectedTests = [System.Collections.Generic.List[object]]::new()
     if (-not $InputReportJson) {
         $accountName = if ($mgCheck -and $mgCheck.Account) { [string]$mgCheck.Account } else { '' }
-        foreach ($ct in @(Invoke-TenantBriefBaselineCollections -OutputPath $OutputPath -Account $accountName -Log $addLog -State $progressState -Diagnostics $diagnostics -Manifest $manifest -ManifestPath $manifestPath -SkipMaester:$SkipMaester -ScubaInteractiveLogin:$ScubaInteractiveLogin -ScubaProducts $ScubaProducts)) {
+        foreach ($ct in @(Invoke-TenantBriefBaselineCollections -OutputPath $OutputPath -Account $accountName -Log $addLog -State $progressState -Diagnostics $diagnostics -Manifest $manifest -ManifestPath $manifestPath -SkipMaester:$SkipMaester -ScubaInteractiveLogin:$ScubaInteractiveLogin -ScubaProducts $ScubaProducts -AppAuth $script:TenantBriefAppAuth)) {
             if ($null -ne $ct) { $collectedTests.Add($ct) }
         }
     } else {
