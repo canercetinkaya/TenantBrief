@@ -14,11 +14,11 @@
 
 <br/>
 
-[![TenantBrief — 20 Saniyelik HD Demo Videosu (Tarayıcıda İzlemek İçin Tıklayın)](assets/tenantbrief-demo-poster.jpg)](https://canercetinkaya.com/tr/blog/tenantbrief-m365-lisans-roi-uyumluluk-analizi#demo-video)
+[![TenantBrief — 20 Saniyelik HD Demo Videosu (Tarayıcıda İzlemek İçin Tıklayın)](assets/tenantbrief-demo-poster.jpg)](https://canercetinkaya.com/tr/blog/tenantbrief-m365-lisans-roi-uyumluluk-analizi/#demo-video)
 
 *▶ 20 saniyelik 1080p sesli demoyu indirmeden doğrudan tarayıcıda izlemek için yukarıdaki önizlemeye tıklayın (anonimleştirilmiş demo kiracısı).*
 
-[📖 Türkçe Mimari İnceleme](https://canercetinkaya.com/tr/blog/tenantbrief-m365-lisans-roi-uyumluluk-analizi) · [🌐 English Deep Dive](https://canercetinkaya.com/en/blog/tenantbrief-m365-lisans-roi-uyumluluk-analizi) · [📊 Canlı Demo (TR)](demo/TenantBriefReport-TR.html) · [📊 Live Demo (EN)](demo/TenantBriefReport-EN.html) · [📄 CISO PDF Özeti (TR)](demo/TenantBrief-ExecutiveSummary-TR.html)
+[🇬🇧 English README](README.en.md) · [📖 Türkçe Mimari İnceleme](https://canercetinkaya.com/tr/blog/tenantbrief-m365-lisans-roi-uyumluluk-analizi/) · [🌐 English Architecture Essay](https://canercetinkaya.com/en/blog/tenantbrief-m365-lisans-roi-uyumluluk-analizi/) · [📊 Canlı Demo (TR)](demo/TenantBriefReport-TR.html) · [📊 Live Demo (EN)](demo/TenantBriefReport-EN.html) · [📄 CISO PDF Özeti (TR)](demo/TenantBrief-ExecutiveSummary-TR.html)
 
 </div>
 
